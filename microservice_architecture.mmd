@@ -1,0 +1,144 @@
+graph TB
+    %% ============================================
+    %% MICROSERVICE ARCHITECTURE - MODULE SEPARATION
+    %% ============================================
+
+    subgraph API["API Gateway"]
+        direction LR
+        AUTH_API["Auth API"]
+        EVENT_API["Event API"]
+        BOOKING_API["Booking API"]
+        PAYMENT_API["Payment API"]
+        CHECKIN_API["Check-in API"]
+        NOTIFICATION_API["Notification API"]
+        STAFF_API["Staff API"]
+    end
+
+    subgraph AUTH["🔐 AUTH MODULE<br/>user_id, roles, permissions"]
+        AUTH_DB[("USERS<br/>ROLES")]
+        AUTH_SERVICE["Auth Service<br/>- Login/Register<br/>- JWT Token<br/>- Role Management"]
+        AUTH_API --> AUTH_SERVICE --> AUTH_DB
+    end
+
+    subgraph EVENT["📅 EVENT MODULE<br/>Domain: Organizer"]
+        EVENT_DB[("EVENTS<br/>SEAT_MAPS<br/>SEATS")]
+        EVENT_SERVICE["Event Service<br/>- Create Event<br/>- Manage Seats<br/>- Seat Status"]
+        EVENT_API --> EVENT_SERVICE --> EVENT_DB
+    end
+
+    subgraph BOOKING["🎫 BOOKING MODULE<br/>Domain: Customer/Admin"]
+        BOOKING_DB[("BOOKINGS<br/>TICKETS")]
+        BOOKING_SERVICE["Booking Service<br/>- Create Booking<br/>- Reserve Seats<br/>- Generate Tickets"]
+        BOOKING_API --> BOOKING_SERVICE --> BOOKING_DB
+        BOOKING_SERVICE --> EVENT_DB
+    end
+
+    subgraph PAYMENT["💳 PAYMENT MODULE<br/>Domain: Finance"]
+        PAYMENT_DB[("PAYMENTS<br/>REFUNDS")]
+        PAYMENT_SERVICE["Payment Service<br/>- Process Payment<br/>- Refund Management<br/>- Transaction Ledger"]
+        PAYMENT_API --> PAYMENT_SERVICE --> PAYMENT_DB
+        PAYMENT_SERVICE --> BOOKING_DB
+    end
+
+    subgraph CHECKIN["✅ CHECK-IN MODULE<br/>Domain: Event Operations"]
+        CHECKIN_DB[("CHECKINS<br/>OFFLINE_CHECKIN_QUEUE")]
+        CHECKIN_SERVICE["Check-in Service<br/>- Online Checkin<br/>- Offline Queue Sync<br/>- QR/Code Validation"]
+        CHECKIN_API --> CHECKIN_SERVICE --> CHECKIN_DB
+        CHECKIN_SERVICE --> BOOKING_DB
+        CHECKIN_SERVICE -.->|"when offline"| OFFLINE_QUEUE[(Local SQLite<br/>on Device)]
+    end
+
+    subgraph NOTIFICATION["🔔 NOTIFICATION MODULE<br/>Domain: Communication"]
+        NOTIF_DB[("NOTIFICATIONS")]
+        NOTIF_SERVICE["Notification Service<br/>- Email Notifications<br/>- SMS Alerts<br/>- Push Messages"]
+        NOTIFICATION_API --> NOTIF_SERVICE --> NOTIF_DB
+    end
+
+    subgraph STAFF["👥 STAFF MODULE<br/>Domain: HR/Operations"]
+        STAFF_DB[("STAFF<br/>STAFF_ASSIGNMENTS")]
+        STAFF_SERVICE["Staff Service<br/>- Manage Staff<br/>- Assign to Events<br/>- Role Assignment"]
+        STAFF_API --> STAFF_SERVICE --> STAFF_DB
+    end
+
+    subgraph REPORTING["📊 REPORTING MODULE<br/>Domain: Analytics"]
+        REPORT_DB[("ATTENDANCE_STATS")]
+        REPORT_SERVICE["Reporting Service<br/>- Event Statistics<br/>- Revenue Analytics<br/>- Attendance Reports"]
+        REPORT_API["Report API"]
+        REPORT_API --> REPORT_SERVICE --> REPORT_DB
+        REPORT_SERVICE -.->|"reads data"| EVENT_DB
+        REPORT_SERVICE -.->|"reads data"| BOOKING_DB
+        REPORT_SERVICE -.->|"reads data"| PAYMENT_DB
+        REPORT_SERVICE -.->|"reads data"| CHECKIN_DB
+    end
+
+    %% ============================================
+    %% SHARED INFRASTRUCTURE
+    %% ============================================
+    subgraph SHARED["🔧 SHARED SERVICES"]
+        CACHE["Redis Cache<br/>- Session Management<br/>- Rate Limiting"]
+        MESSAGE_QUEUE["Message Queue<br/>RabbitMQ/Kafka<br/>- Event Publishing<br/>- Async Tasks"]
+        LOGGING["Logging Service<br/>- Centralized Logs<br/>- Audit Trail"]
+        CONFIG["Config Server<br/>- Feature Flags<br/>- Environment Config"]
+    end
+
+    %% ============================================
+    %% EXTERNAL SERVICES
+    %% ============================================
+    subgraph EXTERNAL["🌐 EXTERNAL SERVICES"]
+        PAYMENT_GATEWAY["Payment Gateway<br/>Stripe/PayPal"]
+        EMAIL_SERVICE["Email Service<br/>SendGrid/AWS SES"]
+        SMS_SERVICE["SMS Service<br/>Twilio"]
+    end
+
+    %% ============================================
+    %% INTER-SERVICE COMMUNICATION
+    %% ============================================
+    PAYMENT_SERVICE -->|"payment.success"| MESSAGE_QUEUE -->|"consume"| NOTIFY_TRIGGER["Notify Customer<br/>Confirmation Email"]
+    CHECKIN_SERVICE -->|"attendance.updated"| MESSAGE_QUEUE -->|"consume"| REPORT_SERVICE
+    BOOKING_SERVICE -->|"booking.created"| MESSAGE_QUEUE -->|"consume"| NOTIF_SERVICE
+    PAYMENT_SERVICE -->|"refund.approved"| MESSAGE_QUEUE -->|"consume"| NOTIF_SERVICE
+
+    %% Connect to external services
+    NOTIF_SERVICE --> EMAIL_SERVICE
+    NOTIF_SERVICE --> SMS_SERVICE
+    PAYMENT_SERVICE --> PAYMENT_GATEWAY
+
+    %% Shared infrastructure connections
+    AUTH_SERVICE -.->|"session cache"| CACHE
+    BOOKING_SERVICE -.->|"rate limit"| CACHE
+    CHECKIN_SERVICE -.->|"session"| CACHE
+
+    AUTH_SERVICE -.->|"logs"| LOGGING
+    EVENT_SERVICE -.->|"logs"| LOGGING
+    BOOKING_SERVICE -.->|"logs"| LOGGING
+    PAYMENT_SERVICE -.->|"logs"| LOGGING
+    CHECKIN_SERVICE -.->|"logs"| LOGGING
+
+    %% ============================================
+    %% MIGRATION PHASES
+    %% ============================================
+    subgraph PHASE["📋 MIGRATION PHASES"]
+        PHASE1["✅ Phase 1<br/>Extract Auth Module<br/>+ Event Module"]
+        PHASE2["✅ Phase 2<br/>Extract Booking Module<br/>+ Payment Module"]
+        PHASE3["✅ Phase 3<br/>Extract Check-in Module<br/>+ Offline Sync"]
+        PHASE4["✅ Phase 4<br/>Extract Notification<br/>+ Staff Management"]
+        PHASE5["✅ Phase 5<br/>Extract Reporting<br/>Analytics Service"]
+
+        PHASE1 --> PHASE2
+        PHASE2 --> PHASE3
+        PHASE3 --> PHASE4
+        PHASE4 --> PHASE5
+    end
+
+    style AUTH fill:#e1f5ff
+    style EVENT fill:#f3e5f5
+    style BOOKING fill:#fff3e0
+    style PAYMENT fill:#e8f5e9
+    style CHECKIN fill:#fce4ec
+    style NOTIFICATION fill:#f1f8e9
+    style STAFF fill:#ede7f6
+    style REPORTING fill:#e0f2f1
+    style SHARED fill:#fff9c4
+    style EXTERNAL fill:#ffccbc
+    style PHASE fill:#c8e6c9
+
