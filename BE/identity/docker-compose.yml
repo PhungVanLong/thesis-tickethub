@@ -1,0 +1,32 @@
+version: "3.9"
+
+services:
+  postgres:
+    image: postgres:16
+    container_name: identity-postgres
+    environment:
+      POSTGRES_DB: identity
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: "270504"
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d identity"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  app:
+    build: .
+    container_name: identity-app
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/identity
+      SPRING_DATASOURCE_USERNAME: postgres
+      SPRING_DATASOURCE_PASSWORD: "270504"
+      JWT_SECRET: change-this-secret-key-please-change-very-long
+      JWT_EXPIRATION_SECONDS: "604800"
+    ports:
+      - "8081:8080"
