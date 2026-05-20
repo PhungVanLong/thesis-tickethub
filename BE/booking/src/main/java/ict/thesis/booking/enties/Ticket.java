@@ -1,5 +1,7 @@
 package ict.thesis.booking.enties;
 
+import java.time.OffsetDateTime;
+
 import ict.thesis.booking.enties.enums.TicketStatus;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -7,20 +9,17 @@ import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
 import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
-import java.time.OffsetDateTime;
-import java.util.UUID;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
-import org.hibernate.annotations.JdbcTypeCode;
-import org.hibernate.annotations.UuidGenerator;
-import org.hibernate.type.SqlTypes;
+
 
 @Entity
 @Table(name = "tickets")
@@ -32,10 +31,9 @@ import org.hibernate.type.SqlTypes;
 public class Ticket {
 
     @Id
-    @GeneratedValue
-    @UuidGenerator
-    @Column(name = "id", columnDefinition = "uuid")
-    private UUID id;
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "id")
+    private Long id;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "order_item_id")
@@ -52,11 +50,9 @@ public class Ticket {
     private String qrCodeUrl;
 
     @Enumerated(EnumType.STRING)
-    @JdbcTypeCode(SqlTypes.NAMED_ENUM)
-    @Column(name = "status", columnDefinition = "enum_ticket_status")
+    @Column(name = "status")
     private TicketStatus status;
 
     @Column(name = "issued_at")
     private OffsetDateTime issuedAt;
 }
-

@@ -33,7 +33,7 @@ public class BookingExceptionHandler {
     @ExceptionHandler(BookingExceptions.BookingException.class)
     public ResponseEntity<ApiErrorResponse> handleBookingException(BookingExceptions.BookingException ex,
                                                                    HttpServletRequest request) {
-        return build(HttpStatus.UNPROCESSABLE_ENTITY, ex.getMessage(), request.getRequestURI(), null);
+        return build(HttpStatus.UNPROCESSABLE_CONTENT, ex.getMessage(), request.getRequestURI(), null);
     }
 
     @ExceptionHandler(Exception.class)
@@ -55,4 +55,5 @@ public class BookingExceptionHandler {
         ));
     }
 }
+
 

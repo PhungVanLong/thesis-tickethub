@@ -7,6 +7,7 @@ import ict.thesis.booking.repository.PaymentRepository;
 import java.math.BigDecimal;
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
+import java.util.List;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -41,6 +42,10 @@ public class PaymentService {
                 .build());
     }
 
+    public List<Payment> getPaymentsByOrderId(Long orderId) {
+        return paymentRepository.findByOrder_Id(orderId);
+    }
+
     private String generateGatewayTxId() {
         return "PAY-" + UUID.randomUUID().toString().replace("-", "").substring(0, 12).toUpperCase();
     }
@@ -49,4 +54,5 @@ public class PaymentService {
         return value == null || value.isBlank() ? defaultValue : value.trim();
     }
 }
+
 

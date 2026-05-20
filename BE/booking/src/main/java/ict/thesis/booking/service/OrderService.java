@@ -52,6 +52,22 @@ public class OrderService {
         return orderItemRepository.findByOrder_Id(orderId);
     }
 
+    public SeatRef getSeat(Long seatId) {
+        if (seatId == null) {
+            throw new BadRequestException("seatId là bắt buộc");
+        }
+        return seatRefRepository.findById(seatId)
+                .orElseThrow(() -> new NotFoundException("Không tìm thấy ghế id=" + seatId));
+    }
+
+    public TicketTierRef getTicketTier(Long ticketTierId) {
+        if (ticketTierId == null) {
+            throw new BadRequestException("ticketTierId là bắt buộc");
+        }
+        return ticketTierRefRepository.findById(ticketTierId)
+                .orElseThrow(() -> new NotFoundException("Không tìm thấy hạng vé id=" + ticketTierId));
+    }
+
     public Order getExistingOrderByIdempotencyKey(String idempotencyKey) {
         if (idempotencyKey == null || idempotencyKey.isBlank()) {
             return null;
@@ -158,4 +174,5 @@ public class OrderService {
         return value == null || value.isBlank() ? null : value.trim();
     }
 }
+
 
