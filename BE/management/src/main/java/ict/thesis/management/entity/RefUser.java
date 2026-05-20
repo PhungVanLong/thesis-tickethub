@@ -9,9 +9,17 @@ import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
+import lombok.ToString;
 
 @Entity
 @Table(name="users_ref")
+@Getter
+@Setter
+@NoArgsConstructor
+@ToString
 public class RefUser {
     @Id
     private Long id;
@@ -23,6 +31,5 @@ public class RefUser {
     private UserRole role;
     
     private Instant syncedAt;
-
 
 }
