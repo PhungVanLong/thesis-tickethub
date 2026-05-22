@@ -53,6 +53,7 @@ public class Notification {
     @Column(columnDefinition = "jsonb", nullable = false)
     private JsonNode payload;
 
+    @Builder.Default
     @Column(name = "is_read", nullable = false)
     private boolean read = false;
 
@@ -63,4 +64,3 @@ public class Notification {
     @Column(name = "created_at", nullable = false, updatable = false)
     private Instant createdAt;
 }
-

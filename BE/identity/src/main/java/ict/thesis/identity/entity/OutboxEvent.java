@@ -54,6 +54,7 @@ public class OutboxEvent {
     @Column(nullable = false, length = 50)
     private OutboxStatus status;
 
+    @Builder.Default
     @Column(name = "retry_count", nullable = false)
     private Integer retryCount = 0;
 
@@ -64,4 +65,3 @@ public class OutboxEvent {
     @Column(name = "published_at")
     private Instant publishedAt;
 }
-

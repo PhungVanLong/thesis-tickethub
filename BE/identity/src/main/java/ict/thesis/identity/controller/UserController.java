@@ -1,0 +1,39 @@
+package ict.thesis.identity.controller;
+
+import ict.thesis.identity.dto.UserResponse;
+import ict.thesis.identity.entity.User;
+import ict.thesis.identity.repository.UserRepository;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
+
+import java.util.Optional;
+
+@RestController
+@RequestMapping("/api/auth")
+public class UserController {
+    private final UserRepository userRepository;
+
+    public UserController(UserRepository userRepository) {
+        this.userRepository = userRepository;
+    }
+
+    @GetMapping("/users/{id}")
+    public ResponseEntity<UserResponse> getUser(@PathVariable Long id) {
+        Optional<User> u = userRepository.findById(id);
+        if (u.isEmpty()) return ResponseEntity.notFound().build();
+        User user = u.get();
+        UserResponse resp = new UserResponse();
+        resp.setId(user.getId());
+        resp.setEmail(user.getEmail());
+        resp.setFullName(user.getFullName());
+        resp.setRole(user.getRole() == null ? null : user.getRole().name());
+        resp.setVerified(user.isVerified());
+        resp.setActive(user.isActive());
+        resp.setCreatedAt(user.getCreatedAt());
+        resp.setUpdatedAt(user.getUpdatedAt());
+        return ResponseEntity.ok(resp);
+    }
+}
