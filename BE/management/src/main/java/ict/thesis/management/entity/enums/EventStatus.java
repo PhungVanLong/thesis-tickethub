@@ -1,11 +1,10 @@
 package ict.thesis.management.entity.enums;
 
-public enum  EventStatus {
+public enum EventStatus {
     DRAFT,
-  PENDING,
-  APPROVED,
-  REJECTED,
-  CANCELLED,
-  COMPLETED
+    PENDING_APPROVAL,
+    APPROVED,
+    PUBLISHED,
+    CANCELLED
 
 }

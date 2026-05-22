@@ -2,6 +2,8 @@ package ict.thesis.management.entity;
 
 import java.time.Instant;
 
+import jakarta.persistence.*;
+
 import ict.thesis.management.entity.enums.RoleEventStaff;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -17,6 +19,7 @@ import jakarta.persistence.Table;
 @Table(name = "event_staff")
 public class EventStaff {
     @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
     @ManyToOne(fetch = FetchType.LAZY)
@@ -28,10 +31,20 @@ public class EventStaff {
     private RefUser staff;
 
     @Enumerated(EnumType.STRING)
-    @Column(name = "role_in_event", nullable = false)
+    @Column(name = "role_in_event", nullable = false, length = 100)
     private RoleEventStaff roleInEvent;
 
     @Column(name = "assigned_at")
     private Instant assignedAt;
-}
 
+    public Long getId() { return id; }
+    public void setId(Long id) { this.id = id; }
+    public Events getEvent() { return event; }
+    public void setEvent(Events event) { this.event = event; }
+    public RefUser getStaff() { return staff; }
+    public void setStaff(RefUser staff) { this.staff = staff; }
+    public RoleEventStaff getRoleInEvent() { return roleInEvent; }
+    public void setRoleInEvent(RoleEventStaff roleInEvent) { this.roleInEvent = roleInEvent; }
+    public Instant getAssignedAt() { return assignedAt; }
+    public void setAssignedAt(Instant assignedAt) { this.assignedAt = assignedAt; }
+}

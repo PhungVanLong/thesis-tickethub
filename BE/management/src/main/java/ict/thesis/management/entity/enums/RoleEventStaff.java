@@ -1,7 +1,6 @@
 package ict.thesis.management.entity.enums;
 
 public enum RoleEventStaff {
-    CHECKER,
-    MANAGER
+    CHECKIN_STAFF,
+    COORDINATOR
 }
-

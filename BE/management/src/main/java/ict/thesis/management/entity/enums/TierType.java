@@ -1,7 +1,7 @@
 package ict.thesis.management.entity.enums;
 
 public enum TierType {
-    STANDARD,
+    SEATED,
+    STANDING,
     VIP
 }
-

@@ -10,45 +10,50 @@ import org.hibernate.annotations.ManyToAny;
 import ict.thesis.management.entity.enums.EventStatus;
 
 @Entity
-//@Getter
-//@Setter
+@Table(name = "events")
 public class Events {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @ManyToOne( fetch= FetchType.LAZY)
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "organizer_id")
-   private RefUser refUser;
+    private RefUser refUser;
 
-    private String title    ;
+    @Column(nullable = false, length = 255)
+    private String title;
 
-    private String description; 
+    @Column(columnDefinition = "text")
+    private String description;
 
+    @Column(length = 255)
     private String venue;
 
+    @Column(length = 100)
     private String city;
-    @Column(name = "location_coords")
+
+    @Column(name = "location_coords", length = 100)
     private String locationCoords;
 
-    @Column(name = "start_time")
+    @Column(name = "start_time", nullable = false)
     private Instant startTime;
 
-    @Column(name="end_time")
+    @Column(name = "end_time", nullable = false)
     private Instant endTime;
 
-    @Column(name = "banner_url")
+    @Column(name = "banner_url", length = 500)
     private String bannerUrl;
 
     @Enumerated(EnumType.STRING)
-    @Column(nullable=false)
+    @Column(nullable = false, length = 50)
     private EventStatus status;
 
-    @Column(name = "is_published")
+    @Column(name = "is_published", nullable = false)
     private boolean isPublished;
 
     @Column(name = "created_at")
     private Instant createdAt;
+
     @Column(name = "updated_at")
     private Instant updatedAt;
 
@@ -84,4 +89,3 @@ public class Events {
 
 
 }
-
