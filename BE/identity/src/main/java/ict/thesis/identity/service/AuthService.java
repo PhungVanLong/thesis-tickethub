@@ -8,6 +8,7 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import ict.thesis.identity.dto.AuthResponse;
 import ict.thesis.identity.dto.LoginRequest;
@@ -30,32 +31,35 @@ public class AuthService {
     private final AuthenticationManager authenticationManager;
     private final JwtService jwtService;
 
+    @Transactional // Đảm bảo tính nguyên tử khi thao tác xuống Database vật lý
     public AuthResponse register(RegisterRequest request) {
         if (userRepository.existsByEmail(request.email())) {
             throw new ConflictException("Email already exists");
         }
 
         User user = User.builder()
-            .email(request.email())
-            .passwordHash(passwordEncoder.encode(request.password()))
-            .fullName(request.fullName())
-            .phone(request.phone())
-            .role(UserRole.CUSTOMER)
-            .verified(false)
-            .active(true)
-            .build();
+                        .email(request.email())
+                        .passwordHash(passwordEncoder.encode(request.password())) // Băm Bcrypt
+                        .fullName(request.fullName())
+                        .phone(request.phone())
+                        .role(UserRole.CUSTOMER) // Mặc định tài khoản đăng ký mới là Khách hàng [cite: 17]
+                        .verified(false)
+                        .active(true)
+                        .build();
 
-        userRepository.save(user);
-        logger.info("Registered user {}", user.getEmail());
+        // Lưu vào DB để sinh ID tự tăng tự động trước khi cấp Token
+        User savedUser = userRepository.save(user);
+        logger.info("Registered user successfully with email: {}", savedUser.getEmail());
 
-        String token = jwtService.generateToken(user.getEmail(), user.getRole().name());
+        // CHỈNH SỬA CỐT LÕI: Subject truyền vào Token chuyển thành ID dạng String để API Gateway đọc hiểu
+        String token = jwtService.generateToken(savedUser.getId().toString(), savedUser.getRole().name().toLowerCase());
         return new AuthResponse(token, "Bearer", jwtService.getExpirationSeconds());
     }
 
     public AuthResponse login(LoginRequest request) {
         try {
             Authentication authentication = authenticationManager.authenticate(
-                new UsernamePasswordAuthenticationToken(request.email(), request.password())
+                    new UsernamePasswordAuthenticationToken(request.email(), request.password())
             );
 
             if (!authentication.isAuthenticated()) {
@@ -63,8 +67,10 @@ public class AuthService {
             }
 
             User user = userRepository.findByEmail(request.email())
-                .orElseThrow(() -> new UnauthorizedException("Invalid credentials"));
-            String token = jwtService.generateToken(user.getEmail(), user.getRole().name());
+                                      .orElseThrow(() -> new UnauthorizedException("Invalid credentials"));
+
+            // CHỈNH SỬA CỐT LÕI: Đồng bộ Subject là User ID tương đương với hàm Register
+            String token = jwtService.generateToken(user.getId().toString(), user.getRole().name().toLowerCase());
             return new AuthResponse(token, "Bearer", jwtService.getExpirationSeconds());
         } catch (UnauthorizedException ex) {
             throw ex;
