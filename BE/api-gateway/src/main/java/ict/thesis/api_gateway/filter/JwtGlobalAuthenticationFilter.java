@@ -1,6 +1,7 @@
 package ict.thesis.api_gateway.filter;
 
 import java.nio.charset.StandardCharsets;
+import java.util.Arrays;
 
 import javax.crypto.SecretKey;
 
@@ -8,10 +9,12 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.cloud.gateway.filter.GlobalFilter;
 import org.springframework.core.Ordered;
 import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.server.reactive.ServerHttpRequest;
 import org.springframework.http.server.reactive.ServerHttpResponse;
 import org.springframework.stereotype.Component;
+import org.springframework.util.AntPathMatcher;
 import org.springframework.web.server.ServerWebExchange;
 
 import io.jsonwebtoken.Claims;
@@ -26,7 +29,11 @@ public class JwtGlobalAuthenticationFilter implements GlobalFilter, Ordered {
     @Value("${jwt.secret}")
     private String secretString;
 
+    @Value("${gateway.security.public-paths:/api/auth/login,/api/auth/register,/api/movies/**,/swagger-ui.html,/swagger-ui/**,/v3/api-docs/**,/api-docs/**,/actuator/health,/actuator/info}")
+    private String publicPathsCsv;
+
     private SecretKey secretKey;
+    private final AntPathMatcher pathMatcher = new AntPathMatcher();
 
     @PostConstruct
     public void init() {
@@ -38,9 +45,9 @@ public class JwtGlobalAuthenticationFilter implements GlobalFilter, Ordered {
         ServerHttpRequest request = exchange.getRequest();
 
         // Apply JWT check only for requests that actually require authentication.
-        // For public endpoints (login/register/refresh) we allow through.
+        // Public endpoints pass through, internal endpoints must present a valid token.
         String path = request.getURI().getPath();
-        if (path.startsWith("/api/auth/")) {
+        if (isPublicPath(path) || HttpMethod.OPTIONS.equals(request.getMethod())) {
             return chain.filter(exchange);
         }
 
@@ -79,6 +86,13 @@ public class JwtGlobalAuthenticationFilter implements GlobalFilter, Ordered {
     private Mono<Void> unauthorized(ServerHttpResponse response, HttpStatus status) {
         response.setStatusCode(status);
         return response.setComplete();
+    }
+
+    private boolean isPublicPath(String path) {
+        return Arrays.stream(publicPathsCsv.split(","))
+            .map(String::trim)
+            .filter(pattern -> !pattern.isBlank())
+            .anyMatch(pattern -> pathMatcher.match(pattern, path));
     }
 
     @Override

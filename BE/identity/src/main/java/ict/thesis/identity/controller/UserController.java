@@ -1,26 +1,32 @@
 package ict.thesis.identity.controller;
 
+import ict.thesis.identity.dto.UpdateUserRequest;
 import ict.thesis.identity.dto.UserResponse;
 import ict.thesis.identity.entity.User;
 import ict.thesis.identity.repository.UserRepository;
+import ict.thesis.identity.service.AuthService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.Optional;
 
 @RestController
-@RequestMapping("/api/auth")
+@RequestMapping("/api/users")
 public class UserController {
+    private final AuthService authService;
     private final UserRepository userRepository;
 
-    public UserController(UserRepository userRepository) {
+    public UserController(AuthService authService, UserRepository userRepository) {
+        this.authService = authService;
         this.userRepository = userRepository;
     }
 
-    @GetMapping("/users/{id}")
+    @GetMapping("/{id}")
     public ResponseEntity<UserResponse> getUser(@PathVariable Long id) {
         Optional<User> u = userRepository.findById(id);
         if (u.isEmpty()) return ResponseEntity.notFound().build();
@@ -35,5 +41,10 @@ public class UserController {
         resp.setCreatedAt(user.getCreatedAt());
         resp.setUpdatedAt(user.getUpdatedAt());
         return ResponseEntity.ok(resp);
+    }
+
+    @PutMapping("/{id}")
+    public ResponseEntity<UserResponse> updateUser(@PathVariable Long id, @RequestBody UpdateUserRequest request) {
+        return ResponseEntity.ok(authService.updateUser(id, request));
     }
 }
