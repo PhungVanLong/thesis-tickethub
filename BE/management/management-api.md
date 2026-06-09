@@ -7,7 +7,7 @@
 - **Base URL local:** `http://localhost:8082`
 - **API style:** REST
 - **Security at service level:** các route API hiện tại đang `permitAll()` trong `SecurityConfig`.
-- **Business usage:** service này nhận dữ liệu user từ `identity`, lưu bản ghi tham chiếu `RefUser`, tạo event draft và xử lý luồng duyệt event.
+- **Business usage:** service này nhận dữ liệu user từ `identity`, lưu bản ghi tham chiếu `RefUser`, cho phép `customer` apply event draft và xử lý luồng duyệt để promote lên `organizer` khi được duyệt.
 
 > Ghi chú: Khi đi qua `api-gateway`, các rule JWT của gateway có thể áp dụng thêm. Tài liệu này mô tả API của service `management` theo code hiện tại.
 
@@ -23,15 +23,18 @@
 - lưu role hiện tại của user tại thời điểm sync
 
 ### 2.2. Event creation rule
-Khi tạo event:
+Khi customer/applicant tạo event draft:
 - `organizerId` là bắt buộc
 - `title` là bắt buộc
 - `startTime` và `endTime` là bắt buộc
 - `startTime` phải nhỏ hơn `endTime`
 - nếu organizer chưa có trong `RefUser`, service sẽ gọi sang `identity` để lấy user và sync về `management`
 - user phải `active=true` và `verified=true` mới được tạo event
+- organizer phải có `OrganizerProfile.status=APPROVED`
 - event mới tạo có trạng thái mặc định: `DRAFT`
 - `isPublished=false`
+
+> Ghi chú: field `organizerId` trong request đang đại diện cho user nộp đơn/apply event ở thời điểm tạo draft. Role thực tế của user có thể vẫn là `CUSTOMER`; chỉ sau khi event được duyệt thì user mới được promote thành `ORGANIZER`.
 
 ### 2.3. Event approval rule
 Khi duyệt event:
@@ -56,6 +59,18 @@ Khi `identity` thay đổi user:
 - nếu record đã tồn tại thì cập nhật lại thông tin
 - nếu chưa tồn tại thì tạo mới
 
+### 2.5. Organizer profile verification rule
+Luồng duyệt tổ chức dựa trên JWT access token:
+- user gửi hồ sơ tổ chức qua endpoint submit profile, hệ thống lấy `userId` từ JWT
+- hệ thống lưu `OrganizerProfile` với `status=PENDING`
+- admin duyệt hồ sơ bằng endpoint verify
+- nếu `decision=APPROVED`:
+  - profile đổi sang `APPROVED`
+  - nếu user hiện tại là `CUSTOMER`, hệ thống sẽ nâng role user đó thành `ORGANIZER` ở `identity`, sau đó sync lại về `management`
+- nếu `decision=REJECTED` hoặc `SUSPENDED`:
+  - profile cập nhật lại status tương ứng
+  - lưu thông tin admin duyệt, thời điểm duyệt và lý do
+
 ---
 
 ## 3) Base endpoints
@@ -66,6 +81,10 @@ Khi `identity` thay đổi user:
 
 ### User reference sync
 - `POST /api/ref-users/sync`
+
+### Organizer profiles
+- `POST /api/organizers/profiles`
+- `POST /api/organizers/{userId}/verify`
 
 ---
 
@@ -96,7 +115,7 @@ Các trạng thái đang có trong code:
 ## 5) Endpoint: Create Event
 
 ### `POST /api/events/create`
-Tạo một event mới với organizer được đồng bộ từ `identity`.
+Tạo một event draft do `customer`/applicant nộp.
 
 ### Request body
 Class: `CreateEventRequest`
@@ -141,14 +160,15 @@ Content-Type: application/json
 4. Nếu user từ `identity`:
    - `active=false` hoặc `verified=false` -> lỗi `400`
    - hợp lệ -> sync sang `RefUser`
-5. Validate title và thời gian
-6. Tạo `Events`
-7. Set:
+5. Kiểm tra organizer profile tồn tại và `status=APPROVED`
+6. Validate title và thời gian
+7. Tạo `Events`
+8. Set:
    - `status = DRAFT`
    - `isPublished = false`
    - `createdAt = now`
    - `updatedAt = now`
-8. Lưu DB và trả response
+9. Lưu DB và trả response
 
 ### Success response
 HTTP status: `201 Created`
@@ -179,6 +199,7 @@ Class: `CreateEventResponse`
   - `startTime` >= `endTime`
   - organizer không tồn tại
   - organizer không active / verified
+  - organizer profile chưa được verify
 - `404 Not Found`
   - nếu fetch event/user không tìm thấy theo rule service
 
@@ -228,7 +249,7 @@ Content-Type: application/json
 7. Nếu `APPROVED`:
    - event.status = `APPROVED`
    - event.isPublished = `false`
-   - nếu organizer.role = `CUSTOMER`:
+   - nếu applicant/organizer hiện tại là `CUSTOMER`:
      - gọi sang `identity` để đổi role user đó thành `ORGANIZER`
      - sync lại `RefUser` từ identity
 8. Nếu `REJECTED`:
@@ -404,14 +425,15 @@ Nếu hệ thống đi qua `api-gateway`, internal request có thể bị chặn
 1. Customer đăng ký / đăng nhập ở `identity`
 2. `identity` sync user sang `management`
 3. Customer gọi `POST /api/events/create`
-4. `management` kiểm tra organizer
+4. `management` kiểm tra applicant/organizerId
 5. Event được tạo với status `DRAFT`
+6. Role của user chưa đổi ngay; vẫn có thể là `CUSTOMER` cho tới khi admin duyệt
 
 ### 10.2. Admin duyệt event
 1. Admin gọi `POST /api/events/{eventId}/approve`
 2. Nếu `APPROVED`:
    - event chuyển sang `APPROVED`
-   - nếu organizer là `CUSTOMER`, hệ thống nâng role thành `ORGANIZER`
+   - nếu user đang là `CUSTOMER`, hệ thống nâng role thành `ORGANIZER`
 3. `identity` cập nhật user
 4. `management` sync lại `RefUser`
 
@@ -445,7 +467,7 @@ Nếu hệ thống đi qua `api-gateway`, internal request có thể bị chặn
 
 Toàn bộ luồng được thiết kế để:
 - nhận user từ `identity`
-- tạo event draft cho customer
+- tạo event draft cho customer/applicant
 - duyệt event bởi admin
 - nâng customer thành organizer khi event được duyệt
 - đồng bộ user reference trong `management` khi user ở `identity` thay đổi

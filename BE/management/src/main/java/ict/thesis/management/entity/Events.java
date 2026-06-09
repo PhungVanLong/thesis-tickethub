@@ -2,12 +2,18 @@ package ict.thesis.management.entity;
 
 import java.time.Instant;
 
-import jakarta.persistence.*;
-import lombok.Getter;
-import lombok.Setter;
-import org.hibernate.annotations.ManyToAny;
-
 import ict.thesis.management.entity.enums.EventStatus;
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
+import jakarta.persistence.FetchType;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
+import jakarta.persistence.Table;
 
 @Entity
 @Table(name = "events")
@@ -18,7 +24,7 @@ public class Events {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "organizer_id")
-    private RefUser refUser;
+    private OrganizerProfile organizerProfile;
 
     @Column(nullable = false, length = 255)
     private String title;
@@ -60,8 +66,13 @@ public class Events {
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }
 
-    public RefUser getRefUser() { return refUser; }
-    public void setRefUser(RefUser refUser) { this.refUser = refUser; }
+    public OrganizerProfile getOrganizerProfile() {
+        return organizerProfile;
+    }
+
+    public void setOrganizerProfile(OrganizerProfile organizerProfile) {
+        this.organizerProfile = organizerProfile;
+    }
     public String getTitle() { return title; }
     public void setTitle(String title) { this.title = title; }
     public String getDescription() { return description; }

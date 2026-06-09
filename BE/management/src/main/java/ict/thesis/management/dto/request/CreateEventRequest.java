@@ -1,12 +1,10 @@
 package ict.thesis.management.dto.request;
 
-import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.NotNull;
-import lombok.Getter;
-
 import java.time.Instant;
 
-@Getter
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
+
 public class CreateEventRequest {
     @NotNull(message = "organizerId is required")
     private Long organizerId;
@@ -21,6 +19,42 @@ public class CreateEventRequest {
     @NotNull(message = "endTime is required")
     private Instant endTime;
     private String bannerUrl;
+
+    public Long getOrganizerId() {
+        return organizerId;
+    }
+
+    public String getTitle() {
+        return title;
+    }
+
+    public String getDescription() {
+        return description;
+    }
+
+    public String getVenue() {
+        return venue;
+    }
+
+    public String getCity() {
+        return city;
+    }
+
+    public String getLocationCoords() {
+        return locationCoords;
+    }
+
+    public Instant getStartTime() {
+        return startTime;
+    }
+
+    public Instant getEndTime() {
+        return endTime;
+    }
+
+    public String getBannerUrl() {
+        return bannerUrl;
+    }
 
     public void setOrganizerId(Long organizerId) {
         this.organizerId = organizerId;

@@ -23,7 +23,9 @@ public class OrganizerProfileController {
     }
 
     @PostMapping("/profiles")
-    public ResponseEntity<OrganizerProfileResponse> submitProfile(@Valid @RequestBody OrganizerProfileRequest request) {
+    public ResponseEntity<OrganizerProfileResponse> submitProfile(
+        @Valid @RequestBody OrganizerProfileRequest request
+    ) {
         return ResponseEntity.status(HttpStatus.CREATED).body(organizerProfileService.submitProfile(request));
     }
 

@@ -2,7 +2,7 @@
 
 ## 1) Domain Overview
 Core entities and relationships:
-- RefUser: referenced user with a role (admin/organizer/staff).
+- RefUser: legacy referenced user with a role (still used by some admin flows).
 - Events: event created by organizer; main aggregate.
 - EventApprovals: admin decision for event approval.
 - EventStaff: staff assignment to event with a role.
@@ -38,7 +38,7 @@ Create request/response DTOs to decouple API from entities.
 ### Step 2: Repositories
 Create repositories for the required aggregates:
 - EventsRepository
-- RefUserRepository
+- RefUserRepository (legacy/admin support)
 (Optional: SeatMapRepository, TicketTierRepository if created in one flow.)
 
 ### Step 3: Service Layer
