@@ -1,7 +1,7 @@
 package ict.thesis.booking.enties;
 
 import java.math.BigDecimal;
-import java.time.OffsetDateTime;
+import java.time.Instant;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -46,6 +46,6 @@ public class VoucherUsage {
     private BigDecimal discountApplied;
 
     @Column(name = "used_at")
-    private OffsetDateTime usedAt;
+    private Instant usedAt;
 }
 

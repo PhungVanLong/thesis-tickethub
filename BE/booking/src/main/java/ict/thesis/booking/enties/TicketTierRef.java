@@ -7,7 +7,7 @@ import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 import java.math.BigDecimal;
-import java.time.OffsetDateTime;
+import java.time.Instant;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
@@ -24,19 +24,27 @@ import lombok.Setter;
 public class TicketTierRef {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "id")
     private Long id;
+
+    @Column(name = "version")
+    private Long version;
 
     @Column(name = "name")
     private String name;
 
-    @Column(name = "price")
+    @Column(name = "price" , nullable = false )
     private BigDecimal price;
+
+    @Column(name = "sale_at")
+    private Instant saleAt;
+
+    @Column(name = "sale_end")
+    private Instant saleEnd;
 
     @Column(name = "quantity_available")
     private Integer quantityAvailable;
 
     @Column(name = "synced_at")
-    private OffsetDateTime syncedAt;
+    private Instant syncedAt;
 }

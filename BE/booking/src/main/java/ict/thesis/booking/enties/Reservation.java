@@ -12,7 +12,7 @@ import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
-import java.time.OffsetDateTime;
+import java.time.Instant;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
@@ -33,13 +33,11 @@ public class Reservation {
     @Column(name = "id")
     private Long id;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "customer_id")
-    private UserRef customer;
+    @Column(name = "customer_id")
+    private Long customer;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "seat_id")
-    private SeatRef seat;
+    @Column(name = "seat_id")
+    private Long seat;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "ticket_tier_id")
@@ -53,9 +51,9 @@ public class Reservation {
     private ReservationStatus status;
 
     @Column(name = "expires_at")
-    private OffsetDateTime expiresAt;
+    private Instant expiresAt;
 
     @Column(name = "created_at")
-    private OffsetDateTime createdAt;
+    private Instant createdAt;
 }
 

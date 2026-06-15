@@ -1,6 +1,6 @@
 package ict.thesis.booking.enties;
 
-import java.time.OffsetDateTime;
+import java.time.Instant;
 
 import ict.thesis.booking.enties.enums.TicketStatus;
 import jakarta.persistence.Column;
@@ -39,9 +39,8 @@ public class Ticket {
     @JoinColumn(name = "order_item_id")
     private OrderItem orderItem;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "seat_id")
-    private SeatRef seat;
+    @Column(name = "seat_id", unique = true)
+    private Long seat;
 
     @Column(name = "ticket_code", unique = true)
     private String ticketCode;
@@ -54,5 +53,8 @@ public class Ticket {
     private TicketStatus status;
 
     @Column(name = "issued_at")
-    private OffsetDateTime issuedAt;
+    private Instant issuedAt;
+
+    @Column(name = "expires_at")
+    private Instant expiresAt;
 }

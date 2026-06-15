@@ -4,7 +4,7 @@ import ict.thesis.booking.enties.enums.OrderStatus;
 import ict.thesis.booking.enties.enums.PaymentStatus;
 import ict.thesis.booking.enties.enums.TicketStatus;
 import java.math.BigDecimal;
-import java.time.OffsetDateTime;
+import java.time.Instant;
 import java.util.List;
 
 public final class BookingDtos {
@@ -43,7 +43,7 @@ public final class BookingDtos {
             BigDecimal amount,
             String currency,
             PaymentStatus status,
-            OffsetDateTime paidAt
+            Instant paidAt
     ) {
     }
 
@@ -53,7 +53,7 @@ public final class BookingDtos {
             String ticketCode,
             String qrCodeUrl,
             TicketStatus status,
-            OffsetDateTime issuedAt
+            Instant issuedAt
     ) {
     }
 
@@ -67,8 +67,8 @@ public final class BookingDtos {
             BigDecimal promotionDiscount,
             BigDecimal voucherDiscount,
             BigDecimal totalAmount,
-            OffsetDateTime createdAt,
-            OffsetDateTime updatedAt,
+            Instant createdAt,
+            Instant updatedAt,
             PaymentResponse payment,
             List<BookingItemResponse> items,
             List<TicketResponse> tickets
@@ -76,7 +76,7 @@ public final class BookingDtos {
     }
 
     public record ApiErrorResponse(
-            OffsetDateTime timestamp,
+            Instant timestamp,
             int status,
             String error,
             String message,

@@ -35,8 +35,11 @@ public class OrderItem {
     private Order order;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "seat_id")
-    private SeatRef seat;
+    @JoinColumn(name = "reservation_id")
+    private Reservation reservation;
+
+    @Column(name = "seat_id")
+    private Long seat;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "ticket_tier_id")
@@ -47,7 +50,7 @@ public class OrderItem {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "promotion_id")
-    private TicketPromotion promotion;
+    private TicketPromotionRef promotion;
 
     @Column(name = "final_price")
     private BigDecimal finalPrice;
