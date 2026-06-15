@@ -21,7 +21,7 @@ public class OrganizerProfileService {
     public OrganizerProfileService(OrganizerProfileRepository organizerProfileRepository) {
         this.organizerProfileRepository = organizerProfileRepository;
     }
-
+//1. SIGN IN PROFILE ORGANIZER
     @Transactional
     public OrganizerProfileResponse submitProfile(OrganizerProfileRequest request) {
         if (request == null) {
@@ -48,6 +48,8 @@ public class OrganizerProfileService {
         profile.setWebsiteUrl(request.getWebsiteUrl());
         profile.setFanpageUrl(request.getFanpageUrl());
         profile.setDescription(request.getDescription());
+    
+        // Mặc định đăng ký mới hoặc đăng ký lại sẽ chờ duyệt
         profile.setStatus(OrganizerStatus.PENDING);
         profile.setVerifiedByAdminId(null);
         profile.setVerifiedAt(null);
@@ -57,7 +59,7 @@ public class OrganizerProfileService {
         OrganizerProfile saved = organizerProfileRepository.save(profile);
         return toResponse(saved);
     }
-
+//Upd
     @Transactional
     public OrganizerProfileResponse verifyProfile(Long userId, OrganizerVerificationRequest request) {
         if (request == null || request.adminUserId() == null) {

@@ -5,7 +5,11 @@ import java.util.UUID;
 
 import ict.thesis.management.entity.enums.OutboxStatus;
 import jakarta.persistence.*;
+import lombok.Getter;
+import lombok.Setter;
 
+@Setter
+@Getter
 @Entity
 @Table(name = "outbox_events")
 public class OutboxEvent {
@@ -38,22 +42,4 @@ public class OutboxEvent {
     @Column(name = "published_at")
     private Instant publishedAt;
 
-    public UUID getId() { return id; }
-    public void setId(UUID id) { this.id = id; }
-    public String getAggregateType() { return aggregateType; }
-    public void setAggregateType(String aggregateType) { this.aggregateType = aggregateType; }
-    public Long getAggregateId() { return aggregateId; }
-    public void setAggregateId(Long aggregateId) { this.aggregateId = aggregateId; }
-    public String getEventType() { return eventType; }
-    public void setEventType(String eventType) { this.eventType = eventType; }
-    public String getPayload() { return payload; }
-    public void setPayload(String payload) { this.payload = payload; }
-    public OutboxStatus getStatus() { return status; }
-    public void setStatus(OutboxStatus status) { this.status = status; }
-    public Integer getRetryCount() { return retryCount; }
-    public void setRetryCount(Integer retryCount) { this.retryCount = retryCount; }
-    public Instant getCreatedAt() { return createdAt; }
-    public void setCreatedAt(Instant createdAt) { this.createdAt = createdAt; }
-    public Instant getPublishedAt() { return publishedAt; }
-    public void setPublishedAt(Instant publishedAt) { this.publishedAt = publishedAt; }
 }

@@ -14,7 +14,11 @@ import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
+import lombok.Getter;
+import lombok.Setter;
 
+@Setter
+@Getter
 @Entity
 @Table(name = "event_approvals")
 public class EventApprovals {
@@ -39,16 +43,4 @@ public class EventApprovals {
     @Column(name = "decided_at")
     private Instant decidedAt;
 
-    public Long getId() { return id; }
-    public void setId(Long id) { this.id = id; }
-    public Events getEvent() { return event; }
-    public void setEvent(Events event) { this.event = event; }
-    public Long getAdminUser() { return adminUser; }
-    public void setAdminUser(Long adminUser) { this.adminUser = adminUser; }
-    public ApprovalDecision getDecision() { return decision; }
-    public void setDecision(ApprovalDecision decision) { this.decision = decision; }
-    public String getReason() { return reason; }
-    public void setReason(String reason) { this.reason = reason; }
-    public Instant getDecidedAt() { return decidedAt; }
-    public void setDecidedAt(Instant decidedAt) { this.decidedAt = decidedAt; }
 }

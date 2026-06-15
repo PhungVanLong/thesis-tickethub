@@ -81,5 +81,4 @@ public class OrganizerProfile {
     private OrganizerStatus status = OrganizerStatus.PENDING; // Mặc định là chờ duyệt khi tạo mới
 
     // --- Getters and Setters hoàn chỉnh ---
-
 }
