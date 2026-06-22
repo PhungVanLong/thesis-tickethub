@@ -1,11 +1,8 @@
 package ict.thesis.identity.service;
 
-import java.util.List;
-import java.util.Map;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
@@ -26,8 +23,6 @@ import ict.thesis.identity.exception.UnauthorizedException;
 import ict.thesis.identity.repository.UserRepository;
 import ict.thesis.identity.security.JwtService;
 import lombok.RequiredArgsConstructor;
-import org.springframework.web.client.RestClientException;
-import org.springframework.web.client.RestTemplate;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.server.ResponseStatusException;
 
@@ -40,10 +35,6 @@ public class AuthService {
     private final PasswordEncoder passwordEncoder;
     private final AuthenticationManager authenticationManager;
     private final JwtService jwtService;
-    private final RestTemplate restTemplate;
-
-    @Value("${management.sync-url:http://localhost:8082/api/ref-users/sync}")
-    private String managementSyncUrl;
 
     @Transactional // Đảm bảo tính nguyên tử khi thao tác xuống Database vật lý
     public AuthResponse register(RegisterRequest request) {
@@ -66,9 +57,6 @@ public class AuthService {
         // 3. Lưu vào DB để sinh ID tự tăng tự động
         User savedUser = userRepository.save(user);
         logger.info("Registered user successfully with email: {}", savedUser.getEmail());
-        
-        // 4. Đồng bộ dữ liệu User sang Management Service qua RestTemplate
-        syncManagement(savedUser);
 
         // CHỈNH SỬA CỐT LÕI: Thêm email vào Token
         String token = jwtService.generateToken(
@@ -115,7 +103,6 @@ public class AuthService {
         }
 
         User saved = userRepository.save(user);
-        syncManagement(saved);
         return toUserResponse(saved);
     }
 
@@ -172,15 +159,6 @@ public class AuthService {
         // 2. Cập nhật mật khẩu mới (băm bằng PasswordEncoder) vào DB
         // 3. Vô hiệu hóa OTP/Token cũ
         throw new UnsupportedOperationException("Tính năng Đặt lại mật khẩu đang được phát triển (TODO)");
-    }
-
-    private void syncManagement(User user) {
-        try {
-            UserResponse payload = toUserResponse(user);
-            restTemplate.postForEntity(managementSyncUrl, payload, Void.class);
-        } catch (RestClientException ex) {
-            logger.warn("Failed to sync user {} to management: {}", user.getId(), ex.getMessage());
-        }
     }
 
     private UserResponse toUserResponse(User user) {
