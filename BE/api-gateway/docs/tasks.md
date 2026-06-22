@@ -20,13 +20,12 @@ Tài liệu này theo dõi các đầu việc cần làm tại API Gateway để
 ---
 
 ## 📌 2. Cập nhật `JwtGlobalAuthenticationFilter.java`
-- [ ] Thay đổi mã giải mã token để đọc thêm các Claims mới: `email` và `permissions` (danh sách quyền).
-- [ ] Thực hiện chèn thêm các Header chuyển tiếp xuống service nội bộ:
+- [x] Thay đổi mã giải mã token để đọc thêm các Claims mới: `email` và `permissions` (danh sách quyền).
+- [x] Thực hiện chèn thêm các Header chuyển tiếp xuống service nội bộ:
   - `X-Gateway-Token`: Giá trị của `gateway.shared-secret`.
   - `X-User-Id`: ID người dùng (`claims.getSubject()`).
   - `X-User-Role`: Vai trò (`claims.get("role")`).
   - `X-User-Email`: Email (`claims.get("email")`).
-  - `X-User-Permissions`: Danh sách quyền dạng chuỗi CSV (`String.join(",", permissions)`).
 
 ---
 

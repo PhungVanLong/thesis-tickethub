@@ -3,7 +3,6 @@ package ict.thesis.identity.security;
 import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.util.Date;
-import java.util.List;
 
 import javax.crypto.SecretKey;
 
@@ -29,7 +28,11 @@ public class JwtService {
         this.expirationSeconds = expirationSeconds;
     }
 
-    public String generateToken(String userId, String role, String email, List<String> permissions) {
+    /**
+     * Sinh token JWT cho User sau khi xác thực thành công.
+     * Token này rất nhẹ, chỉ chứa ID, Role và Email, phù hợp với kiến trúc API Gateway.
+     */
+    public String generateToken(String userId, String role, String email) {
         Instant now = Instant.now();
         Instant expiresAt = now.plusSeconds(expirationSeconds);
 
@@ -39,7 +42,6 @@ public class JwtService {
                    .expiration(Date.from(expiresAt))
                    .claim("role", role) // Khớp cấu hình claims.get("role") ở API Gateway
                    .claim("email", email)
-                   .claim("permissions", permissions)
                    .signWith(secretKey)
                    .compact();
     }
