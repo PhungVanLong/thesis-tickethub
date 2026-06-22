@@ -4,15 +4,14 @@ import java.time.Instant;
 import java.util.UUID;
 
 import ict.thesis.promotion.entities.enums.OutboxStatus;
-import org.hibernate.annotations.Generated;
-import org.hibernate.annotations.GenerationTime;
-import org.hibernate.annotations.GenericGenerator;
+import org.hibernate.annotations.CreationTimestamp;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
 import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 import lombok.AllArgsConstructor;
@@ -31,8 +30,7 @@ import lombok.Setter;
 public class OutboxEvent {
 
     @Id
-    @GeneratedValue(generator = "uuid2")
-    @GenericGenerator(name = "uuid2", strategy = "uuid2")
+    @GeneratedValue(strategy = GenerationType.UUID)
     @Column(name = "id", nullable = false, columnDefinition = "uuid")
     private UUID id;
 
@@ -56,8 +54,8 @@ public class OutboxEvent {
     @Column(name = "retry_count")
     private Integer retryCount = 0;
 
-    @Generated(GenerationTime.INSERT)
-    @Column(name = "created_at")
+    @CreationTimestamp
+    @Column(name = "created_at", updatable = false)
     private Instant createdAt;
 
     @Column(name = "published_at")

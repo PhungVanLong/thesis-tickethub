@@ -3,6 +3,7 @@ package ict.thesis.identity.security;
 import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.util.Date;
+import java.util.List;
 
 import javax.crypto.SecretKey;
 
@@ -28,7 +29,7 @@ public class JwtService {
         this.expirationSeconds = expirationSeconds;
     }
 
-    public String generateToken(String userId, String role) {
+    public String generateToken(String userId, String role, String email, List<String> permissions) {
         Instant now = Instant.now();
         Instant expiresAt = now.plusSeconds(expirationSeconds);
 
@@ -37,6 +38,8 @@ public class JwtService {
                    .issuedAt(Date.from(now))
                    .expiration(Date.from(expiresAt))
                    .claim("role", role) // Khớp cấu hình claims.get("role") ở API Gateway
+                   .claim("email", email)
+                   .claim("permissions", permissions)
                    .signWith(secretKey)
                    .compact();
     }

@@ -28,7 +28,7 @@ public class OrganizationService {
     }
 
     @Transactional
-    public OrganizationResponse submitOrganization(OrganizationRequest request) {
+    public OrganizationResponse submitOrganization(Long userId, OrganizationRequest request) {
         if (request == null) {
             throw new IllegalArgumentException("request is required");
         }
@@ -58,7 +58,7 @@ public class OrganizationService {
 
         // Tạo OrganizationMember đầu tiên với vai trò OWNER
         OrganizationMember member = new OrganizationMember();
-        member.setUserId(request.getUserId());
+        member.setUserId(userId);
         member.setOrganization(savedOrg);
         member.setMemberRole(OrganizationRole.OWNER);
         member.setAssignedAt(Instant.now());
@@ -68,8 +68,8 @@ public class OrganizationService {
     }
 
     @Transactional
-    public OrganizationResponse verifyOrganization(Long organizationId, OrganizationVerificationRequest request) {
-        if (request == null || request.adminUserId() == null) {
+    public OrganizationResponse verifyOrganization(Long organizationId, Long adminUserId, OrganizationVerificationRequest request) {
+        if (request == null || adminUserId == null) {
             throw new IllegalArgumentException("adminUserId is required");
         }
         if (request.decision() == null) {
@@ -80,7 +80,7 @@ public class OrganizationService {
             .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Organization not found"));
 
         org.setStatus(request.decision());
-        org.setVerifiedByAdminId(request.adminUserId());
+        org.setVerifiedByAdminId(adminUserId);
         org.setVerifiedAt(Instant.now());
         org.setVerificationReason(request.reason());
         org.setSyncedAt(Instant.now());

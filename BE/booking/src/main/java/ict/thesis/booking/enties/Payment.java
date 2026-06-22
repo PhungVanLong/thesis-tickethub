@@ -59,4 +59,13 @@ public class Payment {
 
     @Column(name = "paid_at")
     private Instant paidAt;
+
+    @Column(name = "refund_tx_id")
+    private String refundTxId;
+
+    @Column(name = "refunded_at")
+    private Instant refundedAt;
+
+    @Column(name = "refund_reason")
+    private String refundReason;
 }

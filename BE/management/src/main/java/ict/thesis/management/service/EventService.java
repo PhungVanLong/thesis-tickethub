@@ -25,14 +25,12 @@ public class EventService {
         this.organizationMemberRepository = organizationMemberRepository;
     }
 
-    public CreateEventResponse createEvent(CreateEventRequest request) {
-        // Tìm thành viên tổ chức dựa trên organizerId (được coi là userId của người tạo)
-        OrganizationMember member = organizationMemberRepository.findByUserId(request.getOrganizerId())
-            .stream()
-            .findFirst()
+    public CreateEventResponse createEvent(Long userId, CreateEventRequest request) {
+        // Tìm thành viên tổ chức dựa trên organizationId và userId
+        OrganizationMember member = organizationMemberRepository.findByOrganizationIdAndUserId(request.getOrganizationId(), userId)
             .orElseThrow(() -> new ResponseStatusException(
                 HttpStatus.BAD_REQUEST, 
-                "User is not a member of any organization"
+                "User is not a member of the specified organization"
             ));
 
         Organization organization = member.getOrganization();

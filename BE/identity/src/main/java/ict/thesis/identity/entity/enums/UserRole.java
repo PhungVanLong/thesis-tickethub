@@ -2,7 +2,7 @@ package ict.thesis.identity.entity.enums;
 
 public enum UserRole {
     CUSTOMER,
-    ORGANIZER,
+    OWNER,
     STAFF,
     ADMIN
 }

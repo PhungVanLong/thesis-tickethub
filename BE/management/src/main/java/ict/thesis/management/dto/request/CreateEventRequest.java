@@ -6,8 +6,8 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 
 public class CreateEventRequest {
-    @NotNull(message = "organizerId is required")
-    private Long organizerId;
+    @NotNull(message = "organizationId is required")
+    private Long organizationId;
     @NotBlank(message = "title is required")
     private String title;
     private String description;
@@ -20,8 +20,8 @@ public class CreateEventRequest {
     private Instant endTime;
     private String bannerUrl;
 
-    public Long getOrganizerId() {
-        return organizerId;
+    public Long getOrganizationId() {
+        return organizationId;
     }
 
     public String getTitle() {
@@ -56,8 +56,8 @@ public class CreateEventRequest {
         return bannerUrl;
     }
 
-    public void setOrganizerId(Long organizerId) {
-        this.organizerId = organizerId;
+    public void setOrganizationId(Long organizationId) {
+        this.organizationId = organizationId;
     }
 
     public void setTitle(String title) {

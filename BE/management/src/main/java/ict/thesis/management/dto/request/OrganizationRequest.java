@@ -8,9 +8,6 @@ import lombok.Setter;
 @Setter
 @Getter
 public class OrganizationRequest {
-    @NotNull(message = "userId is required")
-    private Long userId;
-
     @NotBlank(message = "name is required")
     private String name;
 

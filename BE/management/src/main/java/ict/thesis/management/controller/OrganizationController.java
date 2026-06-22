@@ -10,6 +10,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -24,16 +25,18 @@ public class OrganizationController {
 
     @PostMapping
     public ResponseEntity<OrganizationResponse> submitOrganization(
+        @RequestHeader("X-User-Id") Long userId,
         @Valid @RequestBody OrganizationRequest request
     ) {
-        return ResponseEntity.status(HttpStatus.CREATED).body(organizationService.submitOrganization(request));
+        return ResponseEntity.status(HttpStatus.CREATED).body(organizationService.submitOrganization(userId, request));
     }
 
     @PostMapping("/{id}/verify")
     public ResponseEntity<OrganizationResponse> verifyOrganization(
         @PathVariable Long id,
+        @RequestHeader("X-User-Id") Long adminUserId,
         @Valid @RequestBody OrganizationVerificationRequest request
     ) {
-        return ResponseEntity.ok(organizationService.verifyOrganization(id, request));
+        return ResponseEntity.ok(organizationService.verifyOrganization(id, adminUserId, request));
     }
 }

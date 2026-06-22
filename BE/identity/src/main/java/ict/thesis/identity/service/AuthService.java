@@ -1,5 +1,6 @@
 package ict.thesis.identity.service;
 
+import java.util.List;
 import java.util.Map;
 
 import org.slf4j.Logger;
@@ -65,8 +66,13 @@ public class AuthService {
         logger.info("Registered user successfully with email: {}", savedUser.getEmail());
         syncManagement(savedUser);
 
-        // CHỈNH SỬA CỐT LÕI: Subject truyền vào Token chuyển thành ID dạng String để API Gateway đọc hiểu
-        String token = jwtService.generateToken(savedUser.getId().toString(), savedUser.getRole().name().toLowerCase());
+        // CHỈNH SỬA CỐT LÕI: Thêm email và permissions vào Token
+        String token = jwtService.generateToken(
+            savedUser.getId().toString(), 
+            savedUser.getRole().name().toLowerCase(),
+            savedUser.getEmail(),
+            getPermissions(savedUser.getRole())
+        );
         return new AuthResponse(token, "Bearer", jwtService.getExpirationSeconds());
     }
 
@@ -123,8 +129,13 @@ public class AuthService {
             User user = userRepository.findByEmail(request.email())
                                       .orElseThrow(() -> new UnauthorizedException("Invalid credentials"));
 
-            // CHỈNH SỬA CỐT LÕI: Đồng bộ Subject là User ID tương đương với hàm Register
-            String token = jwtService.generateToken(user.getId().toString(), user.getRole().name().toLowerCase());
+            // CHỈNH SỬA CỐT LÕI: Thêm email và permissions vào Token
+            String token = jwtService.generateToken(
+                user.getId().toString(), 
+                user.getRole().name().toLowerCase(),
+                user.getEmail(),
+                getPermissions(user.getRole())
+            );
             return new AuthResponse(token, "Bearer", jwtService.getExpirationSeconds());
         } catch (UnauthorizedException ex) {
             throw ex;
@@ -153,5 +164,16 @@ public class AuthService {
         response.setCreatedAt(user.getCreatedAt());
         response.setUpdatedAt(user.getUpdatedAt());
         return response;
+    }
+
+    private List<String> getPermissions(UserRole role) {
+        if (role == UserRole.CUSTOMER) {
+            return List.of("booking:create", "booking:view");
+        } else if (role == UserRole.OWNER) {
+            return List.of("event:create", "event:edit", "event:view");
+        } else if (role == UserRole.ADMIN) {
+            return List.of("admin:all");
+        }
+        return List.of();
     }
 }
