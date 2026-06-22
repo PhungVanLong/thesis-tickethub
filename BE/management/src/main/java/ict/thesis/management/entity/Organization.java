@@ -2,11 +2,13 @@ package ict.thesis.management.entity;
 
 import java.time.Instant;
 
-import ict.thesis.management.entity.enums.OrganizerStatus;
+import ict.thesis.management.entity.enums.OrganizationStatus;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 import lombok.Getter;
@@ -15,15 +17,15 @@ import lombok.Setter;
 @Setter
 @Getter
 @Entity
-@Table(name = "organizer_profiles")
-public class OrganizerProfile {
+@Table(name = "organizations")
+public class Organization {
 
     @Id
-    @Column(name = "user_id")
-    private Long userId;
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
 
-    @Column(name = "organization_name", nullable = false)
-    private String organizationName;
+    @Column(name = "name", nullable = false)
+    private String name;
 
     @Column(name = "abbreviation_name", length = 50)
     private String abbreviationName;
@@ -78,7 +80,5 @@ public class OrganizerProfile {
 
     @Enumerated(EnumType.STRING)
     @Column(name = "status", nullable = false)
-    private OrganizerStatus status = OrganizerStatus.PENDING; // Mặc định là chờ duyệt khi tạo mới
-
-    // --- Getters and Setters hoàn chỉnh ---
+    private OrganizationStatus status = OrganizationStatus.PENDING_VERIFY;
 }

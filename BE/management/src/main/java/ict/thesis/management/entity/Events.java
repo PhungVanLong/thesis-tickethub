@@ -27,8 +27,8 @@ public class Events {
     private Long id;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "organizer_id")
-    private OrganizerProfile organizerProfile;
+    @JoinColumn(name = "organization_id")
+    private Organization organization;
 
     @Column(nullable = false, length = 255)
     private String title;

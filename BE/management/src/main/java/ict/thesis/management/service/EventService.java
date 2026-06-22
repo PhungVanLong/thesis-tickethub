@@ -3,36 +3,48 @@ package ict.thesis.management.service;
 import ict.thesis.management.dto.request.CreateEventRequest;
 import ict.thesis.management.dto.response.CreateEventResponse;
 import ict.thesis.management.entity.Events;
-import ict.thesis.management.entity.OrganizerProfile;
+import ict.thesis.management.entity.Organization;
+import ict.thesis.management.entity.OrganizationMember;
 import ict.thesis.management.entity.enums.EventStatus;
+import ict.thesis.management.entity.enums.OrganizationStatus;
 import ict.thesis.management.repository.EventsRepository;
-import ict.thesis.management.repository.OrganizerProfileRepository;
+import ict.thesis.management.repository.OrganizationMemberRepository;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.time.Instant;
 
 @Service
 public class EventService {
     private final EventsRepository eventsRepository;
-    private final OrganizerProfileRepository organizerProfileRepository;
+    private final OrganizationMemberRepository organizationMemberRepository;
 
-    public EventService(EventsRepository eventsRepository, OrganizerProfileRepository organizerProfileRepository) {
+    public EventService(EventsRepository eventsRepository, OrganizationMemberRepository organizationMemberRepository) {
         this.eventsRepository = eventsRepository;
-        this.organizerProfileRepository = organizerProfileRepository;
+        this.organizationMemberRepository = organizationMemberRepository;
     }
 
     public CreateEventResponse createEvent(CreateEventRequest request) {
-        OrganizerProfile organizerProfile = organizerProfileRepository.findByUserId(request.getOrganizerId())
-            .orElseGet(() -> {
-                OrganizerProfile profile = new OrganizerProfile();
-                profile.setUserId(request.getOrganizerId());
-                profile.setOrganizationName("Organizer " + request.getOrganizerId());
-                profile.setSyncedAt(Instant.now());
-                return organizerProfileRepository.save(profile);
-            });
+        // Tìm thành viên tổ chức dựa trên organizerId (được coi là userId của người tạo)
+        OrganizationMember member = organizationMemberRepository.findByUserId(request.getOrganizerId())
+            .stream()
+            .findFirst()
+            .orElseThrow(() -> new ResponseStatusException(
+                HttpStatus.BAD_REQUEST, 
+                "User is not a member of any organization"
+            ));
+
+        Organization organization = member.getOrganization();
+        if (organization.getStatus() != OrganizationStatus.ACTIVE) {
+            throw new ResponseStatusException(
+                HttpStatus.FORBIDDEN, 
+                "Organization is not active"
+            );
+        }
 
         Events event = new Events();
-        event.setOrganizerProfile(organizerProfile);
+        event.setOrganization(organization);
         event.setTitle(request.getTitle());
         event.setDescription(request.getDescription());
         event.setVenue(request.getVenue());

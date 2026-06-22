@@ -1,16 +1,18 @@
 package ict.thesis.management.dto.request;
 
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
 import lombok.Getter;
 import lombok.Setter;
 
 @Setter
 @Getter
-public class OrganizerProfileRequest {
+public class OrganizationRequest {
+    @NotNull(message = "userId is required")
     private Long userId;
 
-    @NotBlank(message = "organizationName is required")
-    private String organizationName;
+    @NotBlank(message = "name is required")
+    private String name;
 
     private String abbreviationName;
     private String taxCode;
@@ -25,5 +27,4 @@ public class OrganizerProfileRequest {
     private String websiteUrl;
     private String fanpageUrl;
     private String description;
-
 }
