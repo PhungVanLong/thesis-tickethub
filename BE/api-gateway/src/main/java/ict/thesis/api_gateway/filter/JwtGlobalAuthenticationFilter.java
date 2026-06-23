@@ -51,7 +51,10 @@ public class JwtGlobalAuthenticationFilter implements GlobalFilter, Ordered {
         // Public endpoints pass through, internal endpoints must present a valid token.
         String path = request.getURI().getPath();
         if (isPublicPath(path) || HttpMethod.OPTIONS.equals(request.getMethod())) {
-            return chain.filter(exchange);
+            ServerHttpRequest modifiedRequest = request.mutate()
+                    .header("X-Gateway-Token", gatewaySharedSecret)
+                    .build();
+            return chain.filter(exchange.mutate().request(modifiedRequest).build());
         }
 
         if (!request.getHeaders().containsKey(HttpHeaders.AUTHORIZATION)) {
