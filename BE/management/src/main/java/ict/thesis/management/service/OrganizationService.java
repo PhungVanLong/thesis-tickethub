@@ -21,10 +21,14 @@ import ict.thesis.management.repository.OrganizationRepository;
 public class OrganizationService {
     private final OrganizationRepository organizationRepository;
     private final OrganizationMemberRepository organizationMemberRepository;
+    private final org.springframework.web.client.RestTemplate restTemplate;
 
-    public OrganizationService(OrganizationRepository organizationRepository, OrganizationMemberRepository organizationMemberRepository) {
+    public OrganizationService(OrganizationRepository organizationRepository, 
+                               OrganizationMemberRepository organizationMemberRepository,
+                               org.springframework.web.client.RestTemplate restTemplate) {
         this.organizationRepository = organizationRepository;
         this.organizationMemberRepository = organizationMemberRepository;
+        this.restTemplate = restTemplate;
     }
 
     @Transactional
@@ -86,6 +90,26 @@ public class OrganizationService {
         org.setSyncedAt(Instant.now());
 
         Organization saved = organizationRepository.save(org);
+
+        if (request.decision() == OrganizationStatus.ACTIVE) {
+            OrganizationMember ownerMember = organizationMemberRepository.findByOrganizationId(organizationId)
+                .stream()
+                .filter(m -> m.getMemberRole() == OrganizationRole.OWNER)
+                .findFirst()
+                .orElse(null);
+
+            if (ownerMember != null) {
+                try {
+                    String url = "http://identity/api/users/" + ownerMember.getUserId();
+                    java.util.Map<String, Object> updateRequest = new java.util.HashMap<>();
+                    updateRequest.put("role", "ORGANIZER");
+                    restTemplate.put(url, updateRequest);
+                } catch (Exception e) {
+                    throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Failed to update user role to ORGANIZER in identity service: " + e.getMessage(), e);
+                }
+            }
+        }
+
         return toResponse(saved);
     }
 
