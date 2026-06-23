@@ -1,4 +1,4 @@
-package ict.thesis.identity.config;
+package ict.thesis.booking.config;
 
 import io.swagger.v3.oas.models.Components;
 import io.swagger.v3.oas.models.OpenAPI;
@@ -13,13 +13,13 @@ import org.springframework.context.annotation.Configuration;
 public class OpenApiConfig {
 
     @Bean
-    public OpenAPI identityOpenAPI() {
+    public OpenAPI bookingOpenAPI() {
         final String securitySchemeName = "bearerAuth";
         
         return new OpenAPI()
                 .info(new Info()
-                        .title("Identity API")
-                        .description("API documentation for the identity service")
+                        .title("Booking API")
+                        .description("API documentation for the booking service")
                         .version("v1"))
                 .addServersItem(new Server().url("/").description("Gateway Server"))
                 .addSecurityItem(new SecurityRequirement().addList(securitySchemeName))

@@ -1,4 +1,4 @@
-package ict.thesis.identity.config;
+package ict.thesis.promotion.config;
 
 import io.swagger.v3.oas.models.Components;
 import io.swagger.v3.oas.models.OpenAPI;
@@ -13,13 +13,13 @@ import org.springframework.context.annotation.Configuration;
 public class OpenApiConfig {
 
     @Bean
-    public OpenAPI identityOpenAPI() {
+    public OpenAPI promotionOpenAPI() {
         final String securitySchemeName = "bearerAuth";
         
         return new OpenAPI()
                 .info(new Info()
-                        .title("Identity API")
-                        .description("API documentation for the identity service")
+                        .title("Promotion API")
+                        .description("API documentation for the promotion service")
                         .version("v1"))
                 .addServersItem(new Server().url("/").description("Gateway Server"))
                 .addSecurityItem(new SecurityRequirement().addList(securitySchemeName))
