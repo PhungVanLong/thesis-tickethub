@@ -22,6 +22,8 @@ import jakarta.servlet.http.HttpServletResponse;
 @Component
 public class UserContextFilter extends OncePerRequestFilter {
 
+    private static final org.slf4j.Logger log = org.slf4j.LoggerFactory.getLogger(UserContextFilter.class);
+
     @Value("${gateway.shared-secret}")
     private String gatewaySharedSecret;
 
@@ -49,7 +51,9 @@ public class UserContextFilter extends OncePerRequestFilter {
 
         // 2. Verify gateway shared token to prevent gateway bypass
         String gatewayToken = request.getHeader("X-Gateway-Token");
+        log.info("Path: {}, X-Gateway-Token: {}, Expected: {}", path, gatewayToken, gatewaySharedSecret);
         if (gatewayToken == null || !gatewayToken.equals(gatewaySharedSecret)) {
+            log.warn("Direct access attempt or invalid gateway token for path: {}", path);
             response.setStatus(HttpServletResponse.SC_FORBIDDEN);
             response.setContentType("text/plain;charset=UTF-8");
             response.getWriter().write("Direct access is prohibited!");
@@ -60,6 +64,8 @@ public class UserContextFilter extends OncePerRequestFilter {
         String userIdStr = request.getHeader("X-User-Id");
         String role = request.getHeader("X-User-Role");
         String email = request.getHeader("X-User-Email");
+        log.info("Gateway Headers - X-User-Id: {}, X-User-Role: {}, X-User-Email: {}", userIdStr, role, email);
+
 
         try {
             if (userIdStr != null && !userIdStr.isBlank()) {
@@ -81,6 +87,7 @@ public class UserContextFilter extends OncePerRequestFilter {
                             .map(SimpleGrantedAuthority::new)
                             .collect(Collectors.toList());
                 }
+                log.info("Mapped Authorities for user {}: {}", userId, authorities);
 
                 // Set Spring Security Authentication
                 UsernamePasswordAuthenticationToken auth = new UsernamePasswordAuthenticationToken(

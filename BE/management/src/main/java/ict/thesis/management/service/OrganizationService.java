@@ -7,6 +7,11 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import ict.thesis.management.entity.OutboxEvent;
+import ict.thesis.management.entity.enums.OutboxStatus;
+import ict.thesis.management.repository.OutboxEventRepository;
 import ict.thesis.management.dto.request.OrganizationRequest;
 import ict.thesis.management.dto.request.OrganizationVerificationRequest;
 import ict.thesis.management.dto.response.OrganizationResponse;
@@ -19,17 +24,23 @@ import ict.thesis.management.repository.OrganizationRepository;
 
 @Service
 public class OrganizationService {
+    private static final Logger log = LoggerFactory.getLogger(OrganizationService.class);
+
     private final OrganizationRepository organizationRepository;
     private final OrganizationMemberRepository organizationMemberRepository;
-    private final org.springframework.web.client.RestTemplate restTemplate;
+    private final OutboxEventRepository outboxEventRepository;
+    private final EmailService emailService;
 
     public OrganizationService(OrganizationRepository organizationRepository, 
                                OrganizationMemberRepository organizationMemberRepository,
-                               org.springframework.web.client.RestTemplate restTemplate) {
+                               OutboxEventRepository outboxEventRepository,
+                               EmailService emailService) {
         this.organizationRepository = organizationRepository;
         this.organizationMemberRepository = organizationMemberRepository;
-        this.restTemplate = restTemplate;
+        this.outboxEventRepository = outboxEventRepository;
+        this.emailService = emailService;
     }
+
 
     @Transactional
     public OrganizationResponse submitOrganization(Long userId, OrganizationRequest request) {
@@ -92,6 +103,7 @@ public class OrganizationService {
         Organization saved = organizationRepository.save(org);
 
         if (request.decision() == OrganizationStatus.ACTIVE) {
+            log.info("Organization status is ACTIVE. Looking for OWNER of organizationId: {}", organizationId);
             OrganizationMember ownerMember = organizationMemberRepository.findByOrganizationId(organizationId)
                 .stream()
                 .filter(m -> m.getMemberRole() == OrganizationRole.OWNER)
@@ -99,14 +111,35 @@ public class OrganizationService {
                 .orElse(null);
 
             if (ownerMember != null) {
+                log.info("Found OWNER with userId: {}. Creating OutboxEvent for role promotion...", ownerMember.getUserId());
                 try {
-                    String url = "http://identity/api/users/" + ownerMember.getUserId();
-                    java.util.Map<String, Object> updateRequest = new java.util.HashMap<>();
-                    updateRequest.put("role", "ORGANIZER");
-                    restTemplate.put(url, updateRequest);
+                    OutboxEvent outboxEvent = new OutboxEvent();
+                    outboxEvent.setAggregateType("Organization");
+                    outboxEvent.setAggregateId(organizationId);
+                    outboxEvent.setEventType("USER_ROLE_PROMOTE");
+                    outboxEvent.setPayload(String.valueOf(ownerMember.getUserId()));
+                    outboxEvent.setStatus(OutboxStatus.PENDING);
+                    outboxEvent.setRetryCount(0);
+                    outboxEvent.setCreatedAt(Instant.now());
+                    
+                    outboxEventRepository.save(outboxEvent);
+                    log.info("Successfully saved OutboxEvent for userId: {}", ownerMember.getUserId());
                 } catch (Exception e) {
-                    throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Failed to update user role to ORGANIZER in identity service: " + e.getMessage(), e);
+                    log.error("Failed to save OutboxEvent for userId: {}", ownerMember.getUserId(), e);
+                    throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Failed to create outbox event: " + e.getMessage(), e);
                 }
+            } else {
+                log.warn("No OWNER found for organizationId: {}", organizationId);
+            }
+        }
+
+        // Gửi email thông báo bất đồng bộ tới email chính thức của tổ chức
+        if (request.decision() == OrganizationStatus.ACTIVE || request.decision() == OrganizationStatus.REJECTED) {
+            try {
+                boolean isApproved = request.decision() == OrganizationStatus.ACTIVE;
+                emailService.sendVerificationEmail(saved.getOfficialEmail(), saved.getName(), isApproved, request.reason());
+            } catch (Exception e) {
+                log.error("Failed to trigger verification email sending for organization: {}", saved.getId(), e);
             }
         }
 
