@@ -49,7 +49,7 @@ public class AuthService {
                         .passwordHash(passwordEncoder.encode(request.password())) // Băm Bcrypt để bảo mật mật khẩu
                         .fullName(request.fullName())
                         .phone(request.phone())
-                        .role(UserRole.CUSTOMER) // Mặc định tài khoản đăng ký mới là Khách hàng
+                        .role(UserRole.CUSTOMER.name()) // Mặc định tài khoản đăng ký mới là Khách hàng
                         .verified(false)
                         .active(true)
                         .build();
@@ -61,7 +61,7 @@ public class AuthService {
         // CHỈNH SỬA CỐT LÕI: Thêm email vào Token
         String token = jwtService.generateToken(
             savedUser.getId().toString(), 
-            savedUser.getRole().name().toLowerCase(),
+            savedUser.getRole(),
             savedUser.getEmail()
         );
         return new AuthResponse(token, "Bearer", jwtService.getExpirationSeconds());
@@ -90,7 +90,8 @@ public class AuthService {
         }
         if (request.role() != null && !request.role().isBlank()) {
             try {
-                user.setRole(UserRole.valueOf(request.role().trim().toUpperCase()));
+                UserRole roleToRequest = UserRole.valueOf(request.role().trim().toUpperCase());
+                user.addRole(roleToRequest);
             } catch (IllegalArgumentException ex) {
                 throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid role");
             }
@@ -125,7 +126,7 @@ public class AuthService {
             // Token này sẽ được client đính vào Header để gọi các API khác thông qua Gateway
             String token = jwtService.generateToken(
                 user.getId().toString(), 
-                user.getRole().name().toLowerCase(),
+                user.getRole(),
                 user.getEmail()
             );
             return new AuthResponse(token, "Bearer", jwtService.getExpirationSeconds());
@@ -166,7 +167,7 @@ public class AuthService {
         response.setId(user.getId());
         response.setEmail(user.getEmail());
         response.setFullName(user.getFullName());
-        response.setRole(user.getRole() == null ? null : user.getRole().name());
+        response.setRole(user.getRole());
         response.setVerified(user.isVerified());
         response.setActive(user.isActive());
         response.setCreatedAt(user.getCreatedAt());

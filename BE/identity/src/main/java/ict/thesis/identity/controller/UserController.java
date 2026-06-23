@@ -38,7 +38,7 @@ public class UserController {
         resp.setId(user.getId());
         resp.setEmail(user.getEmail());
         resp.setFullName(user.getFullName());
-        resp.setRole(user.getRole() == null ? null : user.getRole().name());
+        resp.setRole(user.getRole());
         resp.setVerified(user.isVerified());
         resp.setActive(user.isActive());
         resp.setCreatedAt(user.getCreatedAt());

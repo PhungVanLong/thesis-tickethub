@@ -34,7 +34,7 @@ public class DataInitializer {
                 .email(DEFAULT_ADMIN_EMAIL)
                 .passwordHash(passwordEncoder.encode(DEFAULT_ADMIN_PASSWORD))
                 .fullName("System Admin")
-                .role(UserRole.ADMIN)
+                .role(UserRole.ADMIN.name())
                 .verified(true)
                 .active(true)
                 .createdAt(Instant.now())

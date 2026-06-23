@@ -52,9 +52,34 @@ public class User {
     @Column(name = "avatar_url")
     private String avatarUrl;
 
-    @Enumerated(EnumType.STRING)
     @Column(nullable = false)
-    private UserRole role;
+    private String role; // Comma-separated roles, e.g. "CUSTOMER" or "CUSTOMER,ORGANIZER"
+
+    public java.util.Set<UserRole> getRoles() {
+        if (this.role == null || this.role.isBlank()) {
+            return java.util.Set.of(UserRole.CUSTOMER);
+        }
+        return java.util.Arrays.stream(this.role.split(","))
+                     .map(String::trim)
+                     .map(UserRole::valueOf)
+                     .collect(java.util.stream.Collectors.toSet());
+    }
+
+    public void setRoles(java.util.Set<UserRole> roles) {
+        if (roles == null || roles.isEmpty()) {
+            this.role = UserRole.CUSTOMER.name();
+        } else {
+            this.role = roles.stream()
+                             .map(Enum::name)
+                             .collect(java.util.stream.Collectors.joining(","));
+        }
+    }
+
+    public void addRole(UserRole roleToRequest) {
+        java.util.Set<UserRole> currentRoles = new java.util.HashSet<>(getRoles());
+        currentRoles.add(roleToRequest);
+        setRoles(currentRoles);
+    }
 
     @Column(name = "is_verified", nullable = false)
     private boolean verified;
