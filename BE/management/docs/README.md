@@ -20,5 +20,9 @@ Thư mục này chứa toàn bộ tài liệu hướng dẫn kỹ thuật, đặ
    - Các điểm mạnh kỹ thuật (phòng rò rỉ bộ nhớ, truy vấn tối ưu).
    - Đề xuất cải tiến kỹ thuật (Email bất đồng bộ, quản lý Retry Outbox).
 
-4. **[Đầu việc phát triển (tasks.md)](file:///d:/thesis/BE/management/docs/tasks.md)**:
+4. **[Hướng dẫn phát triển cho AI (developer_guidelines.md)](file:///d:/thesis/BE/management/docs/developer_guidelines.md)**:
+   - Các quy tắc bảo vệ cấu hình an ninh, nghiệp vụ, và bắt lỗi của luồng hiện tại.
+   - Hướng dẫn các mô hình AI khác cách phát triển các luồng mới sử dụng Outbox, Saga, và quy tắc ngôn ngữ code mà không làm ảnh hưởng/phá vỡ luồng cũ.
+
+5. **[Đầu việc phát triển (tasks.md)](file:///d:/thesis/BE/management/docs/tasks.md)**:
    - Danh sách theo dõi tiến độ phát triển các cấu phần của dịch vụ quản lý.
