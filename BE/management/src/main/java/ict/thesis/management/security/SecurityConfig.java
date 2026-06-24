@@ -25,8 +25,8 @@ public class SecurityConfig {
             .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
             .addFilterBefore(userContextFilter, UsernamePasswordAuthenticationFilter.class)
             .authorizeHttpRequests(auth -> auth
-                // Allow public paths (Swagger, API Docs, Actuator)
-                .requestMatchers("/swagger-ui.html", "/swagger-ui/**", "/v3/api-docs/**", "/api-docs/**", "/actuator/**").permitAll()
+                // Allow public paths (Swagger, API Docs, Actuator, Error)
+                .requestMatchers("/swagger-ui.html", "/swagger-ui/**", "/v3/api-docs/**", "/api-docs/**", "/actuator/**", "/error").permitAll()
                 
                 // Organizations
                 .requestMatchers(HttpMethod.POST, "/api/organizations").hasAuthority("CUSTOMER")
