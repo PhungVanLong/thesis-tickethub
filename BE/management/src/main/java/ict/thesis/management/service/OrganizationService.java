@@ -51,6 +51,12 @@ public class OrganizationService {
             throw new IllegalArgumentException("name is required");
         }
 
+        if (request.getTaxCode() != null && !request.getTaxCode().isBlank()) {
+            if (organizationRepository.existsByTaxCode(request.getTaxCode().trim())) {
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Tax code is already in use.");
+            }
+        }
+
         Organization org = new Organization();
         org.setName(request.getName().trim());
         org.setAbbreviationName(request.getAbbreviationName());
@@ -99,28 +105,28 @@ public class OrganizationService {
 
         if (currentStatus == targetStatus) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, 
-                "Tổ chức đang ở trạng thái " + targetStatus + " rồi.");
+                "Organization is already in " + targetStatus + " status.");
         }
 
         // Kiểm tra State Machine
         if (currentStatus == OrganizationStatus.PENDING_VERIFY) {
             if (targetStatus != OrganizationStatus.ACTIVE && targetStatus != OrganizationStatus.REJECTED) {
                 throw new ResponseStatusException(HttpStatus.BAD_REQUEST, 
-                    "Tổ chức đang chờ duyệt chỉ có thể chuyển sang ACTIVE hoặc REJECTED.");
+                    "Pending organization can only change to ACTIVE or REJECTED.");
             }
         } else if (currentStatus == OrganizationStatus.ACTIVE) {
             if (targetStatus != OrganizationStatus.BANNED) {
                 throw new ResponseStatusException(HttpStatus.BAD_REQUEST, 
-                    "Tổ chức đang hoạt động chỉ có thể chuyển sang BANNED.");
+                    "Active organization can only change to BANNED.");
             }
         } else if (currentStatus == OrganizationStatus.BANNED) {
             if (targetStatus != OrganizationStatus.ACTIVE) {
                 throw new ResponseStatusException(HttpStatus.BAD_REQUEST, 
-                    "Tổ chức đang bị khóa chỉ có thể chuyển sang ACTIVE.");
+                    "Banned organization can only change to ACTIVE.");
             }
         } else if (currentStatus == OrganizationStatus.REJECTED) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, 
-                "Tổ chức đã bị từ chối duyệt trước đó, không thể thay đổi trạng thái.");
+                "Rejected organization cannot change status.");
         }
 
         // Nếu duyệt ACTIVE, bắt buộc phải có OWNER
@@ -131,7 +137,7 @@ public class OrganizationService {
                 .filter(m -> m.getMemberRole() == OrganizationRole.OWNER)
                 .findFirst()
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST, 
-                    "Không tìm thấy OWNER cho tổ chức này. Không thể duyệt ACTIVE."));
+                    "OWNER not found for this organization. Cannot activate."));
         }
 
         org.setStatus(targetStatus);

@@ -7,4 +7,5 @@ import ict.thesis.management.entity.Organization;
 
 @Repository
 public interface OrganizationRepository extends JpaRepository<Organization, Long> {
+    boolean existsByTaxCode(String taxCode);
 }
