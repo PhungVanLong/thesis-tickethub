@@ -94,6 +94,11 @@ public class OrganizationService {
         Organization org = organizationRepository.findById(organizationId)
             .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Organization not found"));
 
+        if (org.getStatus() != OrganizationStatus.PENDING_VERIFY) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, 
+                "Tổ chức này đã được xử lý duyệt trước đó (Trạng thái hiện tại: " + org.getStatus() + ")");
+        }
+
         org.setStatus(request.decision());
         org.setVerifiedByAdminId(adminUserId);
         org.setVerifiedAt(Instant.now());
@@ -117,13 +122,14 @@ public class OrganizationService {
                     outboxEvent.setAggregateType("Organization");
                     outboxEvent.setAggregateId(organizationId);
                     outboxEvent.setEventType("USER_ROLE_PROMOTE");
-                    outboxEvent.setPayload(String.valueOf(ownerMember.getUserId()));
+                    // Lưu payload dưới dạng JSON Object hợp lệ để tránh lỗi cú pháp cột jsonb của PostgreSQL
+                    outboxEvent.setPayload("{\"organizationId\":" + organizationId + ",\"userId\":" + ownerMember.getUserId() + "}");
                     outboxEvent.setStatus(OutboxStatus.PENDING);
                     outboxEvent.setRetryCount(0);
                     outboxEvent.setCreatedAt(Instant.now());
                     
                     outboxEventRepository.save(outboxEvent);
-                    log.info("Successfully saved OutboxEvent for userId: {}", ownerMember.getUserId());
+                    log.info("Successfully saved OutboxEvent with payload: {}", outboxEvent.getPayload());
                 } catch (Exception e) {
                     log.error("Failed to save OutboxEvent for userId: {}", ownerMember.getUserId(), e);
                     throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Failed to create outbox event: " + e.getMessage(), e);
@@ -133,13 +139,12 @@ public class OrganizationService {
             }
         }
 
-        // Gửi email thông báo bất đồng bộ tới email chính thức của tổ chức
-        if (request.decision() == OrganizationStatus.ACTIVE || request.decision() == OrganizationStatus.REJECTED) {
+        // Gửi email thông báo từ chối trực tiếp và bất đồng bộ khi REJECTED
+        if (request.decision() == OrganizationStatus.REJECTED) {
             try {
-                boolean isApproved = request.decision() == OrganizationStatus.ACTIVE;
-                emailService.sendVerificationEmail(saved.getOfficialEmail(), saved.getName(), isApproved, request.reason());
+                emailService.sendVerificationEmail(saved.getOfficialEmail(), saved.getName(), false, request.reason());
             } catch (Exception e) {
-                log.error("Failed to trigger verification email sending for organization: {}", saved.getId(), e);
+                log.error("Failed to trigger rejection email sending for organization: {}", saved.getId(), e);
             }
         }
 
