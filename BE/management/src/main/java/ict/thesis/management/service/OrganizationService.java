@@ -94,12 +94,47 @@ public class OrganizationService {
         Organization org = organizationRepository.findById(organizationId)
             .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Organization not found"));
 
-        if (org.getStatus() != OrganizationStatus.PENDING_VERIFY) {
+        OrganizationStatus currentStatus = org.getStatus();
+        OrganizationStatus targetStatus = request.decision();
+
+        if (currentStatus == targetStatus) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, 
-                "Tổ chức này đã được xử lý duyệt trước đó (Trạng thái hiện tại: " + org.getStatus() + ")");
+                "Tổ chức đang ở trạng thái " + targetStatus + " rồi.");
         }
 
-        org.setStatus(request.decision());
+        // Kiểm tra State Machine
+        if (currentStatus == OrganizationStatus.PENDING_VERIFY) {
+            if (targetStatus != OrganizationStatus.ACTIVE && targetStatus != OrganizationStatus.REJECTED) {
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, 
+                    "Tổ chức đang chờ duyệt chỉ có thể chuyển sang ACTIVE hoặc REJECTED.");
+            }
+        } else if (currentStatus == OrganizationStatus.ACTIVE) {
+            if (targetStatus != OrganizationStatus.BANNED) {
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, 
+                    "Tổ chức đang hoạt động chỉ có thể chuyển sang BANNED.");
+            }
+        } else if (currentStatus == OrganizationStatus.BANNED) {
+            if (targetStatus != OrganizationStatus.ACTIVE) {
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, 
+                    "Tổ chức đang bị khóa chỉ có thể chuyển sang ACTIVE.");
+            }
+        } else if (currentStatus == OrganizationStatus.REJECTED) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, 
+                "Tổ chức đã bị từ chối duyệt trước đó, không thể thay đổi trạng thái.");
+        }
+
+        // Nếu duyệt ACTIVE, bắt buộc phải có OWNER
+        OrganizationMember ownerMember = null;
+        if (targetStatus == OrganizationStatus.ACTIVE) {
+            ownerMember = organizationMemberRepository.findByOrganizationId(organizationId)
+                .stream()
+                .filter(m -> m.getMemberRole() == OrganizationRole.OWNER)
+                .findFirst()
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST, 
+                    "Không tìm thấy OWNER cho tổ chức này. Không thể duyệt ACTIVE."));
+        }
+
+        org.setStatus(targetStatus);
         org.setVerifiedByAdminId(adminUserId);
         org.setVerifiedAt(Instant.now());
         org.setVerificationReason(request.reason());
@@ -107,40 +142,79 @@ public class OrganizationService {
 
         Organization saved = organizationRepository.save(org);
 
-        if (request.decision() == OrganizationStatus.ACTIVE) {
-            log.info("Organization status is ACTIVE. Looking for OWNER of organizationId: {}", organizationId);
-            OrganizationMember ownerMember = organizationMemberRepository.findByOrganizationId(organizationId)
+        // Xử lý khi trạng thái chuyển sang ACTIVE
+        if (targetStatus == OrganizationStatus.ACTIVE && ownerMember != null) {
+            log.info("Found OWNER with userId: {}. Creating OutboxEvent for role promotion...", ownerMember.getUserId());
+            try {
+                OutboxEvent outboxEvent = new OutboxEvent();
+                outboxEvent.setAggregateType("Organization");
+                outboxEvent.setAggregateId(organizationId);
+                outboxEvent.setEventType("USER_ROLE_PROMOTE");
+                outboxEvent.setPayload("{\"organizationId\":" + organizationId + ",\"userId\":" + ownerMember.getUserId() + "}");
+                outboxEvent.setStatus(OutboxStatus.PENDING);
+                outboxEvent.setRetryCount(0);
+                outboxEvent.setCreatedAt(Instant.now());
+                
+                outboxEventRepository.save(outboxEvent);
+                log.info("Successfully saved OutboxEvent for USER_ROLE_PROMOTE with payload: {}", outboxEvent.getPayload());
+            } catch (Exception e) {
+                log.error("Failed to save OutboxEvent for userId: {}", ownerMember.getUserId(), e);
+                throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Failed to create outbox event: " + e.getMessage(), e);
+            }
+        }
+
+        // Xử lý khi trạng thái chuyển sang BANNED (Khóa hoạt động)
+        if (targetStatus == OrganizationStatus.BANNED) {
+            // Gửi email khóa hoạt động ngay lập tức
+            try {
+                emailService.sendVerificationEmail(saved.getOfficialEmail(), saved.getName(), false, 
+                    "Tổ chức của bạn đã bị khóa hoạt động do vi phạm quy định. Lý do: " + request.reason());
+            } catch (Exception e) {
+                log.error("Failed to trigger ban email sending for organization: {}", saved.getId(), e);
+            }
+
+            // Đọc OWNER để xem xét việc thu hồi quyền
+            OrganizationMember bannedOwner = organizationMemberRepository.findByOrganizationId(organizationId)
                 .stream()
                 .filter(m -> m.getMemberRole() == OrganizationRole.OWNER)
                 .findFirst()
                 .orElse(null);
 
-            if (ownerMember != null) {
-                log.info("Found OWNER with userId: {}. Creating OutboxEvent for role promotion...", ownerMember.getUserId());
-                try {
-                    OutboxEvent outboxEvent = new OutboxEvent();
-                    outboxEvent.setAggregateType("Organization");
-                    outboxEvent.setAggregateId(organizationId);
-                    outboxEvent.setEventType("USER_ROLE_PROMOTE");
-                    // Lưu payload dưới dạng JSON Object hợp lệ để tránh lỗi cú pháp cột jsonb của PostgreSQL
-                    outboxEvent.setPayload("{\"organizationId\":" + organizationId + ",\"userId\":" + ownerMember.getUserId() + "}");
-                    outboxEvent.setStatus(OutboxStatus.PENDING);
-                    outboxEvent.setRetryCount(0);
-                    outboxEvent.setCreatedAt(Instant.now());
-                    
-                    outboxEventRepository.save(outboxEvent);
-                    log.info("Successfully saved OutboxEvent with payload: {}", outboxEvent.getPayload());
-                } catch (Exception e) {
-                    log.error("Failed to save OutboxEvent for userId: {}", ownerMember.getUserId(), e);
-                    throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Failed to create outbox event: " + e.getMessage(), e);
+            if (bannedOwner != null) {
+                // Kiểm tra xem người dùng còn quản lý tổ chức ACTIVE nào khác không
+                long activeOrgsCount = organizationMemberRepository.findByUserId(bannedOwner.getUserId())
+                    .stream()
+                    .filter(m -> m.getMemberRole() == OrganizationRole.OWNER)
+                    .map(OrganizationMember::getOrganization)
+                    .filter(orgItem -> orgItem.getId() != organizationId && orgItem.getStatus() == OrganizationStatus.ACTIVE)
+                    .count();
+
+                if (activeOrgsCount == 0) {
+                    log.info("User {} has no other ACTIVE organizations. Creating OutboxEvent for role demotion...", bannedOwner.getUserId());
+                    try {
+                        OutboxEvent outboxEvent = new OutboxEvent();
+                        outboxEvent.setAggregateType("Organization");
+                        outboxEvent.setAggregateId(organizationId);
+                        outboxEvent.setEventType("USER_ROLE_DEMOTE");
+                        outboxEvent.setPayload("{\"organizationId\":" + organizationId + ",\"userId\":" + bannedOwner.getUserId() + "}");
+                        outboxEvent.setStatus(OutboxStatus.PENDING);
+                        outboxEvent.setRetryCount(0);
+                        outboxEvent.setCreatedAt(Instant.now());
+                        
+                        outboxEventRepository.save(outboxEvent);
+                        log.info("Successfully saved OutboxEvent for USER_ROLE_DEMOTE with payload: {}", outboxEvent.getPayload());
+                    } catch (Exception e) {
+                        log.error("Failed to save OutboxEvent for USER_ROLE_DEMOTE for userId: {}", bannedOwner.getUserId(), e);
+                        throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Failed to create demote outbox event: " + e.getMessage(), e);
+                    }
+                } else {
+                    log.info("User {} still has {} other ACTIVE organization(s). No demotion required.", bannedOwner.getUserId(), activeOrgsCount);
                 }
-            } else {
-                log.warn("No OWNER found for organizationId: {}", organizationId);
             }
         }
 
         // Gửi email thông báo từ chối trực tiếp và bất đồng bộ khi REJECTED
-        if (request.decision() == OrganizationStatus.REJECTED) {
+        if (targetStatus == OrganizationStatus.REJECTED) {
             try {
                 emailService.sendVerificationEmail(saved.getOfficialEmail(), saved.getName(), false, request.reason());
             } catch (Exception e) {

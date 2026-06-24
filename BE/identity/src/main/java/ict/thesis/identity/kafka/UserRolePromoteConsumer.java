@@ -21,9 +21,9 @@ public class UserRolePromoteConsumer {
     @KafkaListener(topics = "user-role-promote-topic", groupId = "identity-group")
     public void consume(String payload) {
         logger.info("Received request to promote user role. Payload: {}", payload);
+        String orgIdStr = "";
+        String userIdStr = "";
         try {
-            String orgIdStr = "";
-            String userIdStr = "";
             if (payload.trim().startsWith("{")) {
                 try {
                     com.fasterxml.jackson.databind.JsonNode node = new com.fasterxml.jackson.databind.ObjectMapper().readTree(payload);
@@ -51,10 +51,19 @@ public class UserRolePromoteConsumer {
                 logger.info("Sending callback success event back to Kafka for organization: {}, user: {}", orgIdStr, userIdStr);
                 kafkaTemplate.send("user-role-promoted-success-topic", payload);
             }
-        } catch (NumberFormatException e) {
-            logger.error("Invalid format in Kafka message payload: {}", payload, e);
         } catch (Exception e) {
             logger.error("Error processing user role promotion for payload: {}", payload, e);
+            if (!orgIdStr.isEmpty()) {
+                try {
+                    String errorMsg = e.getMessage() != null ? e.getMessage() : e.getClass().getSimpleName();
+                    String failedPayload = String.format("{\"organizationId\":%s,\"userId\":%s,\"error\":\"%s\"}", 
+                        orgIdStr, userIdStr.isEmpty() ? "null" : userIdStr, errorMsg.replace("\"", "\\\""));
+                    logger.info("Sending callback failure event back to Kafka: {}", failedPayload);
+                    kafkaTemplate.send("user-role-promote-failed-topic", failedPayload);
+                } catch (Exception ex) {
+                    logger.error("Failed to send rollback event to Kafka", ex);
+                }
+            }
         }
     }
 }

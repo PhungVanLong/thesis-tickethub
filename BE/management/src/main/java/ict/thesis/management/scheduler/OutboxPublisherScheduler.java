@@ -69,6 +69,8 @@ public class OutboxPublisherScheduler {
     private String getTopicForEvent(String eventType) {
         if ("USER_ROLE_PROMOTE".equals(eventType)) {
             return "user-role-promote-topic";
+        } else if ("USER_ROLE_DEMOTE".equals(eventType)) {
+            return "user-role-demote-topic";
         }
         return null;
     }
