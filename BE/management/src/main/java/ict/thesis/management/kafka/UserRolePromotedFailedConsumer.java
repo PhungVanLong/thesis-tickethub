@@ -6,7 +6,6 @@ import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
-import ict.thesis.management.entity.Organization;
 import ict.thesis.management.entity.enums.OrganizationStatus;
 import ict.thesis.management.repository.OrganizationRepository;
 import lombok.RequiredArgsConstructor;
@@ -48,11 +47,11 @@ public class UserRolePromotedFailedConsumer {
             final String finalErrorMsg = errorMsg;
             organizationRepository.findById(finalOrgId).ifPresentOrElse(org -> {
                 if (org.getStatus() == OrganizationStatus.ACTIVE) {
-                    logger.info("Rolling back status of organization ID: {} from ACTIVE to PENDING_VERIFY due to promotion failure", finalOrgId);
-                    org.setStatus(OrganizationStatus.PENDING_VERIFY);
+                    logger.info("Rolling back status of organization ID: {} from ACTIVE to PENDING due to promotion failure", finalOrgId);
+                    org.setStatus(OrganizationStatus.PENDING);
                     org.setVerificationReason("[Lỗi phân quyền hệ thống]: " + finalErrorMsg);
                     organizationRepository.save(org);
-                    logger.info("Successfully rolled back organization ID: {} to PENDING_VERIFY", finalOrgId);
+                    logger.info("Successfully rolled back organization ID: {} to PENDING", finalOrgId);
                 } else {
                     logger.warn("Organization ID: {} is in status {}, not ACTIVE. Skipping status rollback.", finalOrgId, org.getStatus());
                 }

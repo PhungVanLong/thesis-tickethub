@@ -71,6 +71,8 @@ public class OutboxPublisherScheduler {
             return "user-role-promote-topic";
         } else if ("USER_ROLE_DEMOTE".equals(eventType)) {
             return "user-role-demote-topic";
+        } else if ("EVENT_PUBLISHED".equals(eventType)) {
+            return "event-published-topic";
         }
         return null;
     }

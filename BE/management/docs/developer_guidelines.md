@@ -14,7 +14,7 @@ Hồ sơ Đăng ký và Phê duyệt Tổ chức là luồng nghiệp vụ quan 
 
 ### 1.2. Tầng Logic Nghiệp Vụ & Dữ Liệu (Business & Data Layer)
 - **Kiểm tra trùng lặp tại Service (Fail-Fast)**: Trước khi lưu tổ chức mới trong [OrganizationService.java](file:///d:/thesis/BE/management/src/main/java/ict/thesis/management/service/OrganizationService.java), bắt buộc phải gọi phương thức `existsByTaxCode` của Repository để kiểm tra trùng mã số thuế. Không được bỏ qua bước này và phụ thuộc hoàn toàn vào ngoại lệ duy nhất của cơ sở dữ liệu.
-- **Ràng buộc Máy Trạng Thái (State Machine)**: Trạng thái tổ chức được quản lý nghiêm ngặt qua 4 bước: `PENDING_VERIFY` -> `ACTIVE` / `REJECTED` -> `BANNED`. Mọi bước chuyển trạng thái khác ngoài thiết kế này đều bị từ chối bằng lỗi `400 Bad Request`.
+- **Ràng buộc Máy Trạng Thái (State Machine)**: Trạng thái tổ chức được quản lý nghiêm ngặt qua 4 bước: `PENDING` -> `ACTIVE` / `REJECTED` -> `BANNED`. Mọi bước chuyển trạng thái khác ngoài thiết kế này đều bị từ chối bằng lỗi `400 Bad Request`.
 - **Sự kiện giao dịch cục bộ (Outbox)**: Việc cập nhật trạng thái tổ chức thành `ACTIVE` (hoặc `BANNED`) và lưu bản ghi `OutboxEvent` mới vào CSDL phải luôn được thực thi trong cùng một giao dịch `@Transactional` cục bộ để đảm bảo tính nguyên tố (Atomicity).
 
 ### 1.3. Tầng Xử Lý Lỗi (Exception Handling)

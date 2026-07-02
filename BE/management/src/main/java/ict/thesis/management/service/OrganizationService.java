@@ -72,7 +72,7 @@ public class OrganizationService {
         org.setWebsiteUrl(request.getWebsiteUrl());
         org.setFanpageUrl(request.getFanpageUrl());
         org.setDescription(request.getDescription());
-        org.setStatus(OrganizationStatus.PENDING_VERIFY);
+        org.setStatus(OrganizationStatus.PENDING);
         org.setSyncedAt(Instant.now());
 
         Organization savedOrg = organizationRepository.save(org);
@@ -109,7 +109,7 @@ public class OrganizationService {
         }
 
         // Kiểm tra State Machine
-        if (currentStatus == OrganizationStatus.PENDING_VERIFY) {
+        if (currentStatus == OrganizationStatus.PENDING) {
             if (targetStatus != OrganizationStatus.ACTIVE && targetStatus != OrganizationStatus.REJECTED) {
                 throw new ResponseStatusException(HttpStatus.BAD_REQUEST, 
                     "Pending organization can only change to ACTIVE or REJECTED.");

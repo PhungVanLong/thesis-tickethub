@@ -15,6 +15,9 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.util.HashMap;
+import java.util.Map;
+
 @RestController
 @RequestMapping("/api/events")
 public class EventController {
@@ -30,6 +33,24 @@ public class EventController {
     ) {
         Long userId = UserContextHolder.getContext().getUserId();
         return ResponseEntity.status(HttpStatus.CREATED).body(eventService.createEvent(userId, request));
+    }
+
+    @PostMapping("/{eventId}/publish")
+    public ResponseEntity<Map<String, String>> publishEvent(@PathVariable Long eventId) {
+        Long userId = UserContextHolder.getContext().getUserId();
+        eventService.publishEvent(userId, eventId);
+        Map<String, String> response = new HashMap<>();
+        response.put("message", "Event published successfully");
+        return ResponseEntity.ok(response);
+    }
+
+    @PostMapping("/{eventId}/cancel")
+    public ResponseEntity<Map<String, String>> cancelEvent(@PathVariable Long eventId) {
+        Long userId = UserContextHolder.getContext().getUserId();
+        eventService.cancelEvent(userId, eventId);
+        Map<String, String> response = new HashMap<>();
+        response.put("message", "Event cancelled successfully");
+        return ResponseEntity.ok(response);
     }
 
     @PostMapping("/{eventId}/approve")

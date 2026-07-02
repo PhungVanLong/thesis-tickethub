@@ -80,5 +80,5 @@ public class Organization {
 
     @Enumerated(EnumType.STRING)
     @Column(name = "status", nullable = false)
-    private OrganizationStatus status = OrganizationStatus.PENDING_VERIFY;
+    private OrganizationStatus status = OrganizationStatus.PENDING;
 }
