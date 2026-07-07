@@ -93,12 +93,12 @@ Luồng duyệt tổ chức dựa trên JWT access token:
 ### 4.1. `EventStatus`
 Các trạng thái đang có trong code:
 - `DRAFT`
-- `PENDING_APPROVAL`
+- `PENDING`
 - `APPROVED`
 - `PUBLISHED`
 - `CANCELLED`
 
-> Lưu ý: Luồng create hiện tại đặt `DRAFT`. Luồng approve sẽ set `APPROVED` hoặc `CANCELLED`.
+> Lưu ý: Luồng create hiện tại đặt `PENDING` (chờ duyệt). Luồng approve sẽ set `APPROVED` hoặc `CANCELLED`.
 
 ### 4.2. `ApprovalDecision`
 - `APPROVED`
@@ -122,15 +122,45 @@ Class: `CreateEventRequest`
 
 | Field | Type | Required | Validation / note |
 |---|---|---:|---|
-| `organizerId` | `Long` | Yes | `@NotNull` |
-| `title` | `String` | Yes | `@NotBlank` |
+| `organizationId` | `Long` | Yes | `@NotNull(message = "organizationId is required")` |
+| `title` | `String` | Yes | `@NotBlank(message = "title is required")` |
 | `description` | `String` | No | mô tả event |
-| `venue` | `String` | No | địa điểm |
-| `city` | `String` | No | thành phố |
+| `venue` | `String` | Yes | `@NotBlank(message = "venue is required")` |
+| `city` | `String` | Yes | `@NotBlank(message = "city is required")` |
 | `locationCoords` | `String` | No | tọa độ dạng text |
-| `startTime` | `Instant` | Yes | `@NotNull` |
-| `endTime` | `Instant` | Yes | `@NotNull` |
+| `startTime` | `Instant` | Yes | `@NotNull(message = "startTime is required")` |
+| `endTime` | `Instant` | Yes | `@NotNull(message = "endTime is required")` |
 | `bannerUrl` | `String` | No | link banner |
+| `ticketTiers` | `List<TicketTierRequest>` | No | `@Valid` danh sách các hạng vé |
+| `seatMaps` | `List<SeatMapRequest>` | No | `@Valid` danh sách sơ đồ ghế |
+
+#### Class: `TicketTierRequest`
+| Field | Type | Required | Validation / note |
+|---|---|---:|---|
+| `name` | `String` | Yes | `@NotBlank(message = "Name is required")` |
+| `tierType` | `TierType` | Yes | `@NotNull(message = "Tier type is required")` |
+| `price` | `BigDecimal` | Yes | `@NotNull`, `@DecimalMin(value = "0.0")` |
+| `quantityTotal` | `Integer` | Yes | `@NotNull`, `@Min(value = 1)` |
+| `colorCode` | `String` | No | Mã màu HEX hiển thị |
+| `saleStart` | `Instant` | No | Thời điểm bắt đầu bán vé |
+| `saleEnd` | `Instant` | No | Thời điểm kết thúc bán vé |
+
+#### Class: `SeatMapRequest`
+| Field | Type | Required | Validation / note |
+|---|---|---:|---|
+| `name` | `String` | Yes | `@NotBlank(message = "Seat map name is required")` |
+| `totalRows` | `Integer` | Yes | `@NotNull(message = "Total rows is required")` |
+| `totalCols` | `Integer` | Yes | `@NotNull(message = "Total columns is required")` |
+| `layoutJson` | `String` | No | Layout chi tiết sơ đồ ghế dạng JSON |
+| `seats` | `List<SeatRequest>` | No | Danh sách ghế chi tiết của sơ đồ này |
+
+#### Class: `SeatRequest`
+| Field | Type | Required | Validation / note |
+|---|---|---:|---|
+| `seatCode` | `String` | Yes | `@NotBlank(message = "Seat code is required")` |
+| `rowLabel` | `String` | Yes | `@NotBlank(message = "Row label is required")` |
+| `colNumber` | `Integer` | Yes | `@NotNull(message = "Column number is required")` |
+| `ticketTierName` | `String` | Yes | `@NotBlank(message = "Ticket tier name is required")` |
 
 ### Example request
 ```http
@@ -140,35 +170,79 @@ Content-Type: application/json
 
 ```json
 {
-  "organizerId": 1,
+  "organizationId": 1,
   "title": "Tech Conference 2026",
   "description": "Annual conference for developers",
   "venue": "Convention Center",
   "city": "Ho Chi Minh City",
   "locationCoords": "10.7769,106.7009",
-  "startTime": "2026-06-01T09:00:00Z",
-  "endTime": "2026-06-01T17:00:00Z",
-  "bannerUrl": "https://example.com/banner.png"
+  "startTime": "2026-08-01T09:00:00Z",
+  "endTime": "2026-08-01T17:00:00Z",
+  "bannerUrl": "https://example.com/banner.png",
+  "ticketTiers": [
+    {
+      "name": "VIP",
+      "tierType": "SEATED",
+      "price": 1500000.0,
+      "quantityTotal": 100,
+      "colorCode": "#FFD700",
+      "saleStart": "2026-07-10T00:00:00Z",
+      "saleEnd": "2026-07-31T23:59:59Z"
+    },
+    {
+      "name": "Standard",
+      "tierType": "SEATED",
+      "price": 500000.0,
+      "quantityTotal": 500,
+      "colorCode": "#C0C0C0",
+      "saleStart": "2026-07-10T00:00:00Z",
+      "saleEnd": "2026-07-31T23:59:59Z"
+    }
+  ],
+  "seatMaps": [
+    {
+      "name": "Main Hall",
+      "totalRows": 10,
+      "totalCols": 10,
+      "layoutJson": "{\"rows\": 10, \"cols\": 10}",
+      "seats": [
+        {
+          "seatCode": "A-1",
+          "rowLabel": "A",
+          "colNumber": 1,
+          "ticketTierName": "VIP"
+        },
+        {
+          "seatCode": "A-2",
+          "rowLabel": "A",
+          "colNumber": 2,
+          "ticketTierName": "VIP"
+        },
+        {
+          "seatCode": "B-1",
+          "rowLabel": "B",
+          "colNumber": 1,
+          "ticketTierName": "Standard"
+        }
+      ]
+    }
+  ]
 }
 ```
 
 ### Processing rule
-1. Kiểm tra `organizerId`
-2. Tìm `RefUser` local theo `organizerId`
-3. Nếu chưa có, gọi sang `identity`:
-   - `GET http://localhost:8081/api/users/{id}`
-4. Nếu user từ `identity`:
-   - `active=false` hoặc `verified=false` -> lỗi `400`
-   - hợp lệ -> sync sang `RefUser`
-5. Kiểm tra organizer profile tồn tại và `status=APPROVED`
-6. Validate title và thời gian
-7. Tạo `Events`
-8. Set:
-   - `status = DRAFT`
-   - `isPublished = false`
-   - `createdAt = now`
-   - `updatedAt = now`
-9. Lưu DB và trả response
+1. Tìm thành viên tổ chức dựa trên `organizationId` và `userId` (lấy từ Token).
+2. Nếu không tìm thấy, trả về lỗi `400 Bad Request`.
+3. Kiểm tra xem tổ chức đó có đang hoạt động hay không (`status = ACTIVE`). Nếu không hoạt động, trả về lỗi `403 Forbidden`.
+4. Kiểm tra quyền của thành viên tổ chức. Chỉ `OWNER` mới có quyền tạo sự kiện. Nếu không phải `OWNER`, trả về lỗi `403 Forbidden`.
+5. Validate thời gian: `startTime` phải ở tương lai, và `endTime` phải diễn ra sau `startTime`. Nếu sai trả về lỗi `400 Bad Request`.
+6. Validate địa điểm: `venue` và `city` không được null hay trống.
+7. Tạo thực thể `Events` với trạng thái mặc định là `PENDING` và `isPublished = false`.
+8. Lưu event vào Database.
+9. Lưu các hạng vé (`TicketTier`) liên kết với event.
+10. Lưu sơ đồ ghế (`SeatMap`) liên kết với event và các ghế (`Seat`) liên kết với sơ đồ ghế tương ứng.
+11. Tạo `OutboxEvent` dạng `EVENT_PENDING` để thông báo cho Admin.
+12. Trả về thông tin event mới tạo thành công.
 
 ### Success response
 HTTP status: `201 Created`
@@ -186,22 +260,25 @@ Class: `CreateEventResponse`
 ```json
 {
   "id": 101,
-  "status": "DRAFT",
-  "createdAt": "2026-05-26T03:00:00Z",
-  "updatedAt": "2026-05-26T03:00:00Z"
+  "status": "PENDING",
+  "createdAt": "2026-07-07T08:30:00Z",
+  "updatedAt": "2026-07-07T08:30:00Z"
 }
 ```
 
 ### Failure cases
 - `400 Bad Request`
-  - `organizerId` null
+  - `organizationId` null
   - `title` null hoặc rỗng
-  - `startTime` >= `endTime`
-  - organizer không tồn tại
-  - organizer không active / verified
-  - organizer profile chưa được verify
+  - `venue` hoặc `city` null hoặc rỗng
+  - `startTime` ở quá khứ hoặc `startTime` >= `endTime`
+  - Sai thông tin ticketTier liên kết với ghế
+- `403 Forbidden`
+  - User không phải là thành viên của tổ chức
+  - Tổ chức không ở trạng thái ACTIVE
+  - User không có vai trò OWNER trong tổ chức
 - `404 Not Found`
-  - nếu fetch event/user không tìm thấy theo rule service
+  - Không tìm thấy tài nguyên tương ứng
 
 ---
 
@@ -220,7 +297,6 @@ Class: `ApprovalRequest`
 
 | Field | Type | Required | Note |
 |---|---|---:|---|
-| `adminUserId` | `Long` | Yes | user thực hiện duyệt |
 | `decision` | `ApprovalDecision` | Yes | `APPROVED` hoặc `REJECTED` |
 | `reason` | `String` | No | lý do duyệt / từ chối |
 
@@ -232,14 +308,14 @@ Content-Type: application/json
 
 ```json
 {
-  "adminUserId": 10,
   "decision": "APPROVED",
   "reason": "Looks good"
 }
 ```
 
 ### Processing rule
-1. Kiểm tra `adminUserId` và `decision`
+1. Lấy `adminUserId` từ token thông qua Security Context.
+2. Kiểm tra `adminUserId` và `decision` (nếu null -> lỗi `400 Bad Request`).
 2. Tìm event theo `eventId`
 3. Tìm admin trong `RefUser`
 4. Kiểm tra role admin:
@@ -292,7 +368,7 @@ Class: `EventApprovalResponse`
 
 ### Failure cases
 - `400 Bad Request`
-  - `adminUserId` null
+  - token thiếu thông tin user / `adminUserId` null
   - `decision` null
   - event organizer missing
   - invalid business rule
@@ -390,7 +466,7 @@ Response format:
 Ví dụ:
 ```json
 {
-  "organizerId": "organizerId is required",
+  "organizationId": "organizationId is required",
   "title": "title is required"
 }
 ```
@@ -425,8 +501,8 @@ Nếu hệ thống đi qua `api-gateway`, internal request có thể bị chặn
 1. Customer đăng ký / đăng nhập ở `identity`
 2. `identity` sync user sang `management`
 3. Customer gọi `POST /api/events/create`
-4. `management` kiểm tra applicant/organizerId
-5. Event được tạo với status `DRAFT`
+4. `management` kiểm tra thành viên tổ chức dựa trên `organizationId` và `userId` từ token
+5. Event được tạo với status `PENDING`
 6. Role của user chưa đổi ngay; vẫn có thể là `CUSTOMER` cho tới khi admin duyệt
 
 ### 10.2. Admin duyệt event
@@ -441,8 +517,9 @@ Nếu hệ thống đi qua `api-gateway`, internal request có thể bị chặn
 
 ## 11) Best practices khi gọi API
 
-- `organizerId` trong event phải là user hợp lệ từ `identity`
-- Chỉ admin nên gọi approve endpoint
+- `organizationId` trong event phải là tổ chức hợp lệ có trạng thái ACTIVE
+- User gửi yêu cầu tạo phải là OWNER của tổ chức đó
+- Chỉ admin mới được gọi approve endpoint
 - Nếu đổi role / active / verified ở `identity`, gọi sync để `management` cập nhật theo
 - Dùng `Instant` chuẩn ISO-8601 trong request body
 

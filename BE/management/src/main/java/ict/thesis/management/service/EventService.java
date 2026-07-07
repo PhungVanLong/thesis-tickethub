@@ -34,6 +34,8 @@ import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.time.Instant;
 import java.util.ArrayList;
@@ -44,6 +46,8 @@ import java.util.Map;
 @Service
 @RequiredArgsConstructor
 public class EventService {
+    private static final Logger log = LoggerFactory.getLogger(EventService.class);
+
     private final EventsRepository eventsRepository;
     private final OrganizationMemberRepository organizationMemberRepository;
     private final EventApprovalsRepository eventApprovalsRepository;
@@ -112,8 +116,8 @@ public class EventService {
         event.setStartTime(request.getStartTime());
         event.setEndTime(request.getEndTime());
         event.setBannerUrl(request.getBannerUrl());
-        // Khởi tạo trạng thái PENDING_APPROVAL, loại bỏ DRAFT
-        event.setStatus(EventStatus.PENDING_APPROVAL);
+        // Khởi tạo trạng thái PENDING, loại bỏ DRAFT
+        event.setStatus(EventStatus.PENDING);
         event.setPublished(false);
 
         event.setCreatedAt(now);
@@ -186,6 +190,32 @@ public class EventService {
                     }
                 }
             }
+        }
+
+        // Tạo Outbox Event cho Admin nhận biết sự kiện cần duyệt
+        try {
+            Map<String, Object> notifyPayload = new HashMap<>();
+            notifyPayload.put("eventId", savedEvent.getId());
+            notifyPayload.put("title", savedEvent.getTitle());
+            notifyPayload.put("organizationId", savedEvent.getOrganization().getId());
+            notifyPayload.put("organizerId", userId);
+            notifyPayload.put("status", savedEvent.getStatus().name());
+            notifyPayload.put("createdAt", savedEvent.getCreatedAt().toString());
+
+            String payloadJson = objectMapper.writeValueAsString(notifyPayload);
+
+            OutboxEvent notifyEvent = new OutboxEvent();
+            notifyEvent.setAggregateType("Event");
+            notifyEvent.setAggregateId(savedEvent.getId());
+            notifyEvent.setEventType("EVENT_PENDING");
+            notifyEvent.setPayload(payloadJson);
+            notifyEvent.setStatus(OutboxStatus.PENDING);
+            notifyEvent.setRetryCount(0);
+            notifyEvent.setCreatedAt(now);
+
+            outboxEventRepository.save(notifyEvent);
+        } catch (Exception e) {
+            log.error("Failed to serialize notify admin payload for outbox", e);
         }
 
         CreateEventResponse response = new CreateEventResponse();

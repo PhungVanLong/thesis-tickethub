@@ -166,15 +166,15 @@ Trạng thái vòng đời sự kiện (`status` enum) chuyển dịch theo sơ 
 
 ```mermaid
 graph TD
-    CREATE[Owner: Tạo sự kiện] -->|Khởi tạo mặc định| PENDING_APP[PENDING_APPROVAL]
-    PENDING_APP -->|Admin duyệt APPROVED| APPROVED[APPROVED]
-    PENDING_APP -->|Admin duyệt CANCELLED| CANCELLED[CANCELLED]
+    CREATE[Owner: Tạo sự kiện] -->|Khởi tạo mặc định| PENDING[PENDING]
+    PENDING -->|Admin duyệt APPROVED| APPROVED[APPROVED]
+    PENDING -->|Admin duyệt CANCELLED| CANCELLED[CANCELLED]
     APPROVED -->|Owner công bố PUBLISHED| PUBLISHED[PUBLISHED]
     APPROVED -->|Owner hủy CANCEL| CANCELLED
     PUBLISHED -->|Owner hủy CANCEL| CANCELLED
 ```
 
-- **PENDING_APPROVAL**: Trạng thái mặc định ngay khi tạo xong. Chờ Admin phê duyệt.
+- **PENDING**: Trạng thái mặc định ngay khi tạo xong. Chờ Admin phê duyệt.
 - **APPROVED**: Admin đã phê duyệt. Cho phép hiển thị nút "Công bố sự kiện" (`publish`) cho Owner.
 - **PUBLISHED**: Sự kiện được công bố ra công chúng và đồng bộ dữ liệu sang `booking-service`. Không cho phép chỉnh sửa cấu hình vé/ghế nữa.
 - **CANCELLED**: Sự kiện đã bị hủy hoặc bị Admin từ chối duyệt.
@@ -253,7 +253,7 @@ Nhà tổ chức (phải có vai trò `OWNER` trong tổ chức đang `ACTIVE`) 
   ```json
   {
     "id": 12,
-    "status": "PENDING_APPROVAL",
+    "status": "PENDING",
     "createdAt": "2026-06-25T00:30:00Z",
     "updatedAt": "2026-06-25T00:30:00Z"
   }

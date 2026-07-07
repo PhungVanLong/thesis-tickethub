@@ -93,7 +93,6 @@ Content-Type: application/json
 `ApprovalRequest`
 
 Required fields:
-- `adminUserId` `Long`
 - `decision` `ApprovalDecision` (`APPROVED` or `REJECTED`)
 
 Optional field:
@@ -107,14 +106,13 @@ Content-Type: application/json
 
 ```json
 {
-  "adminUserId": 10,
   "decision": "APPROVED",
   "reason": "Looks good"
 }
 ```
 
 #### Business rules
-- `adminUserId` is required
+- `adminUserId` is extracted from the token context
 - `decision` is required
 - admin must exist in `RefUser`
 - admin must have role `ADMIN`
@@ -240,7 +238,6 @@ Authorization: Bearer <jwt>
 `OrganizerVerificationRequest`
 
 Required fields:
-- `adminUserId` `Long`
 - `decision` `OrganizerStatus` (`APPROVED`, `REJECTED`, `SUSPENDED`)
 
 Optional field:
@@ -254,14 +251,13 @@ Content-Type: application/json
 
 ```json
 {
-  "adminUserId": 10,
   "decision": "APPROVED",
   "reason": "Tax code and organization details are valid"
 }
 ```
 
 #### Business rules
-- `adminUserId` is required
+- `adminUserId` is extracted from the `X-User-Id` request header
 - `decision` is required
 - admin must exist in `RefUser`
 - admin must have role `ADMIN`

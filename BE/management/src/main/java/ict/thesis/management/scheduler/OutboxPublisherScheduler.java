@@ -73,6 +73,8 @@ public class OutboxPublisherScheduler {
             return "user-role-demote-topic";
         } else if ("EVENT_PUBLISHED".equals(eventType)) {
             return "event-published-topic";
+        } else if ("EVENT_PENDING".equals(eventType)) {
+            return "event-pending-topic";
         }
         return null;
     }
