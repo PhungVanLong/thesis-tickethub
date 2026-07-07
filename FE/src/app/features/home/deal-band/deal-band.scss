@@ -1,0 +1,112 @@
+/* ============================================================
+   DEAL BAND — Nền xanh #1677FF → Chữ trắng #ffffff
+   Button: Nền trắng → Chữ xanh
+   ============================================================ */
+
+:host {
+  display: block;
+  background: #ffffff;
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+a:focus-visible {
+  outline: 2px solid #ffffff;
+  outline-offset: 3px;
+}
+
+h2,
+p {
+  margin: 0;
+  letter-spacing: 0;
+}
+
+/* NỀN XANH, CHỮ TRẮNG */
+.deal-band {
+  display: flex;
+  width: min(1200px, calc(100% - 48px));
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+  margin: 0 auto 64px;
+  padding: 40px 32px;
+  border-radius: 16px;
+  background: #1677ff;
+  color: #ffffff;
+  box-shadow: 0 8px 32px rgba(22, 119, 255, 0.3);
+}
+
+.eyebrow {
+  margin: 0 0 8px;
+  color: #ffffff;
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 16px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  opacity: 0.8;
+}
+
+.deal-band h2 {
+  color: #ffffff;
+  font-size: 24px;
+  font-weight: 600;
+  line-height: 32px;
+}
+
+.deal-band p:last-child {
+  margin-top: 8px;
+  color: #ffffff;
+  font-size: 14px;
+  line-height: 20px;
+  opacity: 0.85;
+}
+
+/* Button: NỀN TRẮNG, CHỮ XANH */
+.deal-button {
+  display: inline-flex;
+  flex: 0 0 auto;
+  min-height: 44px;
+  align-items: center;
+  justify-content: center;
+  border: 0;
+  border-radius: 32px;
+  background: #ffffff;
+  color: #1677ff;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 700;
+  padding: 12px 28px;
+  transition:
+    background 0.2s ease,
+    transform 0.2s ease,
+    box-shadow 0.2s ease;
+}
+
+.deal-button:hover {
+  background: #f0f0f0;
+  transform: scale(1.02);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
+}
+
+.deal-button:active {
+  background: #e0e0e0;
+}
+
+@media (max-width: 767px) {
+  .deal-band {
+    width: min(100% - 24px, 1200px);
+    align-items: stretch;
+    flex-direction: column;
+  }
+}
+
+@media (max-width: 479px) {
+  .deal-button {
+    width: 100%;
+    justify-content: center;
+  }
+}

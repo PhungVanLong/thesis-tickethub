@@ -1,0 +1,225 @@
+/* ============================================================
+   EVENT SECTION — Nền trắng #ffffff → Chữ đen #000000
+   Button CTA: Nền xanh #1677FF → Chữ trắng #ffffff
+   ============================================================ */
+
+:host {
+  display: block;
+  background: #ffffff;
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+button {
+  font: inherit;
+}
+
+a:focus-visible,
+button:focus-visible {
+  outline: 2px solid #1677ff;
+  outline-offset: 3px;
+}
+
+h2,
+h3,
+p {
+  margin: 0;
+  letter-spacing: 0;
+}
+
+/* Nền trắng, chữ đen */
+.events-section {
+  width: min(1200px, calc(100% - 48px));
+  margin: 0 auto;
+  padding: 40px 0 64px;
+  color: #000000;
+}
+
+.section-heading.inline,
+.event-meta,
+.event-footer {
+  display: flex;
+  align-items: center;
+}
+
+.section-heading.inline {
+  align-items: end;
+  justify-content: space-between;
+  gap: 24px;
+  color: #000000;
+}
+
+.section-heading h2 {
+  color: #000000;
+  font-size: 24px;
+  font-weight: 600;
+  line-height: 32px;
+}
+
+.eyebrow {
+  margin: 0 0 8px;
+  color: #1677ff;
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 16px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+/* Link xanh trên nền trắng */
+.text-link {
+  color: #1677ff;
+  font-size: 14px;
+}
+
+.text-link:hover {
+  color: #0958d9;
+  text-decoration: underline;
+}
+
+.event-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 16px;
+  margin-top: 20px;
+}
+
+/* Card: nền trắng, chữ đen, viền xám nhạt */
+.event-card {
+  overflow: hidden;
+  border: 1px solid #e8e8e8;
+  border-radius: 12px;
+  background: #ffffff;
+  color: #000000;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+  transition:
+    box-shadow 0.2s ease,
+    transform 0.2s ease;
+}
+
+.event-card:hover {
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.12);
+  transform: translateY(-2px);
+}
+
+.event-card img {
+  display: block;
+  width: 100%;
+  aspect-ratio: 3 / 4;
+  object-fit: cover;
+}
+
+.event-body {
+  padding: 16px;
+}
+
+.event-meta {
+  justify-content: space-between;
+  gap: 8px;
+  color: #666666;
+  font-size: 12px;
+  line-height: 16px;
+}
+
+/* Pill badge xanh trên nền trắng */
+.category-pill {
+  padding: 6px 12px;
+  border: 1.5px solid #1677ff;
+  border-radius: 16px;
+  color: #1677ff;
+  font-weight: 600;
+  background: #ffffff;
+}
+
+.event-card h3 {
+  min-height: 48px;
+  margin-top: 12px;
+  color: #000000;
+  font-size: 18px;
+  font-weight: 600;
+  line-height: 24px;
+}
+
+.event-card p {
+  margin-top: 8px;
+  color: #555555;
+  font-size: 14px;
+  line-height: 20px;
+}
+
+.event-footer {
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 16px;
+}
+
+/* Giá: màu xanh nổi bật trên nền trắng */
+.event-card strong {
+  color: #1677ff;
+  font-weight: 700;
+}
+
+/* Button: NỀN XANH, CHỮ TRẮNG */
+.event-footer button {
+  display: inline-flex;
+  min-height: 40px;
+  align-items: center;
+  justify-content: center;
+  border: 0;
+  border-radius: 4px;
+  background: #1677ff;
+  color: #ffffff;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 500;
+  padding: 10px 16px;
+  transition:
+    background 0.2s ease,
+    transform 0.2s ease,
+    box-shadow 0.2s ease;
+}
+
+.event-footer button:hover {
+  background: #0958d9;
+  transform: scale(1.02);
+  box-shadow: 0 4px 12px rgba(22, 119, 255, 0.35);
+}
+
+.event-footer button:active {
+  background: #003eb3;
+}
+
+@media (max-width: 1023px) {
+  .event-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 767px) {
+  .events-section {
+    width: min(100% - 24px, 1200px);
+  }
+
+  .section-heading.inline {
+    align-items: stretch;
+    flex-direction: column;
+  }
+}
+
+@media (max-width: 479px) {
+  .event-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .event-footer {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .event-footer button {
+    width: 100%;
+  }
+}

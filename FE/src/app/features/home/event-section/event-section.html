@@ -1,0 +1,29 @@
+<section class="events-section" id="events" aria-labelledby="events-title">
+  <div class="section-heading inline">
+    <div>
+      <p class="eyebrow">Đang bán vé</p>
+      <h2 id="events-title">Sự kiện được quan tâm</h2>
+    </div>
+    <a class="text-link" href="#">Xem tất cả</a>
+  </div>
+
+  <div class="event-grid">
+    @for (event of events; track event.title) {
+      <article class="event-card">
+        <img [src]="event.image" [alt]="event.alt" />
+        <div class="event-body">
+          <div class="event-meta">
+            <span class="category-pill">{{ event.category }}</span>
+            <span>{{ event.date }}</span>
+          </div>
+          <h3>{{ event.title }}</h3>
+          <p>{{ event.location }}</p>
+          <div class="event-footer">
+            <strong>{{ event.price }}</strong>
+            <button type="button">Mua vé</button>
+          </div>
+        </div>
+      </article>
+    }
+  </div>
+</section>
