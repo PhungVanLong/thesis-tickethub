@@ -25,6 +25,12 @@ public class TicketTierRef {
     @Column(name = "id")
     private Long id;
 
+    @Column(name = "event_id")
+    private Long eventId;
+
+    @Column(name = "event_name")
+    private String eventName;
+
     @Column(name = "version")
     private Long version;
 

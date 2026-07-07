@@ -36,17 +36,23 @@ public class Order {
     @Column(name = "customer_id")
     private Long customer;
 
+    @Column(name = "customer_email")
+    private String customerEmail;
+
+    @Column(name = "event_id")
+    private Long eventId;
+
     @Column(name = "order_code", unique = true)
     private String orderCode;
 
     @Column(name = "subtotal")
     private BigDecimal subtotal;
 
-    @Column(name = "promotion_discount")
-    private BigDecimal promotionDiscount;
+    // @Column(name = "promotion_discount")
+    // private BigDecimal promotionDiscount;
 
-    @Column(name = "voucher_discount")
-    private BigDecimal voucherDiscount;
+    // @Column(name = "voucher_discount")
+    // private BigDecimal voucherDiscount;
 
     @Column(name = "total_amount")
     private BigDecimal totalAmount;

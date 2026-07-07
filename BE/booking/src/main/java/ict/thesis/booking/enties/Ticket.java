@@ -42,6 +42,9 @@ public class Ticket {
     @Column(name = "seat_id", unique = true)
     private Long seat;
 
+    @Column(name = "seat_code")
+    private String seatCode;
+
     @Column(name = "ticket_code", unique = true)
     private String ticketCode;
 

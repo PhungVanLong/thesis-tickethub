@@ -50,7 +50,16 @@ public class JwtGlobalAuthenticationFilter implements GlobalFilter, Ordered {
         // Apply JWT check only for requests that actually require authentication.
         // Public endpoints pass through, internal endpoints must present a valid token.
         String path = request.getURI().getPath();
-        if (isPublicPath(path) || HttpMethod.OPTIONS.equals(request.getMethod())) {
+        HttpMethod method = request.getMethod();
+
+        boolean isPublic = isPublicPath(path);
+        // /api/events/** endpoints are public ONLY for GET requests.
+        // POST/PUT/DELETE/PATCH to /api/events/** require authentication.
+        if (isPublic && path.startsWith("/api/events") && !HttpMethod.GET.equals(method)) {
+            isPublic = false;
+        }
+
+        if (isPublic || HttpMethod.OPTIONS.equals(method)) {
             ServerHttpRequest modifiedRequest = request.mutate()
                     .header("X-Gateway-Token", gatewaySharedSecret)
                     .build();
