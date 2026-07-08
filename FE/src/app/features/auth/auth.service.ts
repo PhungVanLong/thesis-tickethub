@@ -54,6 +54,16 @@ export class AuthService {
     this.currentUserToken.set(null);
   }
 
+  forgotPassword(email: string): Observable<string> {
+    const forgotUrl = 'http://localhost:8080/api/auth/forgot-password';
+    return this.http.post(forgotUrl, { email }, { responseType: 'text' });
+  }
+
+  resetPassword(data: { token: string; newPassword: string }): Observable<string> {
+    const resetUrl = 'http://localhost:8080/api/auth/reset-password';
+    return this.http.post(resetUrl, data, { responseType: 'text' });
+  }
+
   isAuthenticated(): boolean {
     return !!this.currentUserToken();
   }

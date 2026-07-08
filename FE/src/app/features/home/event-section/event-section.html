@@ -1,19 +1,32 @@
-<section class="events-section" id="events" aria-label="Featured Events">
+<section class="events-section" id="events" aria-labelledby="events-title">
   <div class="section-heading">
     <h2 id="events-title">{{ 'home.eventsLike' | translate }}</h2>
-    <a class="view-all" href="#">{{ 'home.viewAll' | translate }} <span class="arrow">→</span></a>
   </div>
 
-  <div class="events-grid">
+  <div class="event-grid">
     @for (event of events; track event.title) {
       <article class="event-card">
+        <div class="image-area">
+          @if (event.image) {
+            <img [src]="event.image" [alt]="event.alt" />
+          } @else {
+            <div class="ticket-pass-bg">
+              <svg class="ticket-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M2 9a3 3 0 0 1 0 6v2a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-2a3 3 0 0 1 0-6V7a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2Z" />
+                <line x1="9" y1="5" x2="9" y2="19" stroke-dasharray="3 3" />
+              </svg>
+            </div>
+          }
+        </div>
+        <div class="event-body">
           <p class="event-meta">{{ event.date }}</p>
           <h3 class="event-title">{{ event.title }}</h3>
           <p class="event-location">{{ event.location }}</p>
-          <button type="button" class="btn-action">{{ event.buttonText || 'See Tickets' }}</button>
+          <button type="button" class="btn-action">
+            {{ (event.buttonText === 'See Tickets' ? ('action.seeTickets' | translate) : ('action.seePasses' | translate)) }}
+          </button>
         </div>
       </article>
     }
   </div>
 </section>
-
