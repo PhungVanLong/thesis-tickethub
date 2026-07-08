@@ -23,13 +23,12 @@ export class MyAccountComponent implements OnInit {
   
   readonly userEmail = signal<string>('');
   readonly userRole = signal<string>('');
-  readonly avatarPreviewUrl = signal<string>('https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=80&q=80');
+  readonly avatarPreviewUrl = signal<string | null>(null);
 
-  // Strongly typed form
+  // Strongly typed form (removed avatarUrl field since it's hidden)
   readonly accountForm = this.fb.nonNullable.group({
     fullName: ['', [Validators.required]],
     phone: ['', [Validators.required, Validators.pattern(/^[0-9]{10}$/)]],
-    avatarUrl: [''],
   });
 
   ngOnInit(): void {
@@ -49,11 +48,12 @@ export class MyAccountComponent implements OnInit {
         this.accountForm.patchValue({
           fullName: profile.fullName || '',
           phone: profile.phone || '',
-          avatarUrl: profile.avatarUrl || '',
         });
 
         if (profile.avatarUrl) {
           this.avatarPreviewUrl.set(profile.avatarUrl);
+        } else {
+          this.avatarPreviewUrl.set(null);
         }
         this.isLoading.set(false);
       },
@@ -71,11 +71,11 @@ export class MyAccountComponent implements OnInit {
     });
   }
 
-  onAvatarUrlChange(event: Event): void {
-    const input = event.target as HTMLInputElement;
-    if (input.value) {
-      this.avatarPreviewUrl.set(input.value);
+  getInitials(name: string | null | undefined): string {
+    if (!name) {
+      return 'U';
     }
+    return name.trim().charAt(0).toUpperCase();
   }
 
   onSubmit(): void {
@@ -96,6 +96,8 @@ export class MyAccountComponent implements OnInit {
         this.successMessage.set('account.updateSuccess');
         if (updatedProfile.avatarUrl) {
           this.avatarPreviewUrl.set(updatedProfile.avatarUrl);
+        } else {
+          this.avatarPreviewUrl.set(null);
         }
       },
       error: (err) => {

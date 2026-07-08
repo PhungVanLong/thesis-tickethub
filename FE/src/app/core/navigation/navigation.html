@@ -28,8 +28,14 @@
 
         <div class="dropdown-wrapper">
           <button type="button" class="account-btn" (click)="toggleDropdown($event)">
-            <img class="avatar-img" src="https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=80&q=80" alt="Avatar" />
-            <span class="account-text">{{ 'nav.account' | translate }}</span>
+            @if (currentUserProfile()?.avatarUrl) {
+              <img class="avatar-img" [src]="currentUserProfile().avatarUrl" alt="Avatar" />
+            } @else {
+              <div class="avatar-img-placeholder">
+                <span>{{ getInitials(currentUserProfile()?.fullName) }}</span>
+              </div>
+            }
+            <span class="account-text">{{ currentUserProfile()?.fullName || ('nav.account' | translate) }}</span>
             <span class="caret-icon" [class.open]="showDropdown()">▼</span>
           </button>
           

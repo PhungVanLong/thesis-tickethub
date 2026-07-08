@@ -35,7 +35,13 @@
           <!-- Avatar Preview column -->
           <div class="avatar-column">
             <div class="avatar-wrapper">
-              <img [src]="avatarPreviewUrl()" alt="User Avatar" class="avatar-preview" />
+              @if (avatarPreviewUrl()) {
+                <img [src]="avatarPreviewUrl()" alt="User Avatar" class="avatar-preview" />
+              } @else {
+                <div class="avatar-letter-placeholder">
+                  <span>{{ getInitials(accountForm.controls.fullName.value) }}</span>
+                </div>
+              }
             </div>
             <div class="user-info-brief">
               <span class="user-role-badge">{{ userRole() }}</span>
@@ -71,14 +77,6 @@
                   {{ 'account.phoneError' | translate }}
                 </div>
               }
-            </div>
-
-            <!-- Avatar URL field -->
-            <div class="form-group">
-              <label for="avatarUrl">Đường dẫn ảnh đại diện (Avatar URL)</label>
-              <div class="input-wrapper">
-                <input id="avatarUrl" type="url" formControlName="avatarUrl" (input)="onAvatarUrlChange($event)" placeholder="https://example.com/image.jpg" />
-              </div>
             </div>
 
             <!-- Email (readonly) -->
