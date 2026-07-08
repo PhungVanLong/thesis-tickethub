@@ -123,6 +123,15 @@ export class AuthService {
     }
   }
 
+  registerOrganizer(data: any): Observable<any> {
+    const token = this.currentUserToken();
+    if (!token) {
+      return throwError(() => new Error('No access token found'));
+    }
+    const headers = { Authorization: `Bearer ${token}` };
+    return this.http.post('http://localhost:8080/api/organizations', data, { headers });
+  }
+
   isAuthenticated(): boolean {
     return !!this.currentUserToken();
   }

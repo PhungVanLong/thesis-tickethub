@@ -5,18 +5,32 @@
 :host {
   display: block;
   position: relative;
-  background: #060b16;
+  background: #0052cc; /* TicketHub Blue */
+  color: #ffffff;
 }
+
+/* ... */
+
+.promo-banner {
+  height: 480px;
+  background: linear-gradient(180deg, rgba(6, 11, 22, 0.4) 0%, rgba(6, 11, 22, 0.8) 100%),
+              url('https://images.unsplash.com/photo-1470225620780-dba8ba36b745?auto=format&fit=crop&w=1600&q=80');
+  background-size: cover;
+  background-position: center;
+  display: flex;
+  align-items: center;
+  position: relative;
+  z-index: 1;
+}
+
 
 /* ── Search panel overlay on top of the hero ── */
 .search-container {
-  max-width: 1200px;
-  width: min(1200px, calc(100% - 48px));
-  margin: 0 auto;
+  width: 100%;
   position: relative;
   z-index: 10;
-  padding-top: 24px;
-  margin-bottom: -44px; /* Pulls the hero banner up under it */
+  background: #0052cc; /* Blue background matching host */
+  padding: 10px 0;
 }
 
 .search-panel {
@@ -25,10 +39,12 @@
   align-items: center;
   gap: 16px;
   background: #ffffff;
-  padding: 8px 12px;
+  padding: 8px 12px 10px;
   border-radius: 4px;
   box-shadow: 0 4px 24px rgba(0, 0, 0, 0.25);
   border: 1px solid #e2e8f0;
+  width: min(1200px, calc(100% - 48px));
+  margin: 0 auto;
 }
 
 .search-field {
@@ -59,13 +75,12 @@
   margin-bottom: 2px;
 }
 
-.field-content input,
-.field-content select {
+.field-content input, .field-content select {
   border: none;
   outline: none;
   font-size: 14px;
   font-weight: 500;
-  color: #1a202c;
+  color: #000000; /* black text */
   background: transparent;
   padding: 0;
   width: 100%;
@@ -73,7 +88,7 @@
 }
 
 .field-content input::placeholder {
-  color: #a0aec0;
+  color: #555555; /* dark placeholder */
 }
 
 .field-divider {

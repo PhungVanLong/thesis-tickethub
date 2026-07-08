@@ -14,7 +14,7 @@
 
     <div class="nav-actions">
       <!-- Đăng ký làm tổ chức (Visible always) -->
-      <a class="header-link organizer-link" href="#">{{ 'nav.organizer' | translate }}</a>
+      <a class="header-link organizer-link" routerLink="/organization-dashboard">{{ 'nav.organizer' | translate }}</a>
 
       @if (currentUserToken()) {
         <!-- Vé của tôi (Only when logged in) -->
