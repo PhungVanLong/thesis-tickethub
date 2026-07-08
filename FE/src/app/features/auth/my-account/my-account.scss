@@ -1,0 +1,278 @@
+.account-container {
+  max-width: 1100px;
+  margin: 40px auto;
+  width: calc(100% - 40px);
+  box-sizing: border-box;
+}
+
+.account-card {
+  background: #ffffff;
+  border-radius: 16px;
+  border: 1px solid #e2e8f0;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.05);
+  padding: 40px;
+}
+
+.account-header {
+  margin-bottom: 32px;
+  border-bottom: 1px solid #f1f5f9;
+  padding-bottom: 20px;
+
+  h1 {
+    font-size: 28px;
+    color: #0f172a;
+    margin: 0 0 8px 0;
+    font-weight: 700;
+  }
+
+  .subtitle {
+    font-size: 14px;
+    color: #64748b;
+    margin: 0;
+  }
+}
+
+.account-body {
+  display: grid;
+  grid-template-columns: 280px 1fr;
+  gap: 48px;
+  align-items: start;
+}
+
+.avatar-column {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 20px;
+  background: #f8fafc;
+  padding: 30px 20px;
+  border-radius: 12px;
+  border: 1px solid #f1f5f9;
+}
+
+.avatar-wrapper {
+  width: 140px;
+  height: 140px;
+  border-radius: 50%;
+  overflow: hidden;
+  border: 4px solid #ffffff;
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1);
+}
+
+.avatar-preview {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.user-info-brief {
+  text-align: center;
+}
+
+.user-role-badge {
+  display: inline-block;
+  background: #ecfdf5;
+  color: #059669;
+  padding: 4px 12px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 8px;
+}
+
+.user-email-text {
+  font-size: 14px;
+  color: #64748b;
+  margin: 0;
+  font-weight: 500;
+  word-break: break-all;
+}
+
+.account-form {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+
+  label {
+    font-size: 13.5px;
+    font-weight: 600;
+    color: #475569;
+  }
+}
+
+.input-wrapper {
+  height: 46px;
+  border-radius: 8px;
+  border: 1px solid #cbd5e1;
+  background: #ffffff;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+
+  input {
+    width: 100%;
+    height: 100%;
+    border: none;
+    background: transparent;
+    padding: 0 16px;
+    font-size: 14px;
+    color: #0f172a;
+    box-sizing: border-box;
+
+    &:focus {
+      outline: none;
+    }
+  }
+
+  &:focus-within {
+    border-color: #059669;
+    box-shadow: 0 0 0 3px rgba(5, 150, 105, 0.15);
+  }
+
+  &.has-error {
+    border-color: #ef4444;
+
+    &:focus-within {
+      box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.15);
+    }
+  }
+}
+
+.disabled-wrapper {
+  background: #f1f5f9;
+  border-color: #e2e8f0;
+
+  input {
+    color: #64748b;
+    cursor: not-allowed;
+  }
+}
+
+.error-message {
+  font-size: 12.5px;
+  color: #ef4444;
+  font-weight: 500;
+}
+
+.btn-save {
+  height: 48px;
+  border-radius: 8px;
+  border: none;
+  background: #059669;
+  color: #ffffff;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.15s ease, transform 0.15s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  margin-top: 10px;
+
+  &:hover {
+    background: #047857;
+  }
+
+  &:active {
+    transform: translateY(1px);
+  }
+
+  &:disabled {
+    background: #a7f3d0;
+    cursor: not-allowed;
+  }
+}
+
+.alert {
+  padding: 14px 20px;
+  border-radius: 8px;
+  margin-bottom: 24px;
+  font-size: 14px;
+  font-weight: 500;
+
+  p {
+    margin: 0;
+  }
+}
+
+.alert-error {
+  background: #fef2f2;
+  color: #991b1b;
+  border-left: 4px solid #ef4444;
+}
+
+.alert-success {
+  background: #ecfdf5;
+  color: #065f46;
+  border-left: 4px solid #059669;
+}
+
+/* Skeleton Loading */
+.skeleton-container {
+  display: flex;
+  gap: 48px;
+}
+
+.skeleton {
+  background: linear-gradient(90deg, #f1f5f9 25%, #e2e8f0 50%, #f1f5f9 75%);
+  background-size: 200% 100%;
+  animation: loading-skeleton 1.5s infinite;
+  border-radius: 8px;
+}
+
+.skeleton-avatar {
+  width: 140px;
+  height: 140px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.skeleton-fields {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.skeleton-field {
+  height: 46px;
+  width: 100%;
+}
+
+@keyframes loading-skeleton {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .account-card {
+    padding: 24px;
+  }
+
+  .account-body {
+    grid-template-columns: 1fr;
+    gap: 32px;
+  }
+
+  .skeleton-container {
+    flex-direction: column;
+    gap: 32px;
+    align-items: center;
+  }
+
+  .skeleton-fields {
+    width: 100%;
+  }
+}

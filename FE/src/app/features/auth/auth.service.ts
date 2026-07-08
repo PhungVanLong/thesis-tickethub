@@ -64,6 +64,44 @@ export class AuthService {
     return this.http.post(resetUrl, data, { responseType: 'text' });
   }
 
+  getProfile(): Observable<any> {
+    const token = this.currentUserToken();
+    if (!token) {
+      return throwError(() => new Error('No access token found'));
+    }
+    const userId = this.getUserIdFromToken(token);
+    if (!userId) {
+      return throwError(() => new Error('Invalid token payload'));
+    }
+    const headers = { Authorization: `Bearer ${token}` };
+    return this.http.get(`http://localhost:8080/api/users/${userId}`, { headers });
+  }
+
+  updateProfile(data: any): Observable<any> {
+    const token = this.currentUserToken();
+    if (!token) {
+      return throwError(() => new Error('No access token found'));
+    }
+    const userId = this.getUserIdFromToken(token);
+    if (!userId) {
+      return throwError(() => new Error('Invalid token payload'));
+    }
+    const headers = { Authorization: `Bearer ${token}` };
+    return this.http.put(`http://localhost:8080/api/users/${userId}`, data, { headers });
+  }
+
+  getUserIdFromToken(token: string): string | null {
+    try {
+      const payload = token.split('.')[1];
+      const decodedPayload = atob(payload.replace(/-/g, '+').replace(/_/g, '/'));
+      const decoded = JSON.parse(decodedPayload);
+      return decoded.sub || null;
+    } catch (e) {
+      console.error('Failed to decode JWT token:', e);
+      return null;
+    }
+  }
+
   isAuthenticated(): boolean {
     return !!this.currentUserToken();
   }

@@ -78,7 +78,21 @@ export const TRANSLATIONS: Record<Language, Record<string, string>> = {
     'footer.copyright': '© 2026 TicketHub Institutional. Bảo lưu mọi quyền.',
     'footer.terms': 'Điều khoản dịch vụ',
     'footer.privacy': 'Chính sách bảo mật',
-    'footer.cookie': 'Chính sách Cookie'
+    'footer.cookie': 'Chính sách Cookie',
+
+    // My Account Page
+    'account.title': 'Tài khoản của tôi',
+    'account.subtitle': 'Quản lý thông tin cá nhân và thiết lập tài khoản của bạn',
+    'account.fullName': 'Họ và tên',
+    'account.phone': 'Số điện thoại',
+    'account.email': 'Địa chỉ Email',
+    'account.role': 'Vai trò tài khoản',
+    'account.saveChanges': 'Lưu thay đổi',
+    'account.saving': 'Đang lưu...',
+    'account.updateSuccess': 'Cập nhật thông tin tài khoản thành công!',
+    'account.updateError': 'Cập nhật thất bại. Vui lòng kiểm tra lại dữ liệu.',
+    'account.fullNameError': 'Vui lòng nhập họ tên của bạn',
+    'account.phoneError': 'Số điện thoại không hợp lệ (10 chữ số)'
   },
   Eng: {
     // Navigation Header
@@ -157,6 +171,20 @@ export const TRANSLATIONS: Record<Language, Record<string, string>> = {
     'footer.copyright': '© 2026 TicketHub Institutional. All rights reserved.',
     'footer.terms': 'Terms of Service',
     'footer.privacy': 'Privacy Policy',
-    'footer.cookie': 'Cookie Policy'
+    'footer.cookie': 'Cookie Policy',
+
+    // My Account Page
+    'account.title': 'My Account',
+    'account.subtitle': 'Manage your personal profile and account settings',
+    'account.fullName': 'Full Name',
+    'account.phone': 'Phone Number',
+    'account.email': 'Email Address',
+    'account.role': 'Account Role',
+    'account.saveChanges': 'Save Changes',
+    'account.saving': 'Saving...',
+    'account.updateSuccess': 'User profile updated successfully!',
+    'account.updateError': 'Failed to update profile. Please verify your data.',
+    'account.fullNameError': 'Please enter your full name',
+    'account.phoneError': 'Invalid phone number (10 digits)'
   }
 };

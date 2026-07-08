@@ -10,7 +10,10 @@ import { TRANSLATIONS } from '../data/translations';
 export class TranslatePipe implements PipeTransform {
   private readonly langService = inject(LanguageService);
 
-  transform(key: string): string {
+  transform(key: string | null | undefined): string {
+    if (!key) {
+      return '';
+    }
     const lang = this.langService.currentLang();
     return TRANSLATIONS[lang]?.[key] || key;
   }
