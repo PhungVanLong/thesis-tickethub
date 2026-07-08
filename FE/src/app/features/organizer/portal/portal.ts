@@ -8,13 +8,16 @@ import { HttpClient } from '@angular/common/http';
 import { AuthService } from '../../auth/auth.service';
 import { LanguageService } from '../../../core/services/language.service';
 import { TranslatePipe } from '../../../shared/pipes/translate.pipe';
-import { NgClass, UpperCasePipe, CurrencyPipe, DecimalPipe } from '@angular/common';
+import { NgClass, UpperCasePipe, CurrencyPipe, DecimalPipe, DatePipe } from '@angular/common';
 import { CdkDrag } from '@angular/cdk/drag-drop';
+import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
+import { debounceTime, distinctUntilChanged, switchMap, catchError } from 'rxjs/operators';
+import { of } from 'rxjs';
 
 @Component({
   selector: 'app-organizer-portal',
   standalone: true,
-  imports: [ReactiveFormsModule, UpperCasePipe, DecimalPipe, CdkDrag],
+  imports: [ReactiveFormsModule, UpperCasePipe, DecimalPipe, CdkDrag, DatePipe],
   templateUrl: './portal.html',
   styleUrl: './portal.scss',
 })
@@ -24,6 +27,7 @@ export class OrganizerPortalComponent implements OnInit {
   private readonly router = inject(Router);
   private readonly fb = inject(FormBuilder);
   private readonly http = inject(HttpClient);
+  private readonly sanitizer = inject(DomSanitizer);
 
   readonly userProfile = this.authService.currentUserProfile;
   readonly activeTab = signal('dashboard');
@@ -31,14 +35,13 @@ export class OrganizerPortalComponent implements OnInit {
   readonly showLangDropdown = signal(false);
 
   readonly currentStep = signal(1);
-  readonly totalSteps = 6;
+  readonly totalSteps = 5;
   readonly isSubmitting = signal(false);
   readonly submitError = signal<string | null>(null);
   readonly submitSuccess = signal(false);
 
   readonly steps = [
     { label: 'Event Info' },
-    { label: 'Venue' },
     { label: 'Ticket Tiers' },
     { label: 'Seat Map' },
     { label: 'Review' },
@@ -47,30 +50,26 @@ export class OrganizerPortalComponent implements OnInit {
 
   readonly tierTypes = ['STANDING', 'SEATED'];
 
-  // Step 1: Event Info
+  // Step 1: Event Info (Merged with Venue)
   readonly step1Form: FormGroup = this.fb.group({
     title: ['', [Validators.required, Validators.minLength(3)]],
     category: ['', Validators.required],
     description: [''],
     startTime: ['', Validators.required],
     endTime: ['', Validators.required],
-  });
-
-  // Step 2: Venue
-  readonly step2Form: FormGroup = this.fb.group({
     venue: ['', Validators.required],
     city: ['', Validators.required],
     locationCoords: [''],
     bannerUrl: [''],
   });
 
-  // Step 3: Ticket Tiers (FormArray)
-  readonly step3Form: FormGroup = this.fb.group({
+  // Step 2: Ticket Tiers (FormArray)
+  readonly step2Form: FormGroup = this.fb.group({
     tiers: this.fb.array([this.createTierGroup()]),
   });
 
-  // Step 4: Seat Map Configuration
-  readonly step4Form: FormGroup = this.fb.group({
+  // Step 3: Seat Map Configuration
+  readonly step3Form: FormGroup = this.fb.group({
     name: ['Main Layout', Validators.required],
   });
 
@@ -84,12 +83,13 @@ export class OrganizerPortalComponent implements OnInit {
     cols?: number;
     tierName?: string;
     labelPrefix?: string;
+    rotation?: number;
   }[]>([]);
 
   selectedItemId = signal<string | null>(null);
 
   get tiersArray(): FormArray {
-    return this.step3Form.get('tiers') as FormArray;
+    return this.step2Form.get('tiers') as FormArray;
   }
 
   createTierGroup(): FormGroup {
@@ -99,8 +99,8 @@ export class OrganizerPortalComponent implements OnInit {
       price: [0, [Validators.required, Validators.min(0)]],
       quantityTotal: [100, [Validators.required, Validators.min(1)]],
       colorCode: ['#2563EB'],
-      saleStart: [''],
-      saleEnd: [''],
+      saleStartDate: [''],
+      saleEndDate: ['']
     });
   }
 
@@ -144,7 +144,8 @@ export class OrganizerPortalComponent implements OnInit {
       rows: 5,
       cols: 10,
       labelPrefix: 'A',
-      tierName: this.getSeatedTiers()[0]?.name || ''
+      tierName: this.getSeatedTiers()[0]?.name || '',
+      rotation: 0
     }]);
   }
 
@@ -184,11 +185,21 @@ export class OrganizerPortalComponent implements OnInit {
     }
   }
 
-  getSelectedItem(): any {
+  getSelectedItem(): any | null {
     return this.draggableItems().find(i => i.id === this.selectedItemId()) || null;
   }
 
-  getTierColor(tierName: string | null): string {
+  getArray(n: any): number[] {
+    const size = Number(n) || 1;
+    return Array(size).fill(0).map((_, i) => i);
+  }
+
+  getRowLabel(prefix: string | null | undefined, rowIndex: number): string {
+    const baseCode = prefix ? prefix.charCodeAt(0) : 65; // Default to 'A'
+    return String.fromCharCode(baseCode + rowIndex);
+  }
+
+  getTierColor(tierName: string | null | undefined): string {
     if (!tierName) return 'transparent';
     const tier = this.tiersArray.value.find((t: any) => t.name === tierName);
     return tier?.colorCode || '#2563EB';
@@ -207,8 +218,8 @@ export class OrganizerPortalComponent implements OnInit {
   openCreateEvent(): void {
     this.currentStep.set(1);
     this.step1Form.reset();
-    this.step2Form.reset();
-    this.step3Form.setControl('tiers', this.fb.array([this.createTierGroup()]));
+    this.step2Form.setControl('tiers', this.fb.array([this.createTierGroup()]));
+    this.step3Form.reset({ name: 'Main Layout' });
     this.submitError.set(null);
     this.submitSuccess.set(false);
     this.activeTab.set('create-event');
@@ -235,7 +246,6 @@ export class OrganizerPortalComponent implements OnInit {
   // Build final payload from all steps
   buildPayload(): object {
     const s1 = this.step1Form.value;
-    const s2 = this.step2Form.value;
     const tiers = this.tiersArray.value;
 
     const profile = this.userProfile();
@@ -244,33 +254,19 @@ export class OrganizerPortalComponent implements OnInit {
 
     // Collect seats from drag & drop blocks
     const allSeats: any[] = [];
-    let seatMapConfig: any = { type: 'free-form', elements: [] };
+    let seatMapConfig: any = { type: 'free-form', elements: this.draggableItems() };
 
-    this.draggableItems().forEach(item => {
-      // save into layout config to redraw later
-      seatMapConfig.elements.push(item);
-
-      if (item.type === 'block') {
-        const r = item.rows || 1;
-        const c = item.cols || 1;
-        const pref = item.labelPrefix || 'A';
-        const tier = item.tierName;
-        
-        for (let rowIdx = 0; rowIdx < r; rowIdx++) {
-          const rowLabel = String.fromCharCode(pref.charCodeAt(0) + rowIdx);
-          for (let colIdx = 0; colIdx < c; colIdx++) {
-            // Compute absolute approx coordinates (seat width 30px, spacing 5px)
-            const absoluteX = item.x + (colIdx * 35);
-            const absoluteY = item.y + (rowIdx * 35);
-
-            allSeats.push({
-              seatCode: `${rowLabel}${colIdx + 1}`,
-              rowLabel: rowLabel,
-              colNumber: colIdx + 1,
-              ticketTierName: tier,
-              coordinates: `${absoluteX},${absoluteY}`
-            });
-          }
+    this.draggableItems().filter(i => i.type === 'block').forEach((block: any) => {
+      // Create individual seats for BE mapping
+      for (let r = 0; r < (block.rows || 1); r++) {
+        const rowLbl = this.getRowLabel(block.labelPrefix, r);
+        for (let c = 0; c < (block.cols || 1); c++) {
+          allSeats.push({
+            seatCode: `${rowLbl}${c + 1}`,
+            rowLabel: rowLbl,
+            colNumber: c + 1,
+            ticketTierName: block.tierName
+          });
         }
       }
     });
@@ -278,7 +274,7 @@ export class OrganizerPortalComponent implements OnInit {
     const seatMaps = [];
     if (allSeats.length > 0) {
       seatMaps.push({
-        name: this.step4Form.get('name')?.value || 'Main Layout',
+        name: this.step3Form.get('name')?.value || 'Main Layout',
         totalRows: 0, // Using free form
         totalCols: 0,
         layoutJson: JSON.stringify(seatMapConfig),
@@ -292,18 +288,18 @@ export class OrganizerPortalComponent implements OnInit {
       description: s1.description || '',
       startTime: s1.startTime ? new Date(s1.startTime).toISOString() : null,
       endTime: s1.endTime ? new Date(s1.endTime).toISOString() : null,
-      venue: s2.venue,
-      city: s2.city,
-      locationCoords: s2.locationCoords || null,
-      bannerUrl: s2.bannerUrl || null,
+      venue: s1.venue,
+      city: s1.city,
+      locationCoords: s1.locationCoords || null,
+      bannerUrl: this.normalizeImageUrl(s1.bannerUrl) || null,
       ticketTiers: tiers.map((t: any) => ({
         name: t.name,
         tierType: t.tierType,
         price: t.price,
         quantityTotal: t.quantityTotal,
         colorCode: t.colorCode || null,
-        saleStart: t.saleStart ? new Date(t.saleStart).toISOString() : null,
-        saleEnd: t.saleEnd ? new Date(t.saleEnd).toISOString() : null,
+        saleStart: t.saleStartDate ? new Date(t.saleStartDate).toISOString() : null,
+        saleEnd: t.saleEndDate ? new Date(t.saleEndDate).toISOString() : null
       })),
       seatMaps: seatMaps.length > 0 ? seatMaps : undefined
     };
@@ -354,4 +350,36 @@ export class OrganizerPortalComponent implements OnInit {
 
   // Keep old refs for dashboard tab compatibility
   readonly createEventForm: FormGroup = this.step1Form;
+
+  normalizeImageUrl(url: string | null | undefined): string {
+    if (!url) return '';
+    const gdriveRegex = /drive\.google\.com\/file\/d\/([^\/]+)/;
+    const match = url.match(gdriveRegex);
+    if (match && match[1]) {
+      // Use the thumbnail API which allows direct embedding and returns an image (w1000 is the max size)
+      return `https://drive.google.com/thumbnail?id=${match[1]}&sz=w1000`;
+    }
+    return url;
+  }
+
+  getNormalizedBannerUrl(): string {
+    return this.normalizeImageUrl(this.step1Form.get('bannerUrl')?.value);
+  }
+
+  getTotalCapacity(): number {
+    const tiers = this.tiersArray.value;
+    return tiers.reduce((acc: number, t: any) => acc + (Number(t.quantityTotal) || 0), 0);
+  }
+
+  getSafeMapUrl(): SafeResourceUrl | null {
+    const venue = this.step1Form.get('venue')?.value;
+    const city = this.step1Form.get('city')?.value;
+    if (!venue) return null;
+    
+    const address = city ? `${venue}, ${city}` : venue;
+    const query = encodeURIComponent(address);
+    // Use Google Maps iframe embed format
+    const url = `https://maps.google.com/maps?q=${query}&t=&z=14&ie=UTF8&iwloc=&output=embed`;
+    return this.sanitizer.bypassSecurityTrustResourceUrl(url);
+  }
 }
