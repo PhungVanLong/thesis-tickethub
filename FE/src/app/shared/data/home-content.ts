@@ -8,59 +8,84 @@ export interface FeaturedEvent {
   category: string;
   date: string;
   location: string;
-  price: string;
+  price?: string;
   image: string;
   alt: string;
+  buttonText?: string;
+}
+
+export interface PromoDeal {
+  eyebrow: string;
+  title: string;
+  buttonText: string;
+  image: string;
+  alt: string;
+  isTransparentButton?: boolean;
 }
 
 export const EVENT_CATEGORIES: EventCategory[] = [
-  { name: 'Âm nhạc', icon: '♪' },
-  { name: 'Sân khấu', icon: '◆' },
-  { name: 'Workshop', icon: '✦' },
-  { name: 'Thể thao', icon: '●' },
-  { name: 'Lễ hội', icon: '✹' },
-  { name: 'Gia đình', icon: '◎' },
+  { name: 'Concerts', icon: '🎵' },
+  { name: 'Sports', icon: '⚽' },
+  { name: 'Arts & Theater', icon: '🎭' },
+  { name: 'Family', icon: '👪' },
+  { name: 'Comedy', icon: '🗣️' },
+  { name: 'More', icon: '🏢' },
+];
+
+export const PROMO_DEALS: PromoDeal[] = [
+  {
+    eyebrow: 'LIVE NATION PRESENTS',
+    title: 'Summer of Live Lawn 4-Packs',
+    buttonText: 'See Deals',
+    image: 'https://images.unsplash.com/photo-1508098682722-e99c43a406b2?auto=format&fit=crop&w=700&q=80',
+    alt: 'Basketball court in a stadium'
+  },
+  {
+    eyebrow: 'CONFERENCE',
+    title: 'Future Systems Summit',
+    buttonText: 'Learn More',
+    image: 'https://images.unsplash.com/photo-1540575467063-178a50c2df87?auto=format&fit=crop&w=700&q=80',
+    alt: 'Auditorium stage with abstract background graphic',
+    isTransparentButton: true
+  }
 ];
 
 export const FEATURED_EVENTS: FeaturedEvent[] = [
   {
-    title: 'Rooftop Acoustic: Thành phố lên đèn',
-    category: 'Âm nhạc',
-    date: '22.06',
-    location: 'Chill Skybar, Quận 1',
-    price: '320.000đ',
-    image:
-      'https://images.unsplash.com/photo-1516280440614-37939bbacd81?auto=format&fit=crop&w=700&q=80',
-    alt: 'Ca sĩ biểu diễn dưới ánh đèn sân khấu',
+    title: 'Electric Horizon Festival',
+    category: 'Music',
+    date: 'NOV 24 • SUN • 8:00 PM',
+    location: 'Grand Arena • City Center',
+    image: 'https://images.unsplash.com/photo-1470225620780-dba8ba36b745?auto=format&fit=crop&w=700&q=80',
+    alt: 'Crowd at a concert with lights',
+    buttonText: 'See Tickets'
   },
   {
-    title: 'Múa đương đại: Những đường cong im lặng',
-    category: 'Sân khấu',
-    date: '25.06',
-    location: 'Nhà hát Thành phố',
-    price: '590.000đ',
-    image:
-      'https://images.unsplash.com/photo-1503095396549-807759245b35?auto=format&fit=crop&w=700&q=80',
-    alt: 'Sân khấu biểu diễn nghệ thuật với ánh đèn tím',
+    title: 'Global Championship Finals',
+    category: 'Sports',
+    date: 'DEC 12 • THU • 7:30 PM',
+    location: 'National Stadium • Sector 4',
+    image: 'https://images.unsplash.com/photo-1519766304817-4f37bda74a27?auto=format&fit=crop&w=700&q=80',
+    alt: 'Basketball match in progress',
+    buttonText: 'See Tickets'
   },
   {
-    title: 'Design Systems for Product Teams',
-    category: 'Workshop',
-    date: '29.06',
-    location: 'Dreamplex Nguyễn Trung Ngạn',
-    price: '250.000đ',
-    image:
-      'https://images.unsplash.com/photo-1517245386807-bb43f82c33c4?auto=format&fit=crop&w=700&q=80',
-    alt: 'Nhóm người tham gia workshop sáng tạo',
+    title: 'Future Systems Summit',
+    category: 'Conference',
+    date: 'JAN 18 • WED • 9:00 AM',
+    location: 'Tech Hub Center • Level 2',
+    image: 'https://images.unsplash.com/photo-1515187029135-18ee286d815b?auto=format&fit=crop&w=700&q=80',
+    alt: 'Presenter speaking on tech conference stage',
+    buttonText: 'See Tickets'
   },
   {
-    title: 'Summer Run Festival 2026',
-    category: 'Thể thao',
-    date: '05.07',
-    location: 'Công viên Sala',
-    price: '180.000đ',
-    image:
-      'https://images.unsplash.com/photo-1502224562085-639556652f33?auto=format&fit=crop&w=700&q=80',
-    alt: 'Vận động viên chạy bộ trên đường đua',
+    title: 'Season Passes 2026',
+    category: 'Passes',
+    date: 'NOW AVAILABLE NOW',
+    location: 'Multiple Locations • All Access',
+    image: '', // Will use custom blue container in html
+    alt: 'Blue ticket pass background',
+    buttonText: 'See Passes'
   },
 ];
+

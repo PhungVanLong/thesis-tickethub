@@ -1,29 +1,19 @@
-<section class="events-section" id="events" aria-labelledby="events-title">
-  <div class="section-heading inline">
-    <div>
-      <p class="eyebrow">Đang bán vé</p>
-      <h2 id="events-title">Sự kiện được quan tâm</h2>
-    </div>
-    <a class="text-link" href="#">Xem tất cả</a>
+<section class="events-section" id="events" aria-label="Featured Events">
+  <div class="section-heading">
+    <h2 id="events-title">{{ 'home.eventsLike' | translate }}</h2>
+    <a class="view-all" href="#">{{ 'home.viewAll' | translate }} <span class="arrow">→</span></a>
   </div>
 
-  <div class="event-grid">
+  <div class="events-grid">
     @for (event of events; track event.title) {
       <article class="event-card">
-        <img [src]="event.image" [alt]="event.alt" />
-        <div class="event-body">
-          <div class="event-meta">
-            <span class="category-pill">{{ event.category }}</span>
-            <span>{{ event.date }}</span>
-          </div>
-          <h3>{{ event.title }}</h3>
-          <p>{{ event.location }}</p>
-          <div class="event-footer">
-            <strong>{{ event.price }}</strong>
-            <button type="button">Mua vé</button>
-          </div>
+          <p class="event-meta">{{ event.date }}</p>
+          <h3 class="event-title">{{ event.title }}</h3>
+          <p class="event-location">{{ event.location }}</p>
+          <button type="button" class="btn-action">{{ event.buttonText || 'See Tickets' }}</button>
         </div>
       </article>
     }
   </div>
 </section>
+

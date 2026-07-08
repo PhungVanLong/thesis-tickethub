@@ -1,0 +1,80 @@
+/* ============================================================
+   WHY BOOK WITH TICKETHUB SECTION
+   ============================================================ */
+
+:host {
+  display: block;
+  background: #ffffff;
+  padding: 48px 0 64px;
+  border-top: 1px solid #f1f5f9;
+}
+
+.why-book-section {
+  width: min(1200px, calc(100% - 48px));
+  margin: 0 auto;
+  text-align: center;
+}
+
+h2 {
+  font-size: 28px;
+  font-weight: 700;
+  color: #0c162c;
+  margin-bottom: 48px;
+  letter-spacing: -0.01em;
+}
+
+.benefits-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 40px;
+}
+
+.benefit-col {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 0 16px;
+}
+
+.icon-wrapper {
+  margin-bottom: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.benefit-icon {
+  width: 32px;
+  height: 32px;
+  color: #0052cc; /* TicketHub Blue */
+}
+
+h3 {
+  font-size: 18px;
+  font-weight: 700;
+  color: #0c162c;
+  margin: 0 0 10px 0;
+}
+
+p {
+  font-size: 14px;
+  color: #718096;
+  line-height: 1.5;
+  margin: 0;
+  max-width: 280px;
+}
+
+/* ── Responsive adjustments ── */
+@media (max-width: 767px) {
+  .benefits-grid {
+    grid-template-columns: 1fr;
+    gap: 32px;
+  }
+  .why-book-section {
+    width: calc(100% - 32px);
+  }
+  h2 {
+    font-size: 22px;
+    margin-bottom: 32px;
+  }
+}

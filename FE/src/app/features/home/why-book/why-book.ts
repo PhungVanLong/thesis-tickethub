@@ -2,9 +2,10 @@ import { Component } from '@angular/core';
 import { TranslatePipe } from '../../../shared/pipes/translate.pipe';
 
 @Component({
-  selector: 'app-hero-section',
+  selector: 'app-why-book',
+  standalone: true,
   imports: [TranslatePipe],
-  templateUrl: './hero-section.html',
-  styleUrl: './hero-section.scss',
+  templateUrl: './why-book.html',
+  styleUrl: './why-book.scss',
 })
-export class HeroSection {}
+export class WhyBook {}
