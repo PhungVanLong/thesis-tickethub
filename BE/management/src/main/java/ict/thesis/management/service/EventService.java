@@ -7,6 +7,7 @@ import ict.thesis.management.dto.request.TicketTierRequest;
 import ict.thesis.management.dto.request.SeatRequest;
 import ict.thesis.management.dto.response.CreateEventResponse;
 import ict.thesis.management.dto.response.EventApprovalResponse;
+import ict.thesis.management.dto.response.EventResponse;
 import ict.thesis.management.entity.Events;
 import ict.thesis.management.entity.EventApprovals;
 import ict.thesis.management.entity.Organization;
@@ -406,6 +407,39 @@ public class EventService {
             event.getStatus(),
             savedApproval.getReason(),
             savedApproval.getDecidedAt()
+        );
+    }
+
+    @Transactional(readOnly = true)
+    public List<EventResponse> getAllEvents(EventStatus status) {
+        List<Events> list;
+        if (status == null) {
+            list = eventsRepository.findAll();
+        } else {
+            list = eventsRepository.findByStatus(status);
+        }
+        return list.stream()
+                   .map(this::toEventResponse)
+                   .toList();
+    }
+
+    private EventResponse toEventResponse(Events event) {
+        return new EventResponse(
+            event.getId(),
+            event.getOrganization() != null ? event.getOrganization().getId() : null,
+            event.getOrganization() != null ? event.getOrganization().getName() : null,
+            event.getTitle(),
+            event.getDescription(),
+            event.getVenue(),
+            event.getCity(),
+            event.getLocationCoords(),
+            event.getStartTime(),
+            event.getEndTime(),
+            event.getBannerUrl(),
+            event.getStatus(),
+            event.isPublished(),
+            event.getCreatedAt(),
+            event.getUpdatedAt()
         );
     }
 }

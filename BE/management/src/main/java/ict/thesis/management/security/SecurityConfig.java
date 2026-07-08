@@ -31,6 +31,7 @@ public class SecurityConfig {
                 // Organizations
                 .requestMatchers(HttpMethod.POST, "/api/organizations").hasAuthority("CUSTOMER")
                 .requestMatchers(HttpMethod.POST, "/api/organizations/*/verify").hasAuthority("ADMIN")
+                .requestMatchers(HttpMethod.GET, "/api/organizations").hasAuthority("ADMIN")
                 
                 // Events
                 .requestMatchers(HttpMethod.POST, "/api/events/create").hasAnyAuthority("ORGANIZER", "STAFF")

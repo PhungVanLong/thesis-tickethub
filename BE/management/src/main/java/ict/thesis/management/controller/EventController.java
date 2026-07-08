@@ -15,6 +15,11 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import ict.thesis.management.dto.response.EventResponse;
+import ict.thesis.management.entity.enums.EventStatus;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import java.util.List;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -25,6 +30,13 @@ public class EventController {
 
     public EventController(EventService eventService) {
         this.eventService = eventService;
+    }
+
+    @GetMapping
+    public ResponseEntity<List<EventResponse>> getAllEvents(
+        @RequestParam(required = false) EventStatus status
+    ) {
+        return ResponseEntity.ok(eventService.getAllEvents(status));
     }
 
     @PostMapping("/create")
