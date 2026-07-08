@@ -71,7 +71,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  background: linear-gradient(135deg, #059669, #10b981);
+  background: linear-gradient(135deg, #0052cc, #478dfc);
   color: #ffffff;
   font-size: 54px;
   font-weight: 700;
@@ -84,8 +84,8 @@
 
 .user-role-badge {
   display: inline-block;
-  background: #ecfdf5;
-  color: #059669;
+  background: #e6f0ff;
+  color: #0052cc;
   padding: 4px 12px;
   border-radius: 20px;
   font-size: 12px;
@@ -144,8 +144,8 @@
   }
 
   &:focus-within {
-    border-color: #059669;
-    box-shadow: 0 0 0 3px rgba(5, 150, 105, 0.15);
+    border-color: #0052cc;
+    box-shadow: 0 0 0 3px rgba(0, 82, 204, 0.15);
   }
 
   &.has-error {
@@ -177,7 +177,7 @@
   height: 48px;
   border-radius: 8px;
   border: none;
-  background: #059669;
+  background: #0052cc;
   color: #ffffff;
   font-size: 15px;
   font-weight: 600;
@@ -190,7 +190,7 @@
   margin-top: 10px;
 
   &:hover {
-    background: #047857;
+    background: #0043b3;
   }
 
   &:active {
@@ -198,7 +198,7 @@
   }
 
   &:disabled {
-    background: #a7f3d0;
+    background: #99c2ff;
     cursor: not-allowed;
   }
 }
@@ -222,9 +222,9 @@
 }
 
 .alert-success {
-  background: #ecfdf5;
-  color: #065f46;
-  border-left: 4px solid #059669;
+  background: #e6f7ed;
+  color: #1e7e34;
+  border-left: 4px solid #28a745;
 }
 
 /* Skeleton Loading */
