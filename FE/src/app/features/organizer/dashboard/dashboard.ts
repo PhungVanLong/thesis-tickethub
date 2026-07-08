@@ -86,7 +86,7 @@ export class OrganizationDashboardComponent implements OnInit {
     effect(() => {
       const profile = this.userProfile();
       if (profile) {
-        if (profile.role === 'ORGANIZER') {
+        if (profile.role?.includes('ORGANIZER')) {
           this.isPendingApproval.set(false);
           localStorage.removeItem('pendingOrgReg');
         }
@@ -97,9 +97,9 @@ export class OrganizationDashboardComponent implements OnInit {
   ngOnInit(): void {
     // Initial check for pending status in local storage
     const isPending = localStorage.getItem('pendingOrgReg') === 'true';
-    const role = this.userProfile()?.role;
+    const role = this.userProfile()?.role || '';
     
-    if (isPending && role !== 'ORGANIZER') {
+    if (isPending && !role.includes('ORGANIZER')) {
       this.isPendingApproval.set(true);
     }
   }

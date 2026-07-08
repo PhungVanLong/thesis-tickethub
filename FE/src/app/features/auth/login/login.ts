@@ -42,7 +42,17 @@ export class LoginComponent {
 
     this.authService.login({ email, password }).subscribe({
       next: () => {
-        this.router.navigate(['/']);
+        // Wait for profile to load then redirect based on role
+        this.authService.getProfile().subscribe({
+          next: (profile) => {
+            if (profile?.role === 'ADMIN') {
+              this.router.navigate(['/admin']);
+            } else {
+              this.router.navigate(['/']);
+            }
+          },
+          error: () => this.router.navigate(['/'])
+        });
       },
       error: (err) => {
         console.error('Đăng nhập thất bại:', err);

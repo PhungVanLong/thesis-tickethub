@@ -21,6 +21,12 @@ export class Navigation {
   
   readonly currentLang = this.langService.currentLang;
 
+  get isOrganizer(): boolean {
+    const role = this.authService.currentUserProfile()?.role;
+    if (!role) return false;
+    return role.includes('ORGANIZER');
+  }
+
   getInitials(name: string | null | undefined): string {
     if (!name) {
       return 'U';

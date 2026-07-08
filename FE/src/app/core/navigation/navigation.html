@@ -14,7 +14,13 @@
 
     <div class="nav-actions">
       <!-- Đăng ký làm tổ chức (Visible always) -->
-      <a class="header-link organizer-link" routerLink="/organization-dashboard">{{ 'nav.organizer' | translate }}</a>
+      @if (!currentUserToken()) {
+        <a class="header-link organizer-link" routerLink="/login">{{ 'nav.createOrganizer' | translate }}</a>
+      } @else if (isOrganizer) {
+        <a class="header-link organizer-link" href="/organizer/dashboard" target="_blank">{{ 'nav.organizer' | translate }}</a>
+      } @else {
+        <a class="header-link organizer-link" routerLink="/organization-dashboard">{{ 'nav.createOrganizer' | translate }}</a>
+      }
 
       @if (currentUserToken()) {
         <!-- Vé của tôi (Only when logged in) -->

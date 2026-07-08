@@ -1,0 +1,885 @@
+<div class="organizer-layout">
+  <!-- Sidebar -->
+  <aside class="sidebar">
+    <div class="sidebar-brand">
+      <div class="brand-icon">🎫</div>
+      <div class="brand-text">
+        <span class="brand-name">TicketHub</span>
+        <span class="brand-sub">Organizer Dashboard</span>
+      </div>
+    </div>
+
+    <nav class="sidebar-nav">
+      <a (click)="activeTab.set('dashboard')" class="nav-item" [class.active]="activeTab() === 'dashboard'">
+        <span class="nav-icon">📊</span>
+        <span class="nav-label">Dashboard</span>
+      </a>
+
+      <a (click)="activeTab.set('events')" class="nav-item" [class.active]="activeTab() === 'events'">
+        <span class="nav-icon">📅</span>
+        <span class="nav-label">Events</span>
+      </a>
+
+      <a (click)="activeTab.set('create-event')" class="nav-item" [class.active]="activeTab() === 'create-event'">
+        <span class="nav-icon">➕</span>
+        <span class="nav-label">Create Event</span>
+      </a>
+
+      <a (click)="activeTab.set('staff')" class="nav-item" [class.active]="activeTab() === 'staff'">
+        <span class="nav-icon">👥</span>
+        <span class="nav-label">Staff Management</span>
+      </a>
+    </nav>
+  </aside>
+
+  <!-- Main Content -->
+  <div class="main-wrapper">
+    <!-- Topbar -->
+    <header class="topbar">
+      <div class="topbar-search">
+        <svg class="search-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+        <input type="text" placeholder="Search events, orders, or staff..." />
+      </div>
+
+      <div class="topbar-actions">
+        <!-- Language Dropdown Switcher -->
+        <div class="lang-dropdown-wrapper">
+          <button type="button" class="lang-btn" (click)="toggleLangDropdown($event)">
+            @if (currentLang() === 'Vie') {
+              <svg class="flag-icon-svg" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                <circle cx="12" cy="12" r="10" fill="#da251d"/>
+                <polygon points="12,7.5 13.18,11.13 17,11.13 13.91,13.38 15.09,17.01 12,14.75 8.91,17.01 10.09,13.38 7,11.13 10.82,11.13" fill="#ffff00"/>
+              </svg>
+            } @else {
+              <svg class="flag-icon-svg" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                <mask id="circle-mask-trigger-portal">
+                  <circle cx="12" cy="12" r="10" fill="#ffffff" />
+                </mask>
+                <g mask="url(#circle-mask-trigger-portal)">
+                  <rect width="24" height="24" fill="#012169" />
+                  <path d="M0 0 L24 24 M24 0 L0 24" stroke="#ffffff" stroke-width="3" />
+                  <path d="M0 0 L24 24 M24 0 L0 24" stroke="#c8102e" stroke-width="1.5" />
+                  <path d="M12 0 V24 M0 12 H24" stroke="#ffffff" stroke-width="5" />
+                  <path d="M12 0 V24 M0 12 H24" stroke="#c8102e" stroke-width="3" />
+                </g>
+              </svg>
+            }
+            <span class="lang-label-text">{{ currentLang() }}</span>
+            <span class="caret-icon" [class.open]="showLangDropdown()">▼</span>
+          </button>
+
+          @if (showLangDropdown()) {
+            <div class="lang-dropdown-menu">
+              <button type="button" class="lang-dropdown-item" (click)="setLanguage('Vie')">
+                <svg class="flag-icon-svg-menu" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                  <circle cx="12" cy="12" r="10" fill="#da251d"/>
+                  <polygon points="12,7.5 13.18,11.13 17,11.13 13.91,13.38 15.09,17.01 12,14.75 8.91,17.01 10.09,13.38 7,11.13 10.82,11.13" fill="#ffff00"/>
+                </svg>
+                <span>Tiếng Việt</span>
+              </button>
+              <button type="button" class="lang-dropdown-item" (click)="setLanguage('Eng')">
+                <svg class="flag-icon-svg-menu" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                  <mask id="circle-mask-menu-portal">
+                    <circle cx="12" cy="12" r="10" fill="#ffffff" />
+                  </mask>
+                  <g mask="url(#circle-mask-menu-portal)">
+                    <rect width="24" height="24" fill="#012169" />
+                    <path d="M0 0 L24 24 M24 0 L0 24" stroke="#ffffff" stroke-width="3" />
+                    <path d="M0 0 L24 24 M24 0 L0 24" stroke="#c8102e" stroke-width="1.5" />
+                    <path d="M12 0 V24 M0 12 H24" stroke="#ffffff" stroke-width="5" />
+                    <path d="M12 0 V24 M0 12 H24" stroke="#c8102e" stroke-width="3" />
+                  </g>
+                </svg>
+                <span>English</span>
+              </button>
+            </div>
+          }
+        </div>
+
+        <button class="create-event-topbar-btn" (click)="activeTab.set('create-event')">Create Event</button>
+        <button class="bell-btn" title="Notifications"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg></button>
+        
+        <div class="user-avatar-topbar">
+          {{ userInitial }}
+        </div>
+      </div>
+    </header>
+
+    <!-- Page Body -->
+    <main class="page-content">
+      @if (activeTab() === 'dashboard') {
+        <!-- Title & Time Filter -->
+        <div class="content-header">
+          <div class="greeting-box">
+            <h1 class="welcome-title">Good morning, TicketHub</h1>
+            <p class="welcome-subtitle">Here's what's happening across your organization today.</p>
+          </div>
+          <div class="time-filter-toggle">
+            <button class="time-btn active">Today</button>
+            <button class="time-btn">7 Days</button>
+            <button class="time-btn">30 Days</button>
+          </div>
+        </div>
+
+        <!-- Main Columns Grid -->
+        <div class="portal-grid">
+          <!-- Left Big Column -->
+          <div class="grid-left-col">
+            <!-- Metrics Row -->
+            <div class="metrics-row">
+              <!-- Total Revenue -->
+              <div class="metric-card">
+                <div class="metric-card-header">
+                  <span class="metric-title">Total Revenue</span>
+                  <span class="metric-icon-box box-blue">💵</span>
+                </div>
+                <div class="metric-value-row">
+                  <span class="metric-value">$1.2M</span>
+                  <span class="metric-trend trend-up">↗12%</span>
+                </div>
+                <!-- Mini Bar Chart Mockup -->
+                <div class="mini-bar-chart">
+                  <div class="bar bar-1"></div>
+                  <div class="bar bar-2"></div>
+                  <div class="bar bar-3"></div>
+                  <div class="bar bar-4"></div>
+                  <div class="bar bar-5"></div>
+                </div>
+              </div>
+
+              <!-- Tickets Sold -->
+              <div class="metric-card">
+                <div class="metric-card-header">
+                  <span class="metric-title">Tickets Sold</span>
+                  <span class="metric-icon-box box-indigo">🎟️</span>
+                </div>
+                <div class="metric-value-row">
+                  <span class="metric-value">45k</span>
+                  <span class="metric-trend trend-up">↗8.4%</span>
+                </div>
+                <div class="mini-bar-chart">
+                  <div class="bar bar-1"></div>
+                  <div class="bar bar-2"></div>
+                  <div class="bar bar-3"></div>
+                  <div class="bar bar-4"></div>
+                  <div class="bar bar-5"></div>
+                </div>
+              </div>
+
+              <!-- Active Events -->
+              <div class="metric-card">
+                <div class="metric-card-header">
+                  <span class="metric-title">Active Events</span>
+                  <span class="metric-icon-box box-green">📅</span>
+                </div>
+                <div class="metric-value-row">
+                  <span class="metric-value">12</span>
+                  <span class="metric-trend trend-neutral">No change</span>
+                </div>
+                <div class="mini-bar-chart">
+                  <div class="bar bar-5"></div>
+                  <div class="bar bar-5"></div>
+                  <div class="bar bar-5"></div>
+                  <div class="bar bar-5"></div>
+                  <div class="bar bar-5"></div>
+                </div>
+              </div>
+
+              <!-- Check-in Rate -->
+              <div class="metric-card">
+                <div class="metric-card-header">
+                  <span class="metric-title">Check-in Rate</span>
+                  <span class="metric-icon-box box-teal">👤</span>
+                </div>
+                <div class="metric-value-row">
+                  <span class="metric-value">88%</span>
+                  <span class="metric-trend trend-down">↘2%</span>
+                </div>
+                <div class="mini-bar-chart">
+                  <div class="bar bar-5"></div>
+                  <div class="bar bar-4"></div>
+                  <div class="bar bar-3"></div>
+                  <div class="bar bar-2"></div>
+                  <div class="bar bar-1"></div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Live Pulse Section -->
+            <div class="live-pulse-card">
+              <div class="live-header">
+                <span class="live-badge-dot">● LIVE PULSE</span>
+                <h2 class="live-event-title">Cyber-Glow Music Festival</h2>
+                <span class="live-venue-desc">Main Stage Entrance • District 4</span>
+              </div>
+              
+              <div class="live-stats-row">
+                <div class="live-stat-item">
+                  <span class="live-stat-label">Active Staff</span>
+                  <span class="live-stat-val">142</span>
+                </div>
+                <div class="live-stat-item border-left">
+                  <span class="live-stat-label">Current Flow</span>
+                  <span class="live-stat-val">85/min</span>
+                </div>
+              </div>
+
+              <div class="live-progress-container">
+                <div class="progress-labels">
+                  <span class="progress-lbl">Check-in Progress</span>
+                  <span class="progress-percent">67% <span class="progress-detail">(12,400 / 18,500)</span></span>
+                </div>
+                <div class="progress-bar-bg">
+                  <div class="progress-bar-fill" style="width: 67%"></div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Recent Activity -->
+            <div class="recent-activity-card">
+              <h3 class="recent-title">Recent Activity</h3>
+              <div class="activity-timeline">
+                <div class="activity-item">
+                  <div class="timeline-dot"></div>
+                  <div class="activity-desc">
+                    <span class="activity-text"><strong>New Ticket Tier</strong> created for "Summer Solstice Gala"</span>
+                    <span class="activity-time">2 minutes ago • Alex Johnson</span>
+                  </div>
+                </div>
+                <div class="activity-item">
+                  <div class="timeline-dot"></div>
+                  <div class="activity-desc">
+                    <span class="activity-text"><strong>Bulk Checkout</strong> completed: 50x VIP Passes</span>
+                    <span class="activity-time">15 minutes ago • Order #8842</span>
+                  </div>
+                </div>
+                <div class="activity-item">
+                  <div class="timeline-dot"></div>
+                  <div class="activity-desc">
+                    <span class="activity-text"><strong>Staff Role Updated</strong>: Sarah M. moved to Lead Supervisor</span>
+                    <span class="activity-time">1 hour ago • Organization Admin</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Right Side Column -->
+          <div class="grid-right-col">
+            <!-- Action Required -->
+            <div class="action-required-card">
+              <div class="action-header">
+                <h3 class="action-title">Action Required</h3>
+                <span class="action-count-badge">6</span>
+              </div>
+              
+              <div class="action-items-list">
+                <div class="action-item-row">
+                  <span class="action-icon">📋</span>
+                  <span class="action-text-main">3 Pending Approvals</span>
+                  <span class="action-chevron">›</span>
+                </div>
+                <div class="action-item-row">
+                  <span class="action-icon">⚠️</span>
+                  <span class="action-text-main">2 Low Stock Alerts</span>
+                  <span class="action-chevron">›</span>
+                </div>
+                <div class="action-item-row">
+                  <span class="action-icon">👥</span>
+                  <span class="action-text-main">1 New Staff Request</span>
+                  <span class="action-chevron">›</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Quick Actions Button Group -->
+            <div class="quick-actions-card">
+              <button class="action-big-btn btn-solid-blue" (click)="activeTab.set('create-event')">
+                <span class="btn-left">➕ Create Event</span>
+                <span class="btn-arrow">→</span>
+              </button>
+              <button class="action-big-btn btn-gray-soft">
+                <span class="btn-left">👥 Invite Staff</span>
+                <span class="btn-arrow">→</span>
+              </button>
+              <button class="action-big-btn btn-gray-soft">
+                <span class="btn-left">📊 View Analytics</span>
+                <span class="btn-arrow">→</span>
+              </button>
+            </div>
+
+            <!-- Lead Supervisors on Duty -->
+            <div class="supervisors-card">
+              <h4 class="supervisors-title">Lead Supervisors On Duty</h4>
+              <div class="supervisors-avatars-row">
+                <div class="avatar-circle">AJ</div>
+                <div class="avatar-circle">SM</div>
+                <div class="avatar-circle">TL</div>
+                <div class="avatar-circle">KV</div>
+                <div class="avatar-circle-more">+8</div>
+              </div>
+              <a href="#" class="comm-link">Open Staff Comm Link ↗</a>
+            </div>
+          </div>
+        </div>
+      } @else if (activeTab() === 'create-event') {
+        <!-- Create Event View matching mockup image -->
+        <div class="create-event-container">
+          <!-- Steps Progress Header -->
+          <div class="steps-progress-bar">
+            @for (step of steps; track step.label; let i = $index) {
+              <div class="step" [class.active]="currentStep() === i + 1" [class.completed]="currentStep() > i + 1" (click)="goToStep(i + 1)">
+                <div class="step-badge">
+                  @if (currentStep() > i + 1) {
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" width="14" height="14"><polyline points="20 6 9 17 4 12"/></svg>
+                  } @else {
+                    {{ i + 1 }}
+                  }
+                </div>
+                <span class="step-label">{{ step.label }}</span>
+              </div>
+              @if (i < steps.length - 1) {
+                <div class="step-divider" [class.done]="currentStep() > i + 1"></div>
+              }
+            }
+          </div>
+
+          <!-- Step 1: Event Info -->
+          @if (currentStep() === 1) {
+            <form [formGroup]="step1Form" class="create-event-grid">
+              <!-- Left Column: Form Card -->
+              <div class="form-card">
+                <div class="form-section-title">Basic Information</div>
+
+                <div class="form-group">
+                  <label class="form-lbl" for="eventTitle">Event Title <span class="required-star">*</span></label>
+                  <input id="eventTitle" type="text" class="form-input" formControlName="title" placeholder="e.g. Global Tech Summit 2024" />
+                </div>
+
+                <div class="form-group">
+                  <label class="form-lbl" for="eventCategory">Category <span class="required-star">*</span></label>
+                  <select id="eventCategory" class="form-select" formControlName="category">
+                    <option value="" disabled>Select a category</option>
+                    <option value="Concerts">🎵 Concerts</option>
+                    <option value="Sports">⚽ Sports</option>
+                    <option value="Arts">🎭 Arts &amp; Theater</option>
+                    <option value="Family">👨‍👩‍👧 Family</option>
+                    <option value="Conference">💼 Conference</option>
+                    <option value="Festival">🎉 Festival</option>
+                    <option value="Exhibition">🖼️ Exhibition</option>
+                  </select>
+                </div>
+
+                <div class="form-group">
+                  <label class="form-lbl" for="eventDesc">Description</label>
+                  <textarea id="eventDesc" class="form-textarea" rows="5" formControlName="description" placeholder="Provide a detailed description of your event..."></textarea>
+                </div>
+
+                <div class="form-row-dates">
+                  <div class="form-group flex-1">
+                    <label class="form-lbl" for="startTime">Start Date &amp; Time <span class="required-star">*</span></label>
+                    <input id="startTime" type="datetime-local" class="form-input-date" formControlName="startTime" />
+                  </div>
+                  <div class="form-group flex-1">
+                    <label class="form-lbl" for="endTime">End Date &amp; Time <span class="required-star">*</span></label>
+                    <input id="endTime" type="datetime-local" class="form-input-date" formControlName="endTime" />
+                  </div>
+                </div>
+
+                <!-- Step Action Buttons -->
+                <div class="step-actions end">
+                  <button type="button" class="step-btn-next" [disabled]="step1Form.invalid" (click)="nextStep()">
+                    Next: Venue →
+                  </button>
+                </div>
+              </div>
+
+              <!-- Right Column: Poster Upload Card -->
+              <div class="poster-upload-card">
+                <div class="upload-area">
+                  <div class="upload-icon-box">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="#2563eb" stroke-width="1.5" width="32" height="32">
+                      <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
+                      <circle cx="8.5" cy="8.5" r="1.5"/>
+                      <polyline points="21 15 16 10 5 21"/>
+                    </svg>
+                  </div>
+                  <h3 class="upload-title">Event Poster</h3>
+                  <p class="upload-desc">Drag and drop or click to upload.<br>Recommended size: 1080×1350px (4:5 ratio).</p>
+                  <button type="button" class="choose-file-btn">Choose File</button>
+                </div>
+                <div class="upload-tips">
+                  <div class="tip-header">💡 Tips</div>
+                  <ul class="tip-list">
+                    <li>Use high-resolution images (min 1080px wide)</li>
+                    <li>Supported formats: JPG, PNG, WEBP</li>
+                    <li>Max file size: 5MB</li>
+                    <li>Portrait orientation works best (4:5)</li>
+                  </ul>
+                </div>
+              </div>
+            </form>
+          }
+
+          <!-- Step 2: Venue -->
+          @if (currentStep() === 2) {
+            <form [formGroup]="step2Form" class="create-event-grid">
+              <div class="form-card">
+                <div class="form-section-title">Venue &amp; Location</div>
+
+                <div class="form-group">
+                  <label class="form-lbl" for="venueField">Venue Name <span class="required-star">*</span></label>
+                  <input id="venueField" type="text" class="form-input" formControlName="venue" placeholder="e.g. Grand Convention Center, Nhà Văn Hóa Thanh Niên" />
+                </div>
+
+                <div class="form-group">
+                  <label class="form-lbl" for="cityField">City <span class="required-star">*</span></label>
+                  <select id="cityField" class="form-select" formControlName="city">
+                    <option value="" disabled>Select a city</option>
+                    <option value="Ho Chi Minh City">🏙️ Ho Chi Minh City</option>
+                    <option value="Hanoi">🏛️ Hanoi</option>
+                    <option value="Da Nang">🌊 Da Nang</option>
+                    <option value="Can Tho">🌿 Can Tho</option>
+                    <option value="Hue">🏯 Hue</option>
+                    <option value="Nha Trang">🏖️ Nha Trang</option>
+                    <option value="Da Lat">🌸 Da Lat</option>
+                  </select>
+                </div>
+
+                <div class="form-group">
+                  <label class="form-lbl" for="coordsField">
+                    GPS Coordinates
+                    <span class="form-hint">(optional — format: lat,lng e.g. 10.7769,106.7009)</span>
+                  </label>
+                  <input id="coordsField" type="text" class="form-input" formControlName="locationCoords" placeholder="10.7769,106.7009" />
+                </div>
+
+                <div class="form-group">
+                  <label class="form-lbl" for="bannerUrlField">
+                    Banner / Poster URL
+                    <span class="form-hint">(optional — direct image link)</span>
+                  </label>
+                  <input id="bannerUrlField" type="url" class="form-input" formControlName="bannerUrl" placeholder="https://cdn.example.com/banner.jpg" />
+                  @if (step2Form.get('bannerUrl')?.value) {
+                    <div class="banner-preview-box">
+                      <img [src]="step2Form.get('bannerUrl')?.value" alt="Banner preview" class="banner-preview-img" (error)="$any($event.target).style.display='none'" />
+                    </div>
+                  }
+                </div>
+
+                <div class="step-actions">
+                  <button type="button" class="step-btn-back" (click)="prevStep()">← Back</button>
+                  <button type="button" class="step-btn-next" [disabled]="step2Form.invalid" (click)="nextStep()">Next: Ticket Tiers →</button>
+                </div>
+              </div>
+
+              <!-- Right: Venue Tips -->
+              <div class="poster-upload-card">
+                <div class="upload-tips" style="margin:0">
+                  <div class="tip-header">📍 Venue Tips</div>
+                  <ul class="tip-list">
+                    <li>Enter the exact name as it appears on maps</li>
+                    <li>GPS coordinates help customers find the venue easily</li>
+                    <li>Banner URL should be a publicly accessible image link</li>
+                    <li>Recommended banner ratio: 16:9 or 4:3</li>
+                  </ul>
+                </div>
+                <div class="venue-info-card">
+                  <div class="venue-info-title">📌 Selected Location</div>
+                  @if (step2Form.get('venue')?.value || step2Form.get('city')?.value) {
+                    <div class="venue-info-detail">
+                      <div class="venue-name-preview">{{ step2Form.get('venue')?.value || '—' }}</div>
+                      <div class="venue-city-preview">{{ step2Form.get('city')?.value || '—' }}</div>
+                      @if (step2Form.get('locationCoords')?.value) {
+                        <div class="venue-coords-preview">📍 {{ step2Form.get('locationCoords')?.value }}</div>
+                      }
+                    </div>
+                  } @else {
+                    <div class="venue-info-empty">Fill in venue details on the left to see a preview here.</div>
+                  }
+                </div>
+              </div>
+            </form>
+          }
+
+          <!-- Step 3: Ticket Tiers -->
+          @if (currentStep() === 3) {
+            <div class="step-full-card" [formGroup]="step3Form">
+              <div class="step-full-header">
+                <div>
+                  <div class="form-section-title">Ticket Tiers</div>
+                  <p class="step-subtitle">Define pricing and capacity for each ticket category.</p>
+                </div>
+                <button type="button" class="add-tier-btn" (click)="addTier()">
+                  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="16" height="16"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                  Add Tier
+                </button>
+              </div>
+
+              <div formArrayName="tiers" class="tiers-list">
+                @for (tier of tiersArray.controls; track $index; let i = $index) {
+                  <div [formGroupName]="i" class="tier-row-card">
+                    <div class="tier-row-header">
+                      <div class="tier-row-num">
+                        <span class="tier-badge">Tier {{ i + 1 }}</span>
+                      </div>
+                      @if (tiersArray.length > 1) {
+                        <button type="button" class="remove-tier-btn" (click)="removeTier(i)" title="Remove tier">
+                          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4h6v2"/></svg>
+                        </button>
+                      }
+                    </div>
+
+                    <div class="tier-row-body">
+                      <div class="form-group">
+                        <label class="form-lbl">Tier Name <span class="required-star">*</span></label>
+                        <input type="text" class="form-input" formControlName="name" placeholder="e.g. VIP, General, Early Bird" />
+                      </div>
+
+                      <div class="form-group">
+                        <label class="form-lbl">Type <span class="required-star">*</span></label>
+                        <select class="form-select" formControlName="tierType">
+                          <option value="STANDING">🧍 Standing (no assigned seat)</option>
+                          <option value="SEATED">💺 Seated (assigned seat)</option>
+                        </select>
+                      </div>
+
+                      <div class="form-group">
+                        <label class="form-lbl">Price (VND) <span class="required-star">*</span></label>
+                        <input type="number" class="form-input" formControlName="price" min="0" placeholder="0" />
+                      </div>
+
+                      <div class="form-group">
+                        <label class="form-lbl">Quantity <span class="required-star">*</span></label>
+                        <input type="number" class="form-input" formControlName="quantityTotal" min="1" placeholder="100" />
+                      </div>
+
+                      <div class="form-group">
+                        <label class="form-lbl">Color</label>
+                        <div class="color-input-row">
+                          <input type="color" class="color-picker" formControlName="colorCode" />
+                          <input type="text" class="form-input color-hex-input" formControlName="colorCode" placeholder="#2563EB" />
+                        </div>
+                      </div>
+
+                      <div class="form-group">
+                        <label class="form-lbl">Sale Start</label>
+                        <input type="datetime-local" class="form-input-date" formControlName="saleStart" />
+                      </div>
+
+                      <div class="form-group">
+                        <label class="form-lbl">Sale End</label>
+                        <input type="datetime-local" class="form-input-date" formControlName="saleEnd" />
+                      </div>
+                    </div>
+                  </div>
+                }
+              </div>
+
+              <div class="step-actions">
+                <button type="button" class="step-btn-back" (click)="prevStep()">← Back</button>
+                <button type="button" class="step-btn-next" [disabled]="step3Form.invalid" (click)="nextStep()">Next: Seat Map →</button>
+              </div>
+            </div>
+          }
+
+          <!-- Step 4: Seat Map -->
+          @if (currentStep() === 4) {
+            <div class="step-full-card seat-map-card">
+              <div class="step-full-header">
+                <div>
+                  <div class="form-section-title">Seat Map Configuration</div>
+                  <p class="step-subtitle">Draw your interactive seat map if you have seated ticket tiers.</p>
+                </div>
+              </div>
+
+              <!-- Only show tools if there are SEATED tiers -->
+              @if (getSeatedTiers().length > 0) {
+                <div class="seat-map-builder" [formGroup]="step4Form">
+                  <!-- Toolbar -->
+                  <div class="seat-map-toolbar">
+                    <div class="form-group grid-settings">
+                      <label class="form-lbl">Map Name</label>
+                      <input type="text" class="form-input sm-input" formControlName="name" placeholder="Main Layout" />
+                    </div>
+                    <button type="button" class="btn-generate-grid" (click)="addStage()">➕ Add Stage</button>
+                    <button type="button" class="btn-generate-grid" (click)="addSeatBlock()">➕ Add Seat Block</button>
+                  </div>
+
+                  <div class="seat-map-workspace">
+                    <!-- Left Panel: Properties Tools -->
+                    <div class="tier-tools-panel">
+                      @if (getSelectedItem(); as item) {
+                        <div class="tier-tools-title">Properties</div>
+                        
+                        @if (item.type === 'block') {
+                          <div class="prop-group">
+                            <label class="form-lbl">Rows</label>
+                            <input type="number" class="form-input sm-input" [value]="item.rows" (change)="updateSelectedItem('rows', $any($event.target).value)" min="1" max="100"/>
+                          </div>
+                          <div class="prop-group">
+                            <label class="form-lbl">Cols</label>
+                            <input type="number" class="form-input sm-input" [value]="item.cols" (change)="updateSelectedItem('cols', $any($event.target).value)" min="1" max="100"/>
+                          </div>
+                          <div class="prop-group">
+                            <label class="form-lbl">Row Label Prefix</label>
+                            <input type="text" class="form-input sm-input" [value]="item.labelPrefix" (change)="updateSelectedItem('labelPrefix', $any($event.target).value)" />
+                          </div>
+                          <div class="prop-group">
+                            <label class="form-lbl">Assign Tier</label>
+                            <select class="form-select sm-input" [value]="item.tierName" (change)="updateSelectedItem('tierName', $any($event.target).value)">
+                              @for (tier of getSeatedTiers(); track tier.name) {
+                                <option [value]="tier.name">{{ tier.name }}</option>
+                              }
+                            </select>
+                          </div>
+                        } @else {
+                          <div class="prop-group">
+                            <p>Stage element. No properties to configure.</p>
+                          </div>
+                        }
+
+                        <button type="button" class="btn-remove-item" (click)="removeDraggableItem(item.id)">🗑️ Remove Selected</button>
+                      } @else {
+                        <div class="tier-tools-instructions">
+                          <p>💡 Select an element on the canvas to configure its properties.</p>
+                        </div>
+                      }
+                    </div>
+
+                    <!-- Right Panel: Canvas -->
+                    <div class="grid-canvas-container">
+                      <div class="canvas-boundary">
+                        @for (item of draggableItems(); track item.id) {
+                          <div class="draggable-item" 
+                               [class.selected]="selectedItemId() === item.id"
+                               cdkDrag 
+                               cdkDragBoundary=".canvas-boundary" 
+                               [cdkDragFreeDragPosition]="{x: item.x, y: item.y}"
+                               (cdkDragEnded)="onDragEnded($event, item)"
+                               (click)="selectItem(item.id)">
+                            
+                            @if (item.type === 'stage') {
+                              <div class="stage-element">
+                                Stage
+                              </div>
+                            } @else if (item.type === 'block') {
+                              <div class="block-element" [style.background]="getTierColor(item.tierName || null)">
+                                <span class="block-label">{{ item.rows }}x{{ item.cols }} ({{ item.tierName }})</span>
+                              </div>
+                            }
+                          </div>
+                        }
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              } @else {
+                <div class="no-seated-tiers-msg">
+                  <p>You don't have any SEATED ticket tiers. Seat map is only available for assigned seating.</p>
+                  <p>Skip this step or go back to add a seated tier.</p>
+                </div>
+              }
+
+              <div class="step-actions">
+                <button type="button" class="step-btn-back" (click)="prevStep()">← Back</button>
+                <button type="button" class="step-btn-next" [disabled]="getSeatedTiers().length > 0 && draggableItems().length === 0" (click)="nextStep()">Next: Review →</button>
+              </div>
+            </div>
+          }
+
+          <!-- Step 5: Review -->
+          @if (currentStep() === 5) {
+            <div class="step-full-card review-card">
+              <div class="form-section-title">Review Your Event</div>
+              <p class="step-subtitle">Please verify all details before submitting.</p>
+
+              <!-- Event Info Section -->
+              <div class="review-section">
+                <div class="review-section-header">
+                  <span class="review-section-icon">📋</span>
+                  <span class="review-section-title">Event Info</span>
+                  <button type="button" class="review-edit-btn" (click)="goToStep(1)">Edit</button>
+                </div>
+                <div class="review-grid">
+                  <div class="review-item">
+                    <span class="review-label">Title</span>
+                    <span class="review-value">{{ step1Form.get('title')?.value || '—' }}</span>
+                  </div>
+                  <div class="review-item">
+                    <span class="review-label">Category</span>
+                    <span class="review-value">{{ step1Form.get('category')?.value || '—' }}</span>
+                  </div>
+                  <div class="review-item">
+                    <span class="review-label">Start Time</span>
+                    <span class="review-value">{{ step1Form.get('startTime')?.value || '—' }}</span>
+                  </div>
+                  <div class="review-item">
+                    <span class="review-label">End Time</span>
+                    <span class="review-value">{{ step1Form.get('endTime')?.value || '—' }}</span>
+                  </div>
+                  @if (step1Form.get('description')?.value) {
+                    <div class="review-item full-width">
+                      <span class="review-label">Description</span>
+                      <span class="review-value">{{ step1Form.get('description')?.value }}</span>
+                    </div>
+                  }
+                </div>
+              </div>
+
+              <!-- Venue Section -->
+              <div class="review-section">
+                <div class="review-section-header">
+                  <span class="review-section-icon">📍</span>
+                  <span class="review-section-title">Venue</span>
+                  <button type="button" class="review-edit-btn" (click)="goToStep(2)">Edit</button>
+                </div>
+                <div class="review-grid">
+                  <div class="review-item">
+                    <span class="review-label">Venue</span>
+                    <span class="review-value">{{ step2Form.get('venue')?.value || '—' }}</span>
+                  </div>
+                  <div class="review-item">
+                    <span class="review-label">City</span>
+                    <span class="review-value">{{ step2Form.get('city')?.value || '—' }}</span>
+                  </div>
+                  @if (step2Form.get('locationCoords')?.value) {
+                    <div class="review-item">
+                      <span class="review-label">GPS Coords</span>
+                      <span class="review-value">{{ step2Form.get('locationCoords')?.value }}</span>
+                    </div>
+                  }
+                  @if (step2Form.get('bannerUrl')?.value) {
+                    <div class="review-item full-width">
+                      <span class="review-label">Banner URL</span>
+                      <span class="review-value review-url">{{ step2Form.get('bannerUrl')?.value }}</span>
+                    </div>
+                  }
+                </div>
+              </div>
+
+              <!-- Ticket Tiers Section -->
+              <div class="review-section">
+                <div class="review-section-header">
+                  <span class="review-section-icon">🎟️</span>
+                  <span class="review-section-title">Ticket Tiers ({{ tiersArray.length }})</span>
+                  <button type="button" class="review-edit-btn" (click)="goToStep(3)">Edit</button>
+                </div>
+                <div class="tiers-review-table">
+                  <div class="tiers-table-header">
+                    <span>Name</span>
+                    <span>Type</span>
+                    <span>Price</span>
+                    <span>Qty</span>
+                    <span>Color</span>
+                  </div>
+                  @for (tier of tiersArray.controls; track $index; let i = $index) {
+                    <div class="tiers-table-row">
+                      <span class="tier-name-cell">{{ tier.get('name')?.value || '—' }}</span>
+                      <span>
+                        <span class="tier-type-badge" [class.seated]="tier.get('tierType')?.value === 'SEATED'">
+                          {{ tier.get('tierType')?.value }}
+                        </span>
+                      </span>
+                      <span class="tier-price-cell">{{ (tier.get('price')?.value || 0) | number }} ₫</span>
+                      <span>{{ tier.get('quantityTotal')?.value }}</span>
+                      <span>
+                        <span class="color-swatch" [style.background]="tier.get('colorCode')?.value || '#2563EB'"></span>
+                      </span>
+                    </div>
+                  }
+                </div>
+              </div>
+
+              <div class="step-actions">
+                <button type="button" class="step-btn-back" (click)="prevStep()">← Back</button>
+                <button type="button" class="step-btn-next" (click)="nextStep()">Confirm &amp; Submit →</button>
+              </div>
+            </div>
+          }
+
+          <!-- Step 6: Submit -->
+          @if (currentStep() === 6) {
+            <div class="step-full-card submit-confirm-card">
+              @if (!submitSuccess()) {
+                <div class="submit-header">
+                  <div class="submit-icon-wrap">🚀</div>
+                  <h3 class="submit-title">Ready to Submit?</h3>
+                  <p class="submit-desc">Your event will be submitted for Admin review. It will be visible to customers only after it is <strong>approved and published</strong>.</p>
+                </div>
+
+                <!-- Summary pill badges -->
+                <div class="submit-summary-pills">
+                  <div class="summary-pill">
+                    <span class="pill-icon">📋</span>
+                    <span class="pill-text">{{ step1Form.get('title')?.value }}</span>
+                  </div>
+                  <div class="summary-pill">
+                    <span class="pill-icon">📍</span>
+                    <span class="pill-text">{{ step2Form.get('venue')?.value }}, {{ step2Form.get('city')?.value }}</span>
+                  </div>
+                  <div class="summary-pill">
+                    <span class="pill-icon">🎟️</span>
+                    <span class="pill-text">{{ tiersArray.length }} ticket tier(s)</span>
+                  </div>
+                  @if (draggableItems().length > 0) {
+                    <div class="summary-pill">
+                      <span class="pill-icon">🗺️</span>
+                      <span class="pill-text">Includes Custom Seat Map</span>
+                    </div>
+                  }
+                </div>
+
+                @if (submitError()) {
+                  <div class="submit-error-banner">
+                    ⚠️ {{ submitError() }}
+                  </div>
+                }
+
+                <div class="step-actions centered">
+                  <button type="button" class="step-btn-back" (click)="prevStep()" [disabled]="isSubmitting()">← Back</button>
+                  <button type="button" class="step-btn-submit" (click)="onSubmitEvent()" [disabled]="isSubmitting()">
+                    @if (isSubmitting()) {
+                      <span class="spinner"></span> Submitting...
+                    } @else {
+                      Submit Event 🚀
+                    }
+                  </button>
+                </div>
+              } @else {
+                <!-- Success State -->
+                <div class="submit-success-state">
+                  <div class="success-icon">✅</div>
+                  <h3>Event Submitted Successfully!</h3>
+                  <p>Your event is now <strong>pending review</strong>. Our admin team will review and approve it shortly.</p>
+                  <button type="button" class="step-btn-next" (click)="activeTab.set('dashboard')">
+                    ← Return to Dashboard
+                  </button>
+                </div>
+              }
+            </div>
+          }
+        </div>
+      } @else {
+        <!-- Fallback placeholder for other tabs -->
+        <div class="tab-placeholder">
+          <div class="placeholder-content">
+            <span class="placeholder-icon">🛠️</span>
+            <h3>{{ activeTab() | uppercase }}</h3>
+            <p>This tab is currently under construction. Please check back later.</p>
+          </div>
+        </div>
+      }
+    </main>
+
+    <!-- Footer -->
+    <footer class="portal-footer">
+      <span class="footer-copy">© 2024 Stark Integrity Event Management Systems</span>
+      <div class="footer-links">
+        <a href="#">Privacy Policy</a>
+        <a href="#">Security Standards</a>
+        <a href="#">Support</a>
+      </div>
+    </footer>
+  </div>
+</div>

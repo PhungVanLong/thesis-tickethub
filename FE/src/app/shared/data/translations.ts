@@ -4,6 +4,7 @@ export const TRANSLATIONS: Record<Language, Record<string, string>> = {
   Vie: {
     // Navigation Header
     'nav.organizer': 'Dashboard tổ chức',
+    'nav.createOrganizer': 'Tạo tổ chức',
     'nav.myTickets': 'Vé của tôi',
     'nav.account': 'Tài khoản',
     'nav.signIn': 'Đăng nhập / Đăng ký',
@@ -170,6 +171,7 @@ export const TRANSLATIONS: Record<Language, Record<string, string>> = {
   Eng: {
     // Navigation Header
     'nav.organizer': 'Organization Dashboard',
+    'nav.createOrganizer': 'Create Organization',
     'nav.myTickets': 'My Tickets',
     'nav.account': 'Account',
     'nav.signIn': 'Sign In/Register',

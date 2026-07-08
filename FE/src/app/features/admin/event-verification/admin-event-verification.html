@@ -1,0 +1,173 @@
+<div class="page">
+  <div class="page-header">
+    <div>
+      <h1 class="page-title">Event Verification</h1>
+      <p class="page-sub">Review and approve or reject pending event submissions.</p>
+    </div>
+  </div>
+
+  @if (submitSuccess()) {
+    <div class="alert-success">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
+      {{ submitSuccess() }}
+    </div>
+  }
+
+  <div class="filter-bar">
+    @for (s of statusOptions; track s) {
+      <button class="filter-btn" [class.active]="filterStatus() === s" (click)="onFilterChange(s)">
+        {{ s }}
+      </button>
+    }
+  </div>
+
+  <div class="card">
+    @if (loading()) {
+      <div class="loading-state">
+        <div class="spinner"></div>
+        <span>Loading events...</span>
+      </div>
+    } @else if (error()) {
+      <div class="error-state">{{ error() }}</div>
+    } @else if (events().length === 0) {
+      <div class="empty-state">
+        <span class="empty-icon">📅</span>
+        <p>No events with status <strong>{{ filterStatus() }}</strong></p>
+      </div>
+    } @else {
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>Event</th>
+            <th>Venue</th>
+            <th>City</th>
+            <th>Start Time</th>
+            <th>Status</th>
+            <th>Created</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (event of events(); track event.id) {
+            <tr>
+              <td>
+                <div class="event-cell">
+                  <div class="event-thumb" [style.background-image]="event.bannerUrl ? 'url(' + event.bannerUrl + ')' : 'none'">
+                    @if (!event.bannerUrl) { 🎫 }
+                  </div>
+                  <div>
+                    <span class="event-name">{{ event.title }}</span>
+                    <span class="event-id">#{{ event.id }}</span>
+                  </div>
+                </div>
+              </td>
+              <td>{{ event.venue }}</td>
+              <td>{{ event.city }}</td>
+              <td class="nowrap">{{ formatDate(event.startTime) }}</td>
+              <td>
+                <span class="badge" [ngClass]="getStatusBadgeClass(event.status)">{{ event.status }}</span>
+              </td>
+              <td class="nowrap">{{ formatDate(event.createdAt) }}</td>
+              <td>
+                <div class="action-btns">
+                  <button class="btn-detail" (click)="openDetail(event)">Detail</button>
+                  @if (event.status === 'PENDING') {
+                    <button class="btn-approve" (click)="openApprove(event, 'APPROVED')">Approve</button>
+                    <button class="btn-reject" (click)="openApprove(event, 'REJECTED')">Reject</button>
+                  }
+                </div>
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    }
+  </div>
+</div>
+
+<!-- Detail Modal -->
+@if (detailEvent()) {
+  <div class="modal-backdrop" (click)="closeDetail()">
+    <div class="modal" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <h2>{{ detailEvent()!.title }}</h2>
+        <button class="modal-close" (click)="closeDetail()">✕</button>
+      </div>
+      <div class="modal-body detail-body">
+        @if (detailEvent()!.bannerUrl) {
+          <img [src]="detailEvent()!.bannerUrl" alt="Event Banner" class="event-banner-img" />
+        }
+        <div class="detail-grid">
+          <div class="detail-row">
+            <span class="detail-label">Status</span>
+            <span class="badge" [ngClass]="getStatusBadgeClass(detailEvent()!.status)">{{ detailEvent()!.status }}</span>
+          </div>
+          <div class="detail-row">
+            <span class="detail-label">Venue</span>
+            <span>{{ detailEvent()!.venue }}</span>
+          </div>
+          <div class="detail-row">
+            <span class="detail-label">City</span>
+            <span>{{ detailEvent()!.city }}</span>
+          </div>
+          <div class="detail-row">
+            <span class="detail-label">Start Time</span>
+            <span>{{ formatDate(detailEvent()!.startTime) }}</span>
+          </div>
+          <div class="detail-row">
+            <span class="detail-label">End Time</span>
+            <span>{{ formatDate(detailEvent()!.endTime) }}</span>
+          </div>
+          <div class="detail-row">
+            <span class="detail-label">Description</span>
+            <span>{{ detailEvent()!.description || '—' }}</span>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        @if (detailEvent()!.status === 'PENDING') {
+          <button class="btn-approve" (click)="openApprove(detailEvent()!, 'APPROVED'); closeDetail()">Approve</button>
+          <button class="btn-reject" (click)="openApprove(detailEvent()!, 'REJECTED'); closeDetail()">Reject</button>
+        }
+        <button class="btn-cancel" (click)="closeDetail()">Close</button>
+      </div>
+    </div>
+  </div>
+}
+
+<!-- Approve Modal -->
+@if (approveModal()) {
+  <div class="modal-backdrop" (click)="closeApprove()">
+    <div class="modal" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <h2>{{ approveModal()!.decision === 'APPROVED' ? 'Approve Event' : 'Reject Event' }}</h2>
+        <button class="modal-close" (click)="closeApprove()">✕</button>
+      </div>
+      <div class="modal-body">
+        <p class="modal-desc">
+          You are about to <strong>{{ approveModal()!.decision }}</strong> the event:
+          <strong>{{ approveModal()!.event.title }}</strong>
+        </p>
+        <label class="form-label" for="reason">Reason (optional)</label>
+        <textarea
+          id="reason"
+          class="form-textarea"
+          rows="4"
+          [(ngModel)]="approveModal()!.reason"
+          placeholder="Enter reason for this decision..."></textarea>
+      </div>
+      <div class="modal-footer">
+        <button class="btn-cancel" (click)="closeApprove()">Cancel</button>
+        @if (approveModal()!.decision === 'APPROVED') {
+          <button class="btn-approve" (click)="submitApproval()" [disabled]="submitting()">
+            @if (submitting()) { Processing... } @else { Confirm Approve }
+          </button>
+        } @else {
+          <button class="btn-reject" (click)="submitApproval()" [disabled]="submitting()">
+            @if (submitting()) { Processing... } @else { Confirm Reject }
+          </button>
+        }
+      </div>
+    </div>
+  </div>
+}
