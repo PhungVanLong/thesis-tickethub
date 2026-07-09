@@ -59,6 +59,11 @@ public class JwtGlobalAuthenticationFilter implements GlobalFilter, Ordered {
             isPublic = false;
         }
 
+        // GET /api/events/organizer/** is not public
+        if (isPublic && pathMatcher.match("/api/events/organizer/**", path)) {
+            isPublic = false;
+        }
+
         if (isPublic || HttpMethod.OPTIONS.equals(method)) {
             ServerHttpRequest modifiedRequest = request.mutate()
                     .header("X-Gateway-Token", gatewaySharedSecret)

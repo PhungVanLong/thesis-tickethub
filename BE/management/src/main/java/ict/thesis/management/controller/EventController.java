@@ -18,6 +18,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import ict.thesis.management.dto.response.EventResponse;
+import ict.thesis.management.dto.response.EventDetailResponse;
 import ict.thesis.management.entity.enums.EventStatus;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -51,6 +52,11 @@ public class EventController {
     public ResponseEntity<List<EventResponse>> getOrganizerEvents() {
         Long userId = UserContextHolder.getContext().getUserId();
         return ResponseEntity.ok(eventQueryService.getOrganizerEvents(userId));
+    }
+
+    @GetMapping("/{eventId}")
+    public ResponseEntity<EventDetailResponse> getEventDetail(@PathVariable Long eventId) {
+        return ResponseEntity.ok(eventQueryService.getEventDetail(eventId));
     }
 
     @PostMapping("/create")

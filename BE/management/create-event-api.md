@@ -17,6 +17,8 @@ FE (Step 1-5 Wizard)
    │
    ├─ POST /api/events/{id}/cancel     → Organizer huỷ sự kiện
    │
+   ├─ GET  /api/events/organizer/my-events → Organizer lấy danh sách sự kiện của tổ chức mình
+   │
    └─ GET  /api/events?status=PENDING  → Admin lấy danh sách để duyệt
         └─ POST /api/events/{id}/approve → Admin duyệt / từ chối
 ```
@@ -35,6 +37,7 @@ PENDING → APPROVED → PUBLISHED
 
 > Chỉ **OWNER** của tổ chức mới được gọi API này.  
 > Sự kiện sẽ được tạo với trạng thái **`PENDING`** (chờ Admin duyệt).
+> **Lưu ý bảo mật:** Mặc dù `organizationId` vẫn bắt buộc phải gửi trong body, Backend sẽ tự động lấy thông tin Tổ chức dựa trên `userId` trong Token để tránh tình trạng giả mạo `organizationId`.
 
 ### Request Headers
 ```
@@ -103,7 +106,7 @@ Content-Type: application/json
 
 | Trường            | Bắt Buộc | Ghi Chú                                        |
 |-------------------|----------|------------------------------------------------|
-| `organizationId`  | ✅        | ID tổ chức mà user là OWNER                   |
+| `organizationId`  | ✅        | ID tổ chức gửi lên (Backend sẽ ghi đè bằng Id lấy từ token để bảo mật) |
 | `title`           | ✅        | Tên sự kiện, không được để trống              |
 | `venue`           | ✅        | Địa điểm tổ chức, không được để trống         |
 | `city`            | ✅        | Thành phố, không được để trống                |
@@ -151,14 +154,14 @@ Content-Type: application/json
 | `400`     | `organizationId is required`                                | Thiếu trường bắt buộc                 |
 | `400`     | `Event start time must be in the future`                    | startTime đã qua                      |
 | `400`     | `Event end time must be after start time`                   | endTime <= startTime                  |
-| `400`     | `User is not a member of the specified organization`        | userId không thuộc tổ chức            |
+| `400`     | `User is not a member of any organization`                  | userId không thuộc bất cứ tổ chức nào |
 | `400`     | `Ticket tier [name] not found in the ticket tiers list`     | seatCode tham chiếu tier không tồn tại|
 | `403`     | `Only the organization owner is allowed to create events`   | User không phải OWNER                 |
 | `403`     | `Organization is not active`                                | Tổ chức chưa được kích hoạt           |
 
 ---
 
-## 2. Lấy Danh Sách Sự Kiện
+## 2. Lấy Danh Sách Sự Kiện (Chung / Admin)
 
 **`GET /api/events`**
 **`GET /api/events?status=PENDING`**
@@ -190,6 +193,110 @@ Content-Type: application/json
     "updatedAt": "2024-07-08T10:30:00Z"
   }
 ]
+```
+
+---
+
+## 2b. Organizer Lấy Danh Sách Sự Kiện Của Mình
+
+**`GET /api/events/organizer/my-events`**
+
+> Lấy danh sách các event của tổ chức mà người dùng hiện tại đang quản lý. Lấy trực tiếp từ Token nên không cần truyền parameter.
+> **Yêu cầu phân quyền (Authorization):** Người dùng phải có quyền **`ORGANIZER`** sau khi đã được xác thực (Authentication).
+
+### Request Headers
+```
+Authorization: Bearer <jwt_token>
+```
+
+### Response — 200 OK
+```json
+[
+  {
+    "id": 42,
+    "organizationId": 1,
+    "organizationName": "Tech Org",
+    "title": "Global Tech Summit 2024",
+    "description": "...",
+    "venue": "Grand Convention Center",
+    "city": "Ho Chi Minh City",
+    "locationCoords": "10.7769,106.7009",
+    "startTime": "2024-09-15T08:00:00Z",
+    "endTime": "2024-09-15T17:00:00Z",
+    "bannerUrl": "https://cdn.example.com/banners/event.jpg",
+    "status": "PENDING",
+    "published": false,
+    "createdAt": "2024-07-08T10:30:00Z",
+    "updatedAt": "2024-07-08T10:30:00Z"
+  }
+]
+```
+
+---
+
+## 2c. Lấy Chi Tiết Sự Kiện
+
+**`GET /api/events/{eventId}`**
+
+> Lấy chi tiết thông tin của một sự kiện, bao gồm thông tin chi tiết sự kiện, danh sách hạng vé (`ticketTiers`) và sơ đồ ghế ngồi (`seatMaps` kèm danh sách `seats`).
+
+### Response — 200 OK
+```json
+{
+  "id": 42,
+  "organizationId": 1,
+  "organizationName": "Tech Org",
+  "title": "Global Tech Summit 2024",
+  "description": "Một hội nghị công nghệ quốc tế...",
+  "venue": "Grand Convention Center",
+  "city": "Ho Chi Minh City",
+  "locationCoords": "10.7769,106.7009",
+  "startTime": "2024-09-15T08:00:00Z",
+  "endTime": "2024-09-15T17:00:00Z",
+  "bannerUrl": "https://cdn.example.com/banners/event.jpg",
+  "status": "PENDING",
+  "published": false,
+  "createdAt": "2024-07-08T10:30:00Z",
+  "updatedAt": "2024-07-08T10:30:00Z",
+  "ticketTiers": [
+    {
+      "id": 1,
+      "name": "VIP",
+      "tierType": "SEATED",
+      "price": 500000.00,
+      "quantityTotal": 100,
+      "quantityAvailable": 100,
+      "quantitySold": 0,
+      "colorCode": "#FFD700",
+      "saleStart": "2024-08-01T00:00:00Z",
+      "saleEnd": "2024-09-14T23:59:59Z",
+      "seatMapId": 1
+    }
+  ],
+  "seatMaps": [
+    {
+      "id": 1,
+      "eventId": 42,
+      "name": "Khu VIP A",
+      "totalRows": 5,
+      "totalCols": 10,
+      "layoutJson": "{\"type\":\"grid\"}",
+      "createdAt": "2024-07-08T10:30:00Z",
+      "seats": [
+        {
+          "id": 1,
+          "seatCode": "A1",
+          "rowLabel": "A",
+          "colNumber": 1,
+          "status": "AVAILABLE",
+          "ticketTierId": 1,
+          "ticketTierName": "VIP",
+          "colorCode": "#FFD700"
+        }
+      ]
+    }
+  ]
+}
 ```
 
 ---
@@ -348,6 +455,16 @@ export class EventApiService {
     const params: any = {};
     if (status) params['status'] = status;
     return this.http.get<any[]>(this.API, { params });
+  }
+
+  /** Organizer lấy danh sách sự kiện của mình */
+  getOrganizerEvents(): Observable<any[]> {
+    return this.http.get<any[]>(`${this.API}/organizer/my-events`);
+  }
+
+  /** Lấy chi tiết thông tin của một sự kiện */
+  getEventDetail(eventId: number): Observable<any> {
+    return this.http.get<any>(`${this.API}/${eventId}`);
   }
 
   /** Organizer publish sự kiện (phải ở trạng thái APPROVED) */
