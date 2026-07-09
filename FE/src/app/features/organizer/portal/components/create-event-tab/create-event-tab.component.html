@@ -1,0 +1,586 @@
+﻿<!-- Shared Templates for Seat Map -->
+<ng-template #renderSeatItem let-item="item" let-isPreview="isPreview">
+  @if (item.type === 'stage') {
+    <div class="stage-element" [class.selected-element]="!isPreview && selectedItemId() === item.id" [style.transform]="'rotate(' + (item.rotation || 0) + 'deg)'">
+      STAGE
+    </div>
+  } @else if (item.type === 'block') {
+    <div class="block-element" 
+         [class.selected-element]="!isPreview && selectedItemId() === item.id"
+         [style.border-color]="!isPreview && seatMapValidation().conflictingBlockIds.includes(item.id) ? '#dc2626' : getTierColor(item.tierName || null)" 
+         [style.border-width]="!isPreview && seatMapValidation().conflictingBlockIds.includes(item.id) ? '3px' : '2px'" 
+         [style.transform]="'rotate(' + (item.rotation || 0) + 'deg)'">
+      <div class="block-seats-grid" 
+           [style.gridTemplateRows]="'repeat(' + (item.rows || 1) + ', 1fr)'"
+           [style.gridTemplateColumns]="'repeat(' + (item.cols || 1) + ', 1fr)'"
+           style="width: fit-content; height: fit-content;">
+        @for (r of getArray(item.rows); track $index) {
+          @for (c of getArray(item.cols); track $index) {
+            <div class="seat-dot" [style.background-color]="getTierColor(item.tierName || null)" [title]="getRowLabel(item.labelPrefix, r) + (c + (item.startCol || 1))">
+              {{ getRowLabel(item.labelPrefix, r) }}{{ c + (item.startCol || 1) }}
+            </div>
+          }
+        }
+      </div>
+      <div class="block-overlay-text">
+        <span class="block-label">{{ item.tierName || 'Unassigned Block' }}</span>
+        @if (!isPreview) {
+          <span class="block-rows-cols">{{ item.rows || 1 }} &times; {{ item.cols || 1 }}</span>
+        }
+      </div>
+    </div>
+  }
+</ng-template>
+        <div class="create-event-container">
+          <!-- Steps Progress Header -->
+          <div class="steps-progress-bar">
+            @for (step of steps; track step.label; let i = $index) {
+              <div class="step" [class.active]="currentStep() === i + 1" [class.completed]="currentStep() > i + 1" (click)="goToStep(i + 1)">
+                <div class="step-badge">
+                  @if (currentStep() > i + 1) {
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" width="14" height="14"><polyline points="20 6 9 17 4 12"/></svg>
+                  } @else {
+                    {{ i + 1 }}
+                  }
+                </div>
+                <span class="step-label">{{ step.label }}</span>
+              </div>
+              @if (i < steps.length - 1) {
+                <div class="step-divider" [class.done]="currentStep() > i + 1"></div>
+              }
+            }
+          </div>
+
+          <!-- Step 1: Event Info -->
+          @if (currentStep() === 1) {
+            <form [formGroup]="step1Form" class="create-event-grid">
+              <!-- Left Column: Form Card -->
+              <div class="form-card">
+                <div class="form-section-title">Basic Information</div>
+
+                <div class="form-group">
+                  <label class="form-lbl" for="eventTitle">Event Title <span class="required-star">*</span></label>
+                  <input id="eventTitle" type="text" class="form-input" formControlName="title" placeholder="e.g. Global Tech Summit 2024" />
+                </div>
+
+                <div class="form-group">
+                  <label class="form-lbl" for="eventCategory">Category <span class="required-star">*</span></label>
+                  <select id="eventCategory" class="form-select" formControlName="category">
+                    <option value="" disabled>Select a category</option>
+                    <option value="Concerts">🎵 Concerts</option>
+                    <option value="Sports">⚽ Sports</option>
+                    <option value="Arts">🎭 Arts &amp; Theater</option>
+                    <option value="Family">👨‍👩‍👧 Family</option>
+                    <option value="Conference">💼 Conference</option>
+                    <option value="Festival">🎉 Festival</option>
+                    <option value="Exhibition">🖼️ Exhibition</option>
+                  </select>
+                </div>
+
+                <div class="form-group">
+                  <label class="form-lbl" for="eventDesc">Description</label>
+                  <textarea id="eventDesc" class="form-textarea" rows="5" formControlName="description" placeholder="Provide a detailed description of your event..."></textarea>
+                </div>
+
+                <div class="form-row-dates">
+                  <div class="form-group flex-1">
+                    <label class="form-lbl" for="startTime">Start Date &amp; Time <span class="required-star">*</span></label>
+                    <input id="startTime" type="datetime-local" class="form-input-date" formControlName="startTime" />
+                  </div>
+                  <div class="form-group flex-1">
+                    <label class="form-lbl" for="endTime">End Date &amp; Time <span class="required-star">*</span></label>
+                    <input id="endTime" type="datetime-local" class="form-input-date" formControlName="endTime" />
+                  </div>
+                </div>
+
+                <div class="form-section-title" style="margin-top: 1.5rem;">Venue &amp; Location</div>
+                <div class="form-group">
+                  <label class="form-lbl" for="venueField">Venue Name <span class="required-star">*</span></label>
+                  <input id="venueField" type="text" class="form-input" formControlName="venue" placeholder="e.g. Grand Convention Center" />
+                </div>
+                <div class="form-group">
+                  <label class="form-lbl" for="cityField">Address <span class="required-star">*</span></label>
+                  <input id="cityField" type="text" class="form-input" formControlName="city" placeholder="e.g. 123 Main St, Ho Chi Minh City" />
+                </div>
+                <div class="form-group">
+                  <label class="form-lbl" for="coordsField">
+                    GPS Coordinates
+                    <span class="form-hint">(optional — format: lat,lng)</span>
+                  </label>
+                  <input id="coordsField" type="text" class="form-input" formControlName="locationCoords" placeholder="10.7769,106.7009" />
+                </div>
+
+                <!-- Step Action Buttons -->
+                <div class="step-actions end">
+                  <button type="button" class="step-btn-next" [disabled]="step1Form.invalid" (click)="nextStep()">
+                    Next: Ticket Tiers →
+                  </button>
+                </div>
+              </div>
+
+              <!-- Right Column: Poster Upload Card & Map -->
+              <div style="display: flex; flex-direction: column; gap: 1.5rem;">
+                <div class="poster-upload-card">
+                  <div class="form-group" style="padding: 1.5rem 1.5rem 0;">
+                    <label class="form-lbl" for="bannerUrlField">
+                      Banner / Poster URL
+                      <span class="form-hint">(optional — direct image link)</span>
+                    </label>
+                    <input id="bannerUrlField" type="url" class="form-input" formControlName="bannerUrl" placeholder="https://cdn.example.com/banner.jpg" />
+                    @if (step1Form.get('bannerUrl')?.value) {
+                      <div class="banner-preview-box" style="margin-top: 1rem;">
+                        <img [src]="getNormalizedBannerUrl()" alt="Banner preview" class="banner-preview-img" (error)="$any($event.target).style.display='none'" />
+                      </div>
+                    }
+                  </div>
+                  <div class="upload-tips" style="border-top: 1px solid #e2e8f0; margin-top: 1.5rem;">
+                    <div class="tip-header">💡 Tips</div>
+                    <ul class="tip-list">
+                      <li>Use high-resolution images (min 1080px wide)</li>
+                      <li>Portrait orientation works best (4:5)</li>
+                      <li>Enter the exact venue name as it appears on maps</li>
+                      <li>GPS coordinates help customers find the venue easily</li>
+                    </ul>
+                  </div>
+                </div>
+
+                <!-- Google Maps Box -->
+                <div class="form-card map-card" style="padding: 1.5rem;">
+                  <div class="form-section-title">Location Map</div>
+                  <div class="venue-map-placeholder" style="padding: 0; overflow: hidden; height: 300px; border-radius: 8px; background: #f8fafc; display: flex; align-items: center; justify-content: center; margin-top: 1rem; border: 1px solid #e2e8f0;">
+                    @if (getSafeMapUrl()) {
+                      <iframe 
+                        width="100%" 
+                        height="100%" 
+                        frameborder="0" 
+                        style="border:0;" 
+                        [src]="getSafeMapUrl()" 
+                        allowfullscreen>
+                      </iframe>
+                    } @else {
+                      <div style="color: #94a3b8; text-align: center;">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="margin-bottom: 0.5rem;"><polygon points="3 6 9 3 15 6 21 3 21 18 15 21 9 18 3 21"/><line x1="9" y1="3" x2="9" y2="18"/><line x1="15" y1="6" x2="15" y2="21"/></svg>
+                        <p style="margin: 0; font-size: 13px;">Enter an address to see map</p>
+                      </div>
+                    }
+                  </div>
+                </div>
+              </div>
+            </form>
+          }
+
+
+
+          <!-- Step 2: Ticket Tiers -->
+          @if (currentStep() === 2) {
+            <div class="step-full-card" [formGroup]="step2Form">
+              <div class="step-full-header">
+                <div>
+                  <div class="form-section-title">Ticket Tiers</div>
+                  <p class="step-subtitle">Define pricing and capacity for each ticket category.</p>
+                </div>
+                <button type="button" class="add-tier-btn" (click)="addTier()">
+                  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="16" height="16"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                  Add Tier
+                </button>
+              </div>
+
+              <div formArrayName="tiers" class="tiers-list">
+                @for (tier of tiersArray.controls; track $index; let i = $index) {
+                  <div [formGroupName]="i" class="tier-row-card">
+                    <div class="tier-row-header">
+                      <div class="tier-row-num">
+                        <span class="tier-badge">Tier {{ i + 1 }}</span>
+                      </div>
+                      @if (tiersArray.length > 1) {
+                        <button type="button" class="remove-tier-btn" (click)="removeTier(i)" title="Remove tier">
+                          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4h6v2"/></svg>
+                        </button>
+                      }
+                    </div>
+
+                    <div class="tier-row-body">
+                      <div class="form-group">
+                        <label class="form-lbl">Tier Name <span class="required-star">*</span></label>
+                        <input type="text" class="form-input" formControlName="name" placeholder="e.g. VIP, General, Early Bird" />
+                      </div>
+
+                      <div class="form-group">
+                        <label class="form-lbl">Type <span class="required-star">*</span></label>
+                        <select class="form-select" formControlName="tierType">
+                          <option value="STANDING">🧍 Standing (no assigned seat)</option>
+                          <option value="SEATED">💺 Seated (assigned seat)</option>
+                        </select>
+                      </div>
+
+                      <div class="form-group">
+                        <label class="form-lbl">Price (VND) <span class="required-star">*</span></label>
+                        <input type="number" class="form-input" formControlName="price" min="0" placeholder="0" />
+                      </div>
+
+                      <div class="form-group">
+                        <label class="form-lbl">Quantity <span class="required-star">*</span></label>
+                        <input type="number" class="form-input" formControlName="quantityTotal" min="1" placeholder="100" />
+                      </div>
+
+                      <div class="form-group">
+                        <label class="form-lbl">Sale Start Date</label>
+                        <input type="datetime-local" class="form-input" formControlName="saleStartDate" />
+                      </div>
+
+                      <div class="form-group">
+                        <label class="form-lbl">Sale End Date</label>
+                        <input type="datetime-local" class="form-input" formControlName="saleEndDate" />
+                      </div>
+
+                      <div class="form-group">
+                        <label class="form-lbl">Color</label>
+                        <div class="color-input-row">
+                          <input type="color" class="color-picker" formControlName="colorCode" />
+                          <input type="text" class="form-input color-hex-input" formControlName="colorCode" placeholder="#2563EB" />
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                }
+              </div>
+
+              <div class="step-actions">
+                <button type="button" class="step-btn-back" (click)="prevStep()">← Back</button>
+                <button type="button" class="step-btn-next" [disabled]="step2Form.invalid" (click)="nextStep()">Next: Seat Map →</button>
+              </div>
+            </div>
+          }
+
+          <!-- Step 3: Seat Map -->
+          @if (currentStep() === 3) {
+            <div class="step-full-card seat-map-card">
+              <div class="step-full-header">
+                <div>
+                  <div class="form-section-title">Seat Map Configuration</div>
+                  <p class="step-subtitle">Draw your interactive seat map if you have seated ticket tiers.</p>
+                </div>
+              </div>
+
+              <!-- Only show tools if there are SEATED tiers -->
+              @if (getSeatedTiers().length > 0) {
+                <div class="seat-map-builder" [formGroup]="step3Form">
+                  <!-- Toolbar -->
+                  <div class="seat-map-toolbar">
+                    <div class="form-group grid-settings">
+                      <label class="form-lbl">Map Name</label>
+                      <input type="text" class="form-input sm-input" formControlName="name" placeholder="Main Layout" />
+                    </div>
+                    <button type="button" class="btn-generate-grid" (click)="addStage()">➕ Add Stage</button>
+                    <button type="button" class="btn-generate-grid" (click)="addSeatBlock()">➕ Add Seat Block</button>
+                  </div>
+
+                  @if (!seatMapValidation().valid) {
+                    <div class="seat-map-error-msg" style="background: #fef2f2; color: #dc2626; padding: 1rem; margin: 0 1.5rem 1rem; border-radius: 6px; border: 1px solid #f87171;">
+                      <strong style="display: block; margin-bottom: 0.5rem;">⚠️ Validation Errors Found!</strong>
+                      
+                      @if (seatMapValidation().duplicates.length > 0) {
+                        <p style="margin-bottom: 0.5rem;"><strong>Duplicate seats:</strong> {{ seatMapValidation().duplicates.slice(0, 10).join(', ') }}{{ seatMapValidation().duplicates.length > 10 ? '...' : '' }}</p>
+                        <p style="margin-bottom: 0.5rem;">Please choose another Row Label Prefix to ensure every seat is unique.</p>
+                      }
+
+                      @if (seatMapValidation().tierErrors.length > 0) {
+                        @for (error of seatMapValidation().tierErrors; track $index) {
+                          <p style="margin-bottom: 0.5rem;"><strong>Capacity Error:</strong> {{ error }}</p>
+                        }
+                      }
+                    </div>
+                  }
+
+                  <div class="seat-map-workspace">
+                    <!-- Left Panel: Properties Tools -->
+                    <div class="tier-tools-panel">
+                      @if (getSelectedItem(); as item) {
+                        <div class="tier-tools-title">Properties</div>
+                        
+                        @if (item.type === 'block') {
+                          <div class="prop-group">
+                            <label class="form-lbl">Rows</label>
+                            <input type="number" class="form-input sm-input" [value]="item.rows" (change)="updateSelectedItem('rows', $any($event.target).value)" min="1" max="100"/>
+                          </div>
+                          <div class="prop-group">
+                            <label class="form-lbl">Cols</label>
+                            <input type="number" class="form-input sm-input" [value]="item.cols" (change)="updateSelectedItem('cols', $any($event.target).value)" min="1" max="100"/>
+                          </div>
+                          <div class="prop-group">
+                            <label class="form-lbl">Row Label Prefix</label>
+                            <input type="text" class="form-input sm-input" [value]="item.labelPrefix" (change)="updateSelectedItem('labelPrefix', $any($event.target).value)" />
+                          </div>
+                          <div class="prop-group">
+                            <label class="form-lbl">Row Range</label>
+                            <div class="form-input sm-input" style="background: #f8fafc; color: #475569; display: flex; align-items: center; min-height: 38px;">
+                              {{ getBlockRowRange(item) }}
+                            </div>
+                          </div>
+                          <div class="prop-group">
+                            <label class="form-lbl">Assign Tier</label>
+                            <select class="form-select sm-input" [value]="item.tierName" (change)="updateSelectedItem('tierName', $any($event.target).value)">
+                              @for (tier of getSeatedTiers(); track tier.name) {
+                                <option [value]="tier.name">{{ tier.name }}</option>
+                              }
+                            </select>
+                            @if (item.tierName) {
+                              <div style="margin-top: 0.5rem; font-size: 0.8rem; color: #475569; padding: 0.25rem;">
+                                @for (tier of getSeatedTiers(); track tier.name) {
+                                  @if (tier.name === item.tierName) {
+                                    <div [style.color]="(seatMapValidation().allocatedByTier[tier.name] || 0) > tier.quantityTotal ? '#dc2626' : '#475569'">
+                                      <strong>{{ tier.name }} Capacity:</strong><br/>
+                                      {{ seatMapValidation().allocatedByTier[tier.name] || 0 }} / {{ tier.quantityTotal }} seats
+                                      @if ((seatMapValidation().allocatedByTier[tier.name] || 0) > tier.quantityTotal) {
+                                        <div style="margin-top: 0.25rem;">⚠️ Exceeded by {{ (seatMapValidation().allocatedByTier[tier.name] || 0) - tier.quantityTotal }} seats</div>
+                                      }
+                                    </div>
+                                  }
+                                }
+                              </div>
+                            }
+                          </div>
+                          <div class="prop-group">
+                            <label class="form-lbl">Rotation (deg)</label>
+                            <input type="number" class="form-input sm-input" [value]="item.rotation || 0" (change)="updateSelectedItem('rotation', $any($event.target).value)" step="15" />
+                          </div>
+                        } @else {
+                          <div class="prop-group">
+                            <label class="form-lbl">Rotation (deg)</label>
+                            <input type="number" class="form-input sm-input" [value]="item.rotation || 0" (change)="updateSelectedItem('rotation', $any($event.target).value)" step="15" />
+                          </div>
+                        }
+
+                        <button type="button" class="btn-remove-item" (click)="removeDraggableItem(item.id)">🗑️ Remove Selected</button>
+                      } @else {
+                        <div class="tier-tools-instructions">
+                          <p>💡 Select an element on the canvas to configure its properties.</p>
+                        </div>
+                      }
+                    </div>
+
+                    <!-- Right Panel: Canvas -->
+                    <div class="grid-canvas-container">
+                      <div class="canvas-boundary">
+                        @for (item of draggableItems(); track item.id) {
+                          <div class="draggable-item" 
+                               cdkDrag 
+                               cdkDragBoundary=".canvas-boundary" 
+                               [cdkDragFreeDragPosition]="{x: item.x, y: item.y}"
+                               (cdkDragEnded)="onDragEnded($event, item)"
+                               (click)="selectItem(item.id)">
+                            
+                            <ng-container *ngTemplateOutlet="renderSeatItem; context: { item: item, isPreview: false }"></ng-container>
+                          </div>
+                        }
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              } @else {
+                <div class="no-seated-tiers-msg">
+                  <p>You don't have any SEATED ticket tiers. Seat map is only available for assigned seating.</p>
+                  <p>Skip this step or go back to add a seated tier.</p>
+                </div>
+              }
+
+              <div class="step-actions">
+                <button type="button" class="step-btn-back" (click)="prevStep()">← Back</button>
+                <button type="button" class="step-btn-next" [disabled]="(getSeatedTiers().length > 0 && draggableItems().length === 0) || !seatMapValidation().valid" (click)="nextStep()">Next: Review →</button>
+              </div>
+            </div>
+          }
+
+          <!-- Step 4: Review -->
+          @if (currentStep() === 4) {
+            <div class="review-high-fidelity">
+              <div class="review-hf-header">
+                <h2 class="review-hf-title">Review Event</h2>
+              </div>
+
+              @if (!submitSuccess()) {
+                <!-- Row 1: Details & Venue -->
+                <div class="review-hf-row">
+                  <!-- Event Details Card -->
+                  <div class="hf-card event-details-card">
+                    <div class="hf-card-edit" (click)="goToStep(1)">
+                      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/><path d="m15 5 4 4"/></svg>
+                    </div>
+                    <div class="event-details-content">
+                      <div class="event-details-img">
+                        @if (step1Form.get('bannerUrl')?.value) {
+                          <img [src]="getNormalizedBannerUrl()" alt="Banner" />
+                        } @else {
+                          <div class="img-placeholder">No Image</div>
+                        }
+                      </div>
+                      <div class="event-details-info">
+                        <span class="badge-public">PUBLIC EVENT</span>
+                        <h3 class="event-hf-title">{{ step1Form.get('title')?.value || 'Untitled Event' }}</h3>
+                        <p class="event-hf-desc">{{ step1Form.get('description')?.value || 'No description provided.' }}</p>
+                        
+                        <div class="event-hf-meta-grid">
+                          <div class="meta-item">
+                            <span class="meta-icon"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="18" x="3" y="4" rx="2" ry="2"/><line x1="16" x2="16" y1="2" y2="6"/><line x1="8" x2="8" y1="2" y2="6"/><line x1="3" x2="21" y1="10" y2="10"/></svg></span>
+                            <div class="meta-text">
+                              <span class="meta-lbl">Date</span>
+                              <span class="meta-val">{{ step1Form.get('startTime')?.value | date:'MMM d' }} - {{ step1Form.get('endTime')?.value | date:'MMM d, yyyy' }}</span>
+                            </div>
+                          </div>
+                          <div class="meta-item">
+                            <span class="meta-icon"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg></span>
+                            <div class="meta-text">
+                              <span class="meta-lbl">Time</span>
+                              <span class="meta-val">{{ step1Form.get('startTime')?.value | date:'shortTime' }} - {{ step1Form.get('endTime')?.value | date:'shortTime' }}</span>
+                            </div>
+                          </div>
+                          <div class="meta-item">
+                            <span class="meta-icon"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="22" x2="18" y1="12" y2="12"/><line x1="6" x2="2" y1="12" y2="12"/><line x1="12" x2="12" y1="6" y2="2"/><line x1="12" x2="12" y1="22" y2="18"/></svg></span>
+                            <div class="meta-text">
+                              <span class="meta-lbl">Coordinates</span>
+                              <span class="meta-val">{{ step1Form.get('locationCoords')?.value || 'Not set' }}</span>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <!-- Venue Details Card -->
+                  <div class="hf-card venue-details-card">
+                    <div class="hf-card-header">
+                      <div class="hf-card-title"><span class="title-icon" style="margin-right: 6px;"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/></svg></span> Venue Details</div>
+                      <div class="hf-card-edit" (click)="goToStep(1)">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/><path d="m15 5 4 4"/></svg>
+                      </div>
+                    </div>
+                    <div class="venue-map-placeholder" style="padding: 0; overflow: hidden;">
+                      @if (getSafeMapUrl()) {
+                        <iframe 
+                          width="100%" 
+                          height="100%" 
+                          frameborder="0" 
+                          style="border:0;" 
+                          [src]="getSafeMapUrl()" 
+                          allowfullscreen>
+                        </iframe>
+                      } @else {
+                        <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#cbd5e1" stroke-width="1.5"><polygon points="3 6 9 3 15 6 21 3 21 18 15 21 9 18 3 21"/><line x1="9" y1="3" x2="9" y2="18"/><line x1="15" y1="6" x2="15" y2="21"/></svg>
+                      }
+                    </div>
+                    <div class="venue-hf-info">
+                      <span class="venue-lbl">Location Name</span>
+                      <span class="venue-val-main">{{ step1Form.get('venue')?.value || '—' }}</span>
+                      
+                      <span class="venue-lbl mt-3">Address</span>
+                      <span class="venue-val-sub">{{ step1Form.get('city')?.value || '—' }}</span>
+                      
+                      <div class="venue-divider"></div>
+                      <span class="venue-lbl">Capacity</span>
+                      <span class="venue-val-capacity">
+                        {{ getTotalCapacity() | number }} Attendees
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Row 2: Ticket Tiers & Pricing -->
+                <div class="hf-card tickets-hf-card mt-4">
+                  <div class="hf-card-header">
+                    <div class="hf-card-title">Ticket Tiers & Pricing</div>
+                    <div class="hf-card-edit" (click)="goToStep(2)">
+                      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/><path d="m15 5 4 4"/></svg>
+                    </div>
+                  </div>
+                  
+                  <div class="tickets-hf-grid">
+                    @for (tier of tiersArray.controls; track $index; let i = $index) {
+                      <div class="ticket-hf-item" [class.exclusive]="tier.get('price')?.value >= 1000000" [class.scheduled]="tier.get('price')?.value > 0 && tier.get('price')?.value < 1000000 && i % 2 !== 0">
+                        <div class="ticket-hf-top">
+                          <div class="ticket-hf-badge-row">
+                            <span class="status-dot"></span>
+                            <span class="status-badge">
+                              @if (tier.get('price')?.value >= 1000000) { EXCLUSIVE }
+                              @else if (i % 2 !== 0) { SCHEDULED }
+                              @else { ON SALE }
+                            </span>
+                          </div>
+                          <div class="ticket-hf-price">{{ (tier.get('price')?.value || 0) | number }} ₫</div>
+                        </div>
+                        <h4 class="ticket-hf-name">{{ tier.get('name')?.value || 'Untitled' }}</h4>
+                        <p class="ticket-hf-desc">Standard entry to the event. ({{ tier.get('tierType')?.value }})</p>
+                        
+                        <div class="ticket-hf-bottom">
+                          <div class="ticket-stat">
+                            <span class="stat-lbl">Quantity:</span>
+                            <span class="stat-val">{{ tier.get('quantityTotal')?.value }}</span>
+                          </div>
+                          <div class="ticket-stat">
+                            <span class="stat-lbl">Sold:</span>
+                            <span class="stat-val">0</span>
+                          </div>
+                        </div>
+                      </div>
+                    }
+                  </div>
+                </div>
+
+                <!-- Row 3: Seat Map Layout -->
+                @if (draggableItems().length > 0) {
+                  <div class="hf-card seat-map-hf-card mt-4">
+                    <div class="hf-card-header">
+                      <div class="hf-card-title">Seat Map Layout</div>
+                      <div class="hf-card-edit" (click)="goToStep(3)">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/><path d="m15 5 4 4"/></svg>
+                      </div>
+                    </div>
+                    <div class="static-canvas-container" style="position: relative; width: 100%; height: 500px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; overflow: hidden;">
+                      <div style="position: absolute; transform: scale(0.85); transform-origin: top left; width: 100%; height: 100%;">
+                        @for (item of draggableItems(); track item.id) {
+                          <div style="position: absolute;"
+                               [style.left.px]="item.x" 
+                               [style.top.px]="item.y">
+                            <ng-container *ngTemplateOutlet="renderSeatItem; context: { item: item, isPreview: true }"></ng-container>
+                          </div>
+                        }
+                      </div>
+                    </div>
+                  </div>
+                }
+
+                @if (submitError()) {
+                  <div class="submit-error-banner" style="margin-top: 1.5rem; color: #dc2626; background: #fef2f2; padding: 16px; border-radius: 8px; border: 1px solid #fecaca;">
+                    ⚠️ {{ submitError() }}
+                  </div>
+                }
+
+                <div class="hf-bottom-actions mt-5">
+                  <button type="button" class="btn-prev-hf" (click)="prevStep()" [disabled]="isSubmitting()">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>
+                    Previous: Tickets
+                  </button>
+                  <button type="button" class="btn-publish-hf" (click)="onSubmitEvent()" [disabled]="isSubmitting()">
+                    @if (isSubmitting()) {
+                      <span class="spinner"></span> Submitting...
+                    } @else {
+                      <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+                      Publish Event
+                    }
+                  </button>
+                </div>
+              } @else {
+                <!-- Success State -->
+                <div class="submit-success-state" style="text-align: center; padding: 4rem 2rem;">
+                  <div class="success-icon" style="font-size: 4rem; margin-bottom: 1rem;">✅</div>
+                  <h3>Event Submitted Successfully!</h3>
+                  <p>Your event is now <strong>pending review</strong>. Our admin team will review and approve it shortly.</p>
+                  <button type="button" class="btn-publish-hf" style="margin-top: 2rem; margin-left: auto; margin-right: auto;" (click)="navigateTo.emit('dashboard')">
+                    ← Return to Dashboard
+                  </button>
+                </div>
+              }
+            </div>
+          }
+
+
+        </div>
