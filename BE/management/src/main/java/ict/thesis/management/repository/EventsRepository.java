@@ -9,4 +9,5 @@ import org.springframework.stereotype.Repository;
 @Repository
 public interface EventsRepository extends JpaRepository<Events, Long> {
     List<Events> findByStatus(EventStatus status);
+    List<Events> findByOrganizationId(Long organizationId);
 }
