@@ -233,6 +233,14 @@ public class OrganizationService {
     }
 
     @Transactional(readOnly = true)
+    public List<OrganizationResponse> getMyOrganizations(Long userId) {
+        return organizationMemberRepository.findByUserId(userId).stream()
+            .map(OrganizationMember::getOrganization)
+            .map(this::toResponse)
+            .toList();
+    }
+
+    @Transactional(readOnly = true)
     public List<OrganizationResponse> getAllOrganizations(OrganizationStatus status) {
         List<Organization> list;
         if (status == null) {

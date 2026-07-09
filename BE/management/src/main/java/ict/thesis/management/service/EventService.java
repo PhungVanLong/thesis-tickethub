@@ -60,11 +60,11 @@ public class EventService {
 
     @Transactional
     public CreateEventResponse createEvent(Long userId, CreateEventRequest request) {
-        // Tìm thành viên tổ chức dựa trên organizationId và userId
-        OrganizationMember member = organizationMemberRepository.findByOrganizationIdAndUserId(request.getOrganizationId(), userId)
+        // Tự động tìm organization của user (do frontend có thể gửi sai organizationId)
+        OrganizationMember member = organizationMemberRepository.findByUserId(userId).stream().findFirst()
             .orElseThrow(() -> new ResponseStatusException(
                 HttpStatus.BAD_REQUEST, 
-                "User is not a member of the specified organization"
+                "User is not a member of any organization"
             ));
 
         Organization organization = member.getOrganization();

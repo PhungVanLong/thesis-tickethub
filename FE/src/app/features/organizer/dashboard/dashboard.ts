@@ -1,6 +1,7 @@
 import { Component, inject, OnInit, signal, effect } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { AuthService } from '../../auth/auth.service';
+import { EventApiService } from '../../../core/services/event.service';
 import { TranslatePipe } from '../../../shared/pipes/translate.pipe';
 import { Navigation } from '../../../core/navigation/navigation';
 import { Footer } from '../../../core/footer/footer';
@@ -25,6 +26,7 @@ interface MockEvent {
 export class OrganizationDashboardComponent implements OnInit {
   private readonly fb = inject(FormBuilder);
   private readonly authService = inject(AuthService);
+  private readonly eventApi = inject(EventApiService);
 
   readonly isSubmitting = signal(false);
   readonly errorMessage = signal<string | null>(null);
@@ -34,35 +36,7 @@ export class OrganizationDashboardComponent implements OnInit {
   // Expose user profile signal from AuthService
   readonly userProfile = this.authService.currentUserProfile;
 
-  readonly mockEvents = signal<MockEvent[]>([
-    {
-      id: 1,
-      title: 'Liveshow Lệ Quyên & Những Người Bạn',
-      venue: 'Trung tâm Hội nghị Quốc gia',
-      startTime: '2026-09-01T12:00:00Z',
-      status: 'PUBLISHED',
-      ticketsSold: 450,
-      revenue: '900,000,000đ',
-    },
-    {
-      id: 2,
-      title: 'Đại nhạc hội EDM Summer Vibes 2026',
-      venue: 'Sân vận động Mỹ Đình',
-      startTime: '2026-10-15T10:00:00Z',
-      status: 'APPROVED',
-      ticketsSold: 0,
-      revenue: '0đ',
-    },
-    {
-      id: 3,
-      title: 'Hội thảo Công nghệ Tech Summit 2026',
-      venue: 'Tech Center Hall A',
-      startTime: '2026-11-20T09:00:00Z',
-      status: 'PENDING',
-      ticketsSold: 0,
-      revenue: '0đ',
-    }
-  ]);
+  readonly mockEvents = signal<any[]>([]);
 
   readonly orgForm = this.fb.nonNullable.group({
     name: ['', [Validators.required]],
@@ -89,6 +63,7 @@ export class OrganizationDashboardComponent implements OnInit {
         if (profile.role?.includes('ORGANIZER')) {
           this.isPendingApproval.set(false);
           localStorage.removeItem('pendingOrgReg');
+          this.fetchEvents();
         }
       }
     });
@@ -102,6 +77,20 @@ export class OrganizationDashboardComponent implements OnInit {
     if (isPending && !role.includes('ORGANIZER')) {
       this.isPendingApproval.set(true);
     }
+  }
+
+  fetchEvents(): void {
+    this.eventApi.getEvents().subscribe({
+      next: (events) => {
+        const mapped = events.map(e => ({
+          ...e,
+          ticketsSold: 0,
+          revenue: '0đ'
+        }));
+        this.mockEvents.set(mapped);
+      },
+      error: (err) => console.error('Failed to fetch events:', err)
+    });
   }
 
   onSubmitRegistration(): void {

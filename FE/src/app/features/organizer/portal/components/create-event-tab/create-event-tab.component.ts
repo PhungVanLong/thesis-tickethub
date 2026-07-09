@@ -1,10 +1,10 @@
-﻿import { Component, inject, OnInit, signal, computed, Output, EventEmitter } from '@angular/core';
+import { Component, inject, OnInit, signal, computed, Output, EventEmitter } from '@angular/core';
 import { Router } from '@angular/router';
 import {
   FormBuilder, FormGroup, FormArray,
   ReactiveFormsModule, Validators, AbstractControl
 } from '@angular/forms';
-import { HttpClient } from '@angular/common/http';
+import { EventApiService } from '../../../../../core/services/event.service';
 import { AuthService } from '../../../../auth/auth.service';
 import { NgClass, CurrencyPipe, DecimalPipe, DatePipe, NgTemplateOutlet } from '@angular/common';
 import { CdkDrag } from '@angular/cdk/drag-drop';
@@ -21,7 +21,7 @@ export class CreateEventTabComponent implements OnInit {
   private readonly authService = inject(AuthService);
   private readonly router = inject(Router);
   private readonly fb = inject(FormBuilder);
-  private readonly http = inject(HttpClient);
+  private readonly eventApi = inject(EventApiService);
   private readonly sanitizer = inject(DomSanitizer);
 
   @Output() navigateTo = new EventEmitter<string>();
@@ -442,12 +442,12 @@ export class CreateEventTabComponent implements OnInit {
     this.submitError.set(null);
 
     const payload = this.buildPayload();
-    this.http.post('http://localhost:8080/api/events/create', payload).subscribe({
+    this.eventApi.createEvent(payload as any).subscribe({
       next: () => {
         this.isSubmitting.set(false);
         this.submitSuccess.set(true);
       },
-      error: (err) => {
+      error: (err: any) => {
         this.isSubmitting.set(false);
         this.submitError.set(err?.error?.message || 'Failed to create event. Please try again.');
       },

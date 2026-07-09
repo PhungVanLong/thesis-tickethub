@@ -22,6 +22,7 @@ public class SeatMap {
     @Column(length = 255)
     private String name;
 
+    @org.hibernate.annotations.JdbcTypeCode(org.hibernate.type.SqlTypes.JSON)
     @Column(name = "layout_json", columnDefinition = "jsonb")
     private String layoutJson;
 

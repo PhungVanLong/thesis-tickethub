@@ -1,5 +1,5 @@
-﻿import { Component, inject, OnInit, signal, HostListener } from '@angular/core';
-import { Router } from '@angular/router';
+import { Component, inject, OnInit, signal, HostListener } from '@angular/core';
+import { Router, RouterLink } from '@angular/router';
 import { AuthService } from '../../auth/auth.service';
 import { LanguageService } from '../../../core/services/language.service';
 import { UpperCasePipe } from '@angular/common';
@@ -8,7 +8,7 @@ import { CreateEventTabComponent } from './components/create-event-tab/create-ev
 @Component({
   selector: 'app-organizer-portal',
   standalone: true,
-  imports: [UpperCasePipe, CreateEventTabComponent],
+  imports: [UpperCasePipe, CreateEventTabComponent, RouterLink],
   templateUrl: './portal.html',
   styleUrl: './portal.scss',
 })
@@ -21,6 +21,7 @@ export class OrganizerPortalComponent implements OnInit {
   readonly activeTab = signal('dashboard');
   readonly currentLang = this.langService.currentLang;
   readonly showLangDropdown = signal(false);
+  readonly showUserMenu = signal(false);
 
   ngOnInit(): void {
     const profile = this.userProfile();
@@ -35,6 +36,13 @@ export class OrganizerPortalComponent implements OnInit {
   toggleLangDropdown(event: Event): void {
     event.stopPropagation();
     this.showLangDropdown.update(v => !v);
+    this.showUserMenu.set(false);
+  }
+
+  toggleUserMenu(event: Event): void {
+    event.stopPropagation();
+    this.showUserMenu.update(v => !v);
+    this.showLangDropdown.set(false);
   }
 
   setLanguage(lang: 'Vie' | 'Eng'): void {
@@ -45,6 +53,7 @@ export class OrganizerPortalComponent implements OnInit {
   @HostListener('document:click')
   onDocumentClick(): void {
     this.showLangDropdown.set(false);
+    this.showUserMenu.set(false);
   }
 
   logout(): void {
@@ -55,6 +64,10 @@ export class OrganizerPortalComponent implements OnInit {
   get userInitial(): string {
     const name = this.userProfile()?.fullName || this.userProfile()?.email || 'O';
     return name.charAt(0).toUpperCase();
+  }
+
+  get userName(): string {
+    return this.userProfile()?.fullName || this.userProfile()?.email || 'Organizer';
   }
 
   navigateToTab(tab: string): void {
