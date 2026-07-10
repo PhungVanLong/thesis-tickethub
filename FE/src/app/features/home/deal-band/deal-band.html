@@ -1,0 +1,23 @@
+<section class="deal-band" id="deals" aria-label="Featured Promotions">
+  <div class="deals-grid">
+    @for (deal of deals; track deal.title) {
+      <div class="deal-card" [style.background-image]="'linear-gradient(rgba(0, 0, 0, 0.15), rgba(0, 0, 0, 0.75)), url(' + deal.image + ')'">
+        <div class="deal-content">
+          @if (deal.eyebrow) {
+            <span class="deal-eyebrow" [class.conference]="deal.eyebrow === 'CONFERENCE'">
+              {{ (deal.eyebrow === 'CONFERENCE' ? ('deal.conference' | translate) : deal.eyebrow) }}
+            </span>
+          }
+          <h2 class="deal-title">{{ deal.title }}</h2>
+          @if (deal.title === 'Future Systems Summit') {
+            <p class="deal-subtitle">{{ 'deal.summitSubtitle' | translate }}</p>
+          }
+          <button type="button" class="deal-btn" [class.btn-transparent]="deal.isTransparentButton">
+            {{ (deal.buttonText === 'See Deals' ? ('action.seeDeals' | translate) : ('action.learnMore' | translate)) }}
+          </button>
+        </div>
+      </div>
+    }
+  </div>
+</section>
+

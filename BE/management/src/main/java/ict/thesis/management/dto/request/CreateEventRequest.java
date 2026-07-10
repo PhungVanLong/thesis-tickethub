@@ -1,60 +1,44 @@
 package ict.thesis.management.dto.request;
 
+import java.time.Instant;
+import java.util.List;
+
+import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import lombok.Getter;
-
-import java.time.Instant;
+import lombok.Setter;
 
 @Getter
+@Setter
 public class CreateEventRequest {
-    @NotNull(message = "organizerId is required")
-    private Long organizerId;
+    @NotNull(message = "organizationId is required")
+    private Long organizationId;
+
     @NotBlank(message = "title is required")
     private String title;
+
     private String description;
+
+    @NotBlank(message = "venue is required")
     private String venue;
+
+    @NotBlank(message = "city is required")
     private String city;
+
     private String locationCoords;
+
     @NotNull(message = "startTime is required")
     private Instant startTime;
+
     @NotNull(message = "endTime is required")
     private Instant endTime;
+
     private String bannerUrl;
 
-    public void setOrganizerId(Long organizerId) {
-        this.organizerId = organizerId;
-    }
+    @Valid
+    private List<TicketTierRequest> ticketTiers;
 
-    public void setTitle(String title) {
-        this.title = title;
-    }
-
-    public void setDescription(String description) {
-        this.description = description;
-    }
-
-    public void setVenue(String venue) {
-        this.venue = venue;
-    }
-
-    public void setCity(String city) {
-        this.city = city;
-    }
-
-    public void setLocationCoords(String locationCoords) {
-        this.locationCoords = locationCoords;
-    }
-
-    public void setStartTime(Instant startTime) {
-        this.startTime = startTime;
-    }
-
-    public void setEndTime(Instant endTime) {
-        this.endTime = endTime;
-    }
-
-    public void setBannerUrl(String bannerUrl) {
-        this.bannerUrl = bannerUrl;
-    }
+    @Valid
+    private List<SeatMapRequest> seatMaps;
 }

@@ -1,8 +1,6 @@
 package ict.thesis.identity.security;
 
-import java.util.List;
 
-import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
@@ -22,10 +20,16 @@ public class UserDetailsServiceImpl implements UserDetailsService {
         User user = userRepository.findByEmail(username)
             .orElseThrow(() -> new UsernameNotFoundException("User not found"));
 
+        java.util.List<org.springframework.security.core.authority.SimpleGrantedAuthority> authorities =
+            java.util.Arrays.stream(user.getRole().split(","))
+                .map(String::trim)
+                .map(org.springframework.security.core.authority.SimpleGrantedAuthority::new)
+                .toList();
+
         return org.springframework.security.core.userdetails.User.builder()
             .username(user.getEmail())
             .password(user.getPasswordHash())
-            .authorities(List.of(new SimpleGrantedAuthority("ROLE_" + user.getRole().name())))
+            .authorities(authorities)
             .accountLocked(!user.isActive())
             .disabled(!user.isActive())
             .build();

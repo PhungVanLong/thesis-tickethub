@@ -3,7 +3,11 @@ package ict.thesis.management.entity;
 import java.time.Instant;
 
 import jakarta.persistence.*;
+import lombok.Getter;
+import lombok.Setter;
 
+@Setter
+@Getter
 @Entity
 @Table(name = "seat_maps")
 public class SeatMap {
@@ -30,18 +34,4 @@ public class SeatMap {
     @Column(name = "created_at")
     private Instant createdAt;
 
-    public Long getId() { return id; }
-    public void setId(Long id) { this.id = id; }
-    public Events getEvent() { return event; }
-    public void setEvent(Events event) { this.event = event; }
-    public String getName() { return name; }
-    public void setName(String name) { this.name = name; }
-    public String getLayoutJson() { return layoutJson; }
-    public void setLayoutJson(String layoutJson) { this.layoutJson = layoutJson; }
-    public Integer getTotalRows() { return totalRows; }
-    public void setTotalRows(Integer totalRows) { this.totalRows = totalRows; }
-    public Integer getTotalCols() { return totalCols; }
-    public void setTotalCols(Integer totalCols) { this.totalCols = totalCols; }
-    public Instant getCreatedAt() { return createdAt; }
-    public void setCreatedAt(Instant createdAt) { this.createdAt = createdAt; }
 }

@@ -12,7 +12,7 @@ import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
-import java.time.OffsetDateTime;
+import java.time.Instant;
 import java.util.UUID;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -38,9 +38,9 @@ public class Checkin {
     @JoinColumn(name = "ticket_id")
     private Ticket ticket;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "staff_id")
-    private UserRef staff;
+    @Column(name = "staff_id")
+    private Long staff;
+
 
     @Column(name = "event_id")
     private Long eventId;
@@ -53,6 +53,5 @@ public class Checkin {
     private String deviceId;
 
     @Column(name = "checked_in_at")
-    private OffsetDateTime checkedInAt;
+    private Instant checkedInAt;
 }
-

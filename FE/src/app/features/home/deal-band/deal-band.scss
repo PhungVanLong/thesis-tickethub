@@ -1,0 +1,125 @@
+/* ============================================================
+   DEAL BAND — Recreated Side-by-Side Promotion Banners
+   ============================================================ */
+
+:host {
+  display: block;
+  background: #ffffff;
+  padding: 40px 0;
+}
+
+.deal-band {
+  width: min(1200px, calc(100% - 48px));
+  margin: 0 auto;
+}
+
+.deals-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 24px;
+}
+
+.deal-card {
+  height: 280px;
+  background-size: cover;
+  background-position: center;
+  border-radius: 8px;
+  position: relative;
+  display: flex;
+  align-items: flex-end;
+  padding: 32px;
+  overflow: hidden;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.deal-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
+}
+
+.deal-content {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  color: #ffffff;
+  width: 100%;
+}
+
+.deal-eyebrow {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  color: #38bdf8; /* Soft blue */
+  margin-bottom: 8px;
+}
+
+.deal-eyebrow.conference {
+  color: #e2e8f0;
+  opacity: 0.8;
+}
+
+.deal-title {
+  font-size: 32px;
+  font-weight: 800;
+  line-height: 1.1;
+  margin: 0;
+  color: #ffffff;
+}
+
+.deal-subtitle {
+  font-size: 14px;
+  margin: 6px 0 0 0;
+  color: #e2e8f0;
+}
+
+.deal-btn {
+  margin-top: 20px;
+  background: #ffffff;
+  color: #000000;
+  border: none;
+  border-radius: 4px;
+  font-size: 14px;
+  font-weight: 700;
+  padding: 10px 20px;
+  cursor: pointer;
+  transition: background 0.2s ease, opacity 0.2s ease;
+}
+
+.deal-btn:hover {
+  background: #f1f5f9;
+}
+
+.deal-btn.btn-transparent {
+  background: transparent;
+  color: #ffffff;
+  border: 1px solid #ffffff;
+}
+
+.deal-btn.btn-transparent:hover {
+  background: rgba(255, 255, 255, 0.12);
+}
+
+/* ── Responsive adjustments ── */
+@media (max-width: 1023px) {
+  .deals-grid {
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
+  .deal-card {
+    height: 240px;
+    padding: 24px;
+  }
+  .deal-title {
+    font-size: 26px;
+  }
+}
+
+@media (max-width: 767px) {
+  .deal-band {
+    width: calc(100% - 32px);
+  }
+}
+

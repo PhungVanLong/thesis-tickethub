@@ -14,7 +14,11 @@ import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
+import lombok.Getter;
+import lombok.Setter;
 
+@Setter
+@Getter
 @Entity
 @Table(name = "event_staff")
 public class EventStaff {
@@ -26,9 +30,8 @@ public class EventStaff {
     @JoinColumn(name = "event_id")
     private Events event;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "staff_id")
-    private RefUser staff;
+    @Column(name = "staff_id")
+    private Long staff;
 
     @Enumerated(EnumType.STRING)
     @Column(name = "role_in_event", nullable = false, length = 100)
@@ -37,14 +40,4 @@ public class EventStaff {
     @Column(name = "assigned_at")
     private Instant assignedAt;
 
-    public Long getId() { return id; }
-    public void setId(Long id) { this.id = id; }
-    public Events getEvent() { return event; }
-    public void setEvent(Events event) { this.event = event; }
-    public RefUser getStaff() { return staff; }
-    public void setStaff(RefUser staff) { this.staff = staff; }
-    public RoleEventStaff getRoleInEvent() { return roleInEvent; }
-    public void setRoleInEvent(RoleEventStaff roleInEvent) { this.roleInEvent = roleInEvent; }
-    public Instant getAssignedAt() { return assignedAt; }
-    public void setAssignedAt(Instant assignedAt) { this.assignedAt = assignedAt; }
 }

@@ -1,10 +1,10 @@
 package ict.thesis.management.dto.request;
 
 import ict.thesis.management.entity.enums.ApprovalDecision;
+import jakarta.validation.constraints.NotNull;
 
 public record ApprovalRequest(
-    Long adminUserId,
-    ApprovalDecision decision,
+    @NotNull ApprovalDecision decision,
     String reason
 ) {
 }

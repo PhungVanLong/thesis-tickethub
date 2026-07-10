@@ -28,7 +28,11 @@ public class JwtService {
         this.expirationSeconds = expirationSeconds;
     }
 
-    public String generateToken(String userId, String role) {
+    /**
+     * Sinh token JWT cho User sau khi xác thực thành công.
+     * Token này rất nhẹ, chỉ chứa ID, Role và Email, phù hợp với kiến trúc API Gateway.
+     */
+    public String generateToken(String userId, String role, String email) {
         Instant now = Instant.now();
         Instant expiresAt = now.plusSeconds(expirationSeconds);
 
@@ -37,6 +41,7 @@ public class JwtService {
                    .issuedAt(Date.from(now))
                    .expiration(Date.from(expiresAt))
                    .claim("role", role) // Khớp cấu hình claims.get("role") ở API Gateway
+                   .claim("email", email)
                    .signWith(secretKey)
                    .compact();
     }

@@ -4,7 +4,11 @@ import java.math.BigDecimal;
 import java.time.Instant;
 
 import jakarta.persistence.*;
+import lombok.Getter;
+import lombok.Setter;
 
+@Setter
+@Getter
 @Entity
 @Table(name = "analytics_events")
 public class AnalyticsEvent {
@@ -31,18 +35,4 @@ public class AnalyticsEvent {
     @Column(name = "snapshot_at")
     private Instant snapshotAt;
 
-    public Long getId() { return id; }
-    public void setId(Long id) { this.id = id; }
-    public Events getEvent() { return event; }
-    public void setEvent(Events event) { this.event = event; }
-    public Integer getTotalTicketsSold() { return totalTicketsSold; }
-    public void setTotalTicketsSold(Integer totalTicketsSold) { this.totalTicketsSold = totalTicketsSold; }
-    public Integer getTotalCheckins() { return totalCheckins; }
-    public void setTotalCheckins(Integer totalCheckins) { this.totalCheckins = totalCheckins; }
-    public BigDecimal getTotalRevenue() { return totalRevenue; }
-    public void setTotalRevenue(BigDecimal totalRevenue) { this.totalRevenue = totalRevenue; }
-    public String getTierBreakdown() { return tierBreakdown; }
-    public void setTierBreakdown(String tierBreakdown) { this.tierBreakdown = tierBreakdown; }
-    public Instant getSnapshotAt() { return snapshotAt; }
-    public void setSnapshotAt(Instant snapshotAt) { this.snapshotAt = snapshotAt; }
 }

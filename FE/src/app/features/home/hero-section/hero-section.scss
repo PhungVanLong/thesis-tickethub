@@ -1,0 +1,212 @@
+/* ============================================================
+   HERO SECTION — Recreated TicketHub Hero & Search
+   ============================================================ */
+
+:host {
+  display: block;
+  position: relative;
+  background: #060b16;
+}
+
+/* ── Search panel overlay on top of the hero ── */
+.search-container {
+  max-width: 1200px;
+  width: min(1200px, calc(100% - 48px));
+  margin: 0 auto;
+  position: relative;
+  z-index: 10;
+  padding-top: 24px;
+  margin-bottom: -44px; /* Pulls the hero banner up under it */
+}
+
+.search-panel {
+  display: grid;
+  grid-template-columns: 1.2fr auto 1fr auto 1.8fr auto;
+  align-items: center;
+  gap: 16px;
+  background: #ffffff;
+  padding: 8px 12px;
+  border-radius: 4px;
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.25);
+  border: 1px solid #e2e8f0;
+}
+
+.search-field {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 6px 12px;
+}
+
+.field-icon {
+  width: 20px;
+  height: 20px;
+  color: #718096;
+  flex-shrink: 0;
+}
+
+.field-content {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+}
+
+.field-label {
+  font-size: 9px;
+  font-weight: 700;
+  color: #718096;
+  letter-spacing: 0.05em;
+  margin-bottom: 2px;
+}
+
+.field-content input,
+.field-content select {
+  border: none;
+  outline: none;
+  font-size: 14px;
+  font-weight: 500;
+  color: #1a202c;
+  background: transparent;
+  padding: 0;
+  width: 100%;
+  min-height: auto;
+}
+
+.field-content input::placeholder {
+  color: #a0aec0;
+}
+
+.field-divider {
+  width: 1px;
+  height: 36px;
+  background: #e2e8f0;
+}
+
+.search-btn {
+  background: #0052cc; /* TicketHub Blue */
+  color: #ffffff;
+  border: none;
+  border-radius: 4px;
+  font-size: 15px;
+  font-weight: 700;
+  padding: 14px 36px;
+  cursor: pointer;
+  transition: background 0.2s ease, transform 0.2s ease;
+  height: 100%;
+  min-height: 48px;
+}
+
+.search-btn:hover {
+  background: #0043b3;
+  transform: translateY(-1px);
+}
+
+.search-btn:active {
+  transform: translateY(0);
+}
+
+/* ── Hero Banner ── */
+.promo-banner {
+  height: 480px;
+  background: linear-gradient(180deg, rgba(6, 11, 22, 0.4) 0%, rgba(6, 11, 22, 0.8) 100%), 
+              url('https://images.unsplash.com/photo-1470225620780-dba8ba36b745?auto=format&fit=crop&w=1600&q=80');
+  background-size: cover;
+  background-position: center;
+  display: flex;
+  align-items: center;
+  position: relative;
+  z-index: 1;
+  padding-top: 44px; /* Offset for overlay search bar */
+}
+
+.banner-content {
+  width: min(1200px, calc(100% - 48px));
+  margin: 0 auto;
+  color: #ffffff;
+}
+
+.promoted-tag {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  opacity: 0.9;
+}
+
+.tag-arrow {
+  font-size: 8px;
+  margin-right: 2px;
+}
+
+h1 {
+  font-size: 52px;
+  font-weight: 800;
+  line-height: 1.1;
+  margin: 12px 0 8px;
+  letter-spacing: -0.01em;
+}
+
+.hero-copy {
+  font-size: 18px;
+  font-weight: 400;
+  max-width: 600px;
+  margin: 0 0 24px;
+  opacity: 0.95;
+}
+
+.btn-find-tickets {
+  background: #0052cc;
+  color: #ffffff;
+  border: none;
+  border-radius: 4px;
+  font-size: 14px;
+  font-weight: 700;
+  padding: 12px 24px;
+  cursor: pointer;
+  transition: background 0.2s ease, transform 0.2s ease;
+}
+
+.btn-find-tickets:hover {
+  background: #0043b3;
+  transform: translateY(-1px);
+}
+
+/* ── Responsive adjustments ── */
+@media (max-width: 1023px) {
+  .search-panel {
+    grid-template-columns: 1fr;
+    gap: 8px;
+    padding: 16px;
+  }
+  .field-divider {
+    display: none;
+  }
+  .search-container {
+    margin-bottom: 24px;
+  }
+  .promo-banner {
+    height: auto;
+    padding: 64px 0;
+  }
+  h1 {
+    font-size: 40px;
+  }
+}
+
+@media (max-width: 767px) {
+  .search-container {
+    width: calc(100% - 32px);
+  }
+  .banner-content {
+    width: calc(100% - 32px);
+  }
+  h1 {
+    font-size: 32px;
+  }
+  .hero-copy {
+    font-size: 16px;
+  }
+}
+

@@ -30,4 +30,18 @@ public class AuthController {
     public ResponseEntity<AuthResponse> login(@Valid @RequestBody LoginRequest request) {
         return ResponseEntity.ok(authService.login(request));
     }
+
+    // TODO: Sẽ phát triển chức năng quên mật khẩu sau
+    @PostMapping("/forgot-password")
+    public ResponseEntity<String> forgotPassword(@Valid @RequestBody ict.thesis.identity.dto.ForgotPasswordRequest request) {
+        authService.forgotPassword(request);
+        return ResponseEntity.ok("Email reset password will be sent (TODO).");
+    }
+
+    // TODO: Sẽ phát triển chức năng đặt lại mật khẩu sau
+    @PostMapping("/reset-password")
+    public ResponseEntity<String> resetPassword(@Valid @RequestBody ict.thesis.identity.dto.ResetPasswordRequest request) {
+        authService.resetPassword(request);
+        return ResponseEntity.ok("Password reset successfully (TODO).");
+    }
 }

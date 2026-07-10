@@ -32,6 +32,9 @@ public class JwtGlobalAuthenticationFilter implements GlobalFilter, Ordered {
     @Value("${gateway.security.public-paths:/api/auth/login,/api/auth/register,/api/movies/**,/swagger-ui.html,/swagger-ui/**,/v3/api-docs/**,/api-docs/**,/actuator/health,/actuator/info}")
     private String publicPathsCsv;
 
+    @Value("${gateway.shared-secret}")
+    private String gatewaySharedSecret;
+
     private SecretKey secretKey;
     private final AntPathMatcher pathMatcher = new AntPathMatcher();
 
@@ -47,8 +50,20 @@ public class JwtGlobalAuthenticationFilter implements GlobalFilter, Ordered {
         // Apply JWT check only for requests that actually require authentication.
         // Public endpoints pass through, internal endpoints must present a valid token.
         String path = request.getURI().getPath();
-        if (isPublicPath(path) || HttpMethod.OPTIONS.equals(request.getMethod())) {
-            return chain.filter(exchange);
+        HttpMethod method = request.getMethod();
+
+        boolean isPublic = isPublicPath(path);
+        // /api/events/** endpoints are public ONLY for GET requests.
+        // POST/PUT/DELETE/PATCH to /api/events/** require authentication.
+        if (isPublic && path.startsWith("/api/events") && !HttpMethod.GET.equals(method)) {
+            isPublic = false;
+        }
+
+        if (isPublic || HttpMethod.OPTIONS.equals(method)) {
+            ServerHttpRequest modifiedRequest = request.mutate()
+                    .header("X-Gateway-Token", gatewaySharedSecret)
+                    .build();
+            return chain.filter(exchange.mutate().request(modifiedRequest).build());
         }
 
         if (!request.getHeaders().containsKey(HttpHeaders.AUTHORIZATION)) {
@@ -70,10 +85,13 @@ public class JwtGlobalAuthenticationFilter implements GlobalFilter, Ordered {
 
             String userId = claims.getSubject();
             String role = claims.get("role", String.class);
+            String email = claims.get("email", String.class);
 
             ServerHttpRequest modifiedRequest = request.mutate()
                     .header("X-User-Id", userId == null ? "" : userId)
                     .header("X-User-Role", role == null ? "" : role)
+                    .header("X-User-Email", email == null ? "" : email)
+                    .header("X-Gateway-Token", gatewaySharedSecret)
                     .build();
 
             return chain.filter(exchange.mutate().request(modifiedRequest).build());

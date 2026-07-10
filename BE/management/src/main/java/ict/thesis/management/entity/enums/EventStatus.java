@@ -1,8 +1,7 @@
 package ict.thesis.management.entity.enums;
 
 public enum EventStatus {
-    DRAFT,
-    PENDING_APPROVAL,
+    PENDING,
     APPROVED,
     PUBLISHED,
     CANCELLED

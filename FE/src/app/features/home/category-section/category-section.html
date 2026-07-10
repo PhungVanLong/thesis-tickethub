@@ -1,0 +1,15 @@
+<section class="category-section" id="categories" aria-labelledby="cat-title">
+  <div class="section-heading">
+    <h2 id="cat-title">{{ 'home.browseCategory' | translate }}</h2>
+    <a class="view-all" href="#">{{ 'home.viewAll' | translate }} <span class="arrow">→</span></a>
+  </div>
+
+  <div class="category-grid">
+    @for (category of categories; track category.name) {
+      <a class="category-card" href="#">
+        <span class="category-icon">{{ category.icon }}</span>
+        <span class="category-name">{{ 'category.' + category.name | translate }}</span>
+      </a>
+    }
+  </div>
+</section>

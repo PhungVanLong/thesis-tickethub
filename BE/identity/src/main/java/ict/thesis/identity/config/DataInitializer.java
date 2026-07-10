@@ -23,9 +23,17 @@ public class DataInitializer {
     @Bean
     public CommandLineRunner initAdminUser(
         UserRepository userRepository,
-        PasswordEncoder passwordEncoder
+        PasswordEncoder passwordEncoder,
+        org.springframework.jdbc.core.JdbcTemplate jdbcTemplate
     ) {
         return args -> {
+            try {
+                jdbcTemplate.execute("ALTER TABLE users DROP CONSTRAINT IF EXISTS users_role_check");
+                LOGGER.info("Dropped users_role_check constraint if it existed.");
+            } catch (Exception e) {
+                LOGGER.warn("Could not drop users_role_check constraint: {}", e.getMessage());
+            }
+
             if (userRepository.existsByEmail(DEFAULT_ADMIN_EMAIL)) {
                 return;
             }
@@ -34,7 +42,7 @@ public class DataInitializer {
                 .email(DEFAULT_ADMIN_EMAIL)
                 .passwordHash(passwordEncoder.encode(DEFAULT_ADMIN_PASSWORD))
                 .fullName("System Admin")
-                .role(UserRole.ADMIN)
+                .role(UserRole.ADMIN.name())
                 .verified(true)
                 .active(true)
                 .createdAt(Instant.now())

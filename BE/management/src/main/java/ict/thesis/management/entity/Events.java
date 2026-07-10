@@ -2,13 +2,23 @@ package ict.thesis.management.entity;
 
 import java.time.Instant;
 
-import jakarta.persistence.*;
+import ict.thesis.management.entity.enums.EventStatus;
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
+import jakarta.persistence.FetchType;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
+import jakarta.persistence.Table;
 import lombok.Getter;
 import lombok.Setter;
-import org.hibernate.annotations.ManyToAny;
 
-import ict.thesis.management.entity.enums.EventStatus;
-
+@Setter
+@Getter
 @Entity
 @Table(name = "events")
 public class Events {
@@ -17,8 +27,8 @@ public class Events {
     private Long id;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "organizer_id")
-    private RefUser refUser;
+    @JoinColumn(name = "organization_id")
+    private Organization organization;
 
     @Column(nullable = false, length = 255)
     private String title;
@@ -56,36 +66,6 @@ public class Events {
 
     @Column(name = "updated_at")
     private Instant updatedAt;
-
-    public Long getId() { return id; }
-    public void setId(Long id) { this.id = id; }
-
-    public RefUser getRefUser() { return refUser; }
-    public void setRefUser(RefUser refUser) { this.refUser = refUser; }
-    public String getTitle() { return title; }
-    public void setTitle(String title) { this.title = title; }
-    public String getDescription() { return description; }
-    public void setDescription(String description) { this.description = description; }
-    public String getVenue() { return venue; }
-    public void setVenue(String venue) { this.venue = venue; }
-    public String getCity() { return city; }
-    public void setCity(String city) { this.city = city; }
-    public String getLocationCoords() { return locationCoords; }
-    public void setLocationCoords(String locationCoords) { this.locationCoords = locationCoords; }
-    public Instant getStartTime() { return startTime; }
-    public void setStartTime(Instant startTime) { this.startTime = startTime; }
-    public Instant getEndTime() { return endTime; }
-    public void setEndTime(Instant endTime) { this.endTime = endTime; }
-    public String getBannerUrl() { return bannerUrl; }
-    public void setBannerUrl(String bannerUrl) { this.bannerUrl = bannerUrl; }
-    public EventStatus getStatus() { return status; }
-    public void setStatus(EventStatus status) { this.status = status; }
-    public boolean isPublished() { return isPublished; }
-    public void setPublished(boolean published) { isPublished = published; }
-    public Instant getCreatedAt() { return createdAt; }
- public void setCreatedAt(Instant createdAt) { this.createdAt = createdAt; }
- public Instant getUpdatedAt() { return updatedAt; }
- public void setUpdatedAt(Instant updatedAt) { this.updatedAt = updatedAt; }
 
 
 }

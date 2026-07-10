@@ -5,7 +5,11 @@ import java.time.Instant;
 
 import ict.thesis.management.entity.enums.TierType;
 import jakarta.persistence.*;
+import lombok.Getter;
+import lombok.Setter;
 
+@Setter
+@Getter
 @Entity
 @Table(name = "ticket_tiers")
 public class TicketTier {
@@ -49,28 +53,4 @@ public class TicketTier {
     @Column(name = "sale_end")
     private Instant saleEnd;
 
-    public Long getId() { return id; }
-    public void setId(Long id) { this.id = id; }
-    public Events getEvent() { return event; }
-    public void setEvent(Events event) { this.event = event; }
-    public SeatMap getSeatMap() { return seatMap; }
-    public void setSeatMap(SeatMap seatMap) { this.seatMap = seatMap; }
-    public String getName() { return name; }
-    public void setName(String name) { this.name = name; }
-    public TierType getTierType() { return tierType; }
-    public void setTierType(TierType tierType) { this.tierType = tierType; }
-    public BigDecimal getPrice() { return price; }
-    public void setPrice(BigDecimal price) { this.price = price; }
-    public Integer getQuantityTotal() { return quantityTotal; }
-    public void setQuantityTotal(Integer quantityTotal) { this.quantityTotal = quantityTotal; }
-    public Integer getQuantityAvailable() { return quantityAvailable; }
-    public void setQuantityAvailable(Integer quantityAvailable) { this.quantityAvailable = quantityAvailable; }
-    public Integer getQuantitySold() { return quantitySold; }
-    public void setQuantitySold(Integer quantitySold) { this.quantitySold = quantitySold; }
-    public String getColorCode() { return colorCode; }
-    public void setColorCode(String colorCode) { this.colorCode = colorCode; }
-    public Instant getSaleStart() { return saleStart; }
-    public void setSaleStart(Instant saleStart) { this.saleStart = saleStart; }
-    public Instant getSaleEnd() { return saleEnd; }
-    public void setSaleEnd(Instant saleEnd) { this.saleEnd = saleEnd; }
 }

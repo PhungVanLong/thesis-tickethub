@@ -1,0 +1,108 @@
+<div class="shell">
+  <app-navigation />
+
+  <main class="account-container">
+    <div class="account-card">
+      <div class="account-header">
+        <h1>{{ 'account.title' | translate }}</h1>
+        <p class="subtitle">{{ 'account.subtitle' | translate }}</p>
+      </div>
+
+      <!-- Alerts -->
+      @if (errorMessage()) {
+        <div class="alert alert-error" role="alert">
+          <p>{{ errorMessage() | translate }}</p>
+        </div>
+      }
+      @if (successMessage()) {
+        <div class="alert alert-success" role="alert">
+          <p>{{ successMessage() | translate }}</p>
+        </div>
+      }
+
+      @if (isLoading()) {
+        <!-- Skeleton loader -->
+        <div class="skeleton-container">
+          <div class="skeleton skeleton-avatar"></div>
+          <div class="skeleton-fields">
+            <div class="skeleton skeleton-field"></div>
+            <div class="skeleton skeleton-field"></div>
+            <div class="skeleton skeleton-field"></div>
+          </div>
+        </div>
+      } @else {
+        <div class="account-body">
+          <!-- Avatar Preview column -->
+          <div class="avatar-column">
+            <div class="avatar-wrapper">
+              <img [src]="avatarPreviewUrl()" alt="User Avatar" class="avatar-preview" />
+            </div>
+            <div class="user-info-brief">
+              <span class="user-role-badge">{{ userRole() }}</span>
+              <p class="user-email-text">{{ userEmail() }}</p>
+            </div>
+          </div>
+
+          <!-- Edit Profile Form -->
+          <form [formGroup]="accountForm" (ngSubmit)="onSubmit()" class="account-form">
+            <!-- Full Name field -->
+            <div class="form-group">
+              <label for="fullName">{{ 'account.fullName' | translate }}</label>
+              <div class="input-wrapper"
+                [class.has-error]="accountForm.controls.fullName.invalid && accountForm.controls.fullName.touched">
+                <input id="fullName" type="text" formControlName="fullName" placeholder="Nguyễn Văn A" />
+              </div>
+              @if (accountForm.controls.fullName.invalid && accountForm.controls.fullName.touched) {
+                <div class="error-message">
+                  {{ 'account.fullNameError' | translate }}
+                </div>
+              }
+            </div>
+
+            <!-- Phone field -->
+            <div class="form-group">
+              <label for="phone">{{ 'account.phone' | translate }}</label>
+              <div class="input-wrapper"
+                [class.has-error]="accountForm.controls.phone.invalid && accountForm.controls.phone.touched">
+                <input id="phone" type="text" formControlName="phone" placeholder="0987654321" />
+              </div>
+              @if (accountForm.controls.phone.invalid && accountForm.controls.phone.touched) {
+                <div class="error-message">
+                  {{ 'account.phoneError' | translate }}
+                </div>
+              }
+            </div>
+
+            <!-- Avatar URL field -->
+            <div class="form-group">
+              <label for="avatarUrl">Đường dẫn ảnh đại diện (Avatar URL)</label>
+              <div class="input-wrapper">
+                <input id="avatarUrl" type="url" formControlName="avatarUrl" (input)="onAvatarUrlChange($event)" placeholder="https://example.com/image.jpg" />
+              </div>
+            </div>
+
+            <!-- Email (readonly) -->
+            <div class="form-group disabled-group">
+              <label for="email">{{ 'account.email' | translate }}</label>
+              <div class="input-wrapper disabled-wrapper">
+                <input id="email" type="email" [value]="userEmail()" disabled />
+              </div>
+            </div>
+
+            <!-- Save button -->
+            <button type="submit" class="btn-save" [disabled]="isSaving()">
+              @if (isSaving()) {
+                <span class="spinner"></span>
+                <span>{{ 'account.saving' | translate }}</span>
+              } @else {
+                <span>{{ 'account.saveChanges' | translate }}</span>
+              }
+            </button>
+          </form>
+        </div>
+      }
+    </div>
+  </main>
+
+  <app-footer />
+</div>

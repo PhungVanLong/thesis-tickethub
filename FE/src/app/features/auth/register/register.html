@@ -1,0 +1,190 @@
+<div class="register-page">
+  <!-- Minimalist Top Navigation Header -->
+  <header class="header">
+    <a href="/" class="logo">TicketHub</a>
+  </header>
+
+  <!-- Main Centered Form Area -->
+  <main class="main-content">
+    <div class="card-container">
+      <div class="register-card">
+        <div class="card-header">
+          <h1>Create your account</h1>
+          <p class="subtitle">Please enter your details to sign up</p>
+        </div>
+
+        <!-- Global Error Notification -->
+        @if (registerError()) {
+        <div class="alert alert-error" role="alert">
+          <p>{{ registerError() }}</p>
+        </div>
+        }
+
+        <form [formGroup]="registerForm" (ngSubmit)="onSubmit()" class="register-form">
+          <!-- Full Name & Phone Number (Side by Side) -->
+          <div class="form-row">
+            <!-- Full Name -->
+            <div class="form-group">
+              <label for="fullName">Full Name</label>
+              <div class="input-wrapper"
+                [class.has-error]="registerForm.controls.fullName.invalid && registerForm.controls.fullName.touched">
+                <input id="fullName" type="text" formControlName="fullName" placeholder="John Doe"
+                  autocomplete="name" />
+              </div>
+              @if (registerForm.controls.fullName.invalid && registerForm.controls.fullName.touched) {
+              <div class="error-message">
+                @if (registerForm.controls.fullName.errors?.['required']) {
+                Please enter your full name
+                }
+              </div>
+              }
+            </div>
+
+            <!-- Phone Number -->
+            <div class="form-group">
+              <label for="phone">Phone Number</label>
+              <div class="input-wrapper"
+                [class.has-error]="registerForm.controls.phone.invalid && registerForm.controls.phone.touched">
+                <input id="phone" type="tel" formControlName="phone" placeholder="0987654321"
+                  autocomplete="tel" />
+              </div>
+              @if (registerForm.controls.phone.invalid && registerForm.controls.phone.touched) {
+              <div class="error-message">
+                @if (registerForm.controls.phone.errors?.['required']) {
+                Please enter your phone number
+                } @else if (registerForm.controls.phone.errors?.['pattern']) {
+                Invalid phone number (must be 10 digits)
+                }
+              </div>
+              }
+            </div>
+          </div>
+
+          <!-- Email Address Input Group -->
+          <div class="form-group">
+            <label for="email">Email Address</label>
+            <div class="input-wrapper"
+              [class.has-error]="registerForm.controls.email.invalid && registerForm.controls.email.touched">
+              <input id="email" type="email" formControlName="email" placeholder="example@gmail.com"
+                autocomplete="email" />
+            </div>
+            @if (registerForm.controls.email.invalid && registerForm.controls.email.touched) {
+            <div class="error-message">
+              @if (registerForm.controls.email.errors?.['required']) {
+              Please enter your email address
+              } @else if (registerForm.controls.email.errors?.['email']) {
+              Please enter a valid email address
+              }
+            </div>
+            }
+          </div>
+
+          <!-- Password Input Group -->
+          <div class="form-group">
+            <label for="password">Password</label>
+            <div class="input-wrapper password-wrapper"
+              [class.has-error]="registerForm.controls.password.invalid && registerForm.controls.password.touched">
+              <input id="password" [type]="showPassword() ? 'text' : 'password'" formControlName="password"
+                placeholder="••••••••" autocomplete="new-password" />
+              <button type="button" class="password-toggle" (click)="togglePasswordVisibility()"
+                [attr.aria-label]="showPassword() ? 'Ẩn mật khẩu' : 'Hiển thị mật khẩu'">
+                @if (showPassword()) {
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="20" height="20" fill="none"
+                  stroke="currentColor" stroke-width="2">
+                  <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+                  <circle cx="12" cy="12" r="3" />
+                </svg>
+                } @else {
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="20" height="20" fill="none"
+                  stroke="currentColor" stroke-width="2">
+                  <path
+                    d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24" />
+                  <line x1="1" y1="1" x2="23" y2="23" />
+                </svg>
+                }
+              </button>
+            </div>
+            @if (registerForm.controls.password.invalid && registerForm.controls.password.touched) {
+            <div class="error-message">
+              @if (registerForm.controls.password.errors?.['required']) {
+              Please enter your password
+              } @else if (registerForm.controls.password.errors?.['minlength']) {
+              Password must be at least 6 characters
+              }
+            </div>
+            }
+          </div>
+
+          <!-- Confirm Password Input Group -->
+          <div class="form-group">
+            <label for="confirmPassword">Confirm Password</label>
+            <div class="input-wrapper password-wrapper"
+              [class.has-error]="(registerForm.controls.confirmPassword.invalid || registerForm.errors?.['passwordsMismatch']) && registerForm.controls.confirmPassword.touched">
+              <input id="confirmPassword" [type]="showConfirmPassword() ? 'text' : 'password'" formControlName="confirmPassword"
+                placeholder="••••••••" autocomplete="new-password" />
+              <button type="button" class="password-toggle" (click)="toggleConfirmPasswordVisibility()"
+                [attr.aria-label]="showConfirmPassword() ? 'Ẩn mật khẩu' : 'Hiển thị mật khẩu'">
+                @if (showConfirmPassword()) {
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="20" height="20" fill="none"
+                  stroke="currentColor" stroke-width="2">
+                  <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+                  <circle cx="12" cy="12" r="3" />
+                </svg>
+                } @else {
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="20" height="20" fill="none"
+                  stroke="currentColor" stroke-width="2">
+                  <path
+                    d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24" />
+                  <line x1="1" y1="1" x2="23" y2="23" />
+                </svg>
+                }
+              </button>
+            </div>
+            @if (registerForm.controls.confirmPassword.touched) {
+            <div class="error-message">
+              @if (registerForm.controls.confirmPassword.errors?.['required']) {
+              Please confirm your password
+              } @else if (registerForm.errors?.['passwordsMismatch']) {
+              Passwords do not match
+              }
+            </div>
+            }
+          </div>
+
+          <!-- Sign Up Submit Button -->
+          <button type="submit" class="btn btn-primary btn-submit" [disabled]="isRegistering()">
+            @if (isRegistering()) {
+            <span class="spinner" aria-hidden="true"></span>
+            <span>Signing Up...</span>
+            } @else {
+            <span>Sign Up</span>
+            <svg class="btn-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="18" height="18"
+              fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4" />
+              <polyline points="10 17 15 12 10 7" />
+              <line x1="15" y1="12" x2="3" y2="12" />
+            </svg>
+            }
+          </button>
+        </form>
+
+        <!-- Card Bottom Message -->
+        <div class="card-footer-msg">
+          <p>Already have an account? <a href="/login">Sign In</a></p>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <!-- Global Footer -->
+  <footer class="footer">
+    <div class="footer-left">
+      <p>© 2026 TicketHub Institutional. All rights reserved.</p>
+    </div>
+    <div class="footer-right">
+      <a href="#">Terms of Service</a>
+      <a href="#">Privacy Policy</a>
+      <a href="#">Help Center</a>
+    </div>
+  </footer>
+</div>

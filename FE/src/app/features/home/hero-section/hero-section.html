@@ -1,0 +1,67 @@
+<section class="hero-wrapper">
+  <!-- Search panel on top of hero -->
+  <div class="search-container">
+    <form class="search-panel" [attr.aria-label]="'hero.search' | translate">
+      <div class="search-field">
+        <svg class="field-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" />
+          <circle cx="12" cy="10" r="3" />
+        </svg>
+        <div class="field-content">
+          <span class="field-label">{{ 'hero.location' | translate }}</span>
+          <input type="text" [placeholder]="'hero.locationPlaceholder' | translate" />
+        </div>
+      </div>
+      
+      <div class="field-divider"></div>
+      
+      <div class="search-field">
+        <svg class="field-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
+          <line x1="16" y1="2" x2="16" y2="6" />
+          <line x1="8" y1="2" x2="8" y2="6" />
+          <line x1="3" y1="10" x2="21" y2="10" />
+        </svg>
+        <div class="field-content">
+          <span class="field-label">{{ 'hero.dates' | translate }}</span>
+          <select>
+            <option>{{ 'hero.datesAll' | translate }}</option>
+            <option>{{ 'hero.datesToday' | translate }}</option>
+            <option>{{ 'hero.datesWeekend' | translate }}</option>
+            <option>{{ 'hero.datesMonth' | translate }}</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="field-divider"></div>
+
+      <div class="search-field query-field">
+        <svg class="field-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="11" cy="11" r="8" />
+          <line x1="21" y1="21" x2="16.65" y2="16.65" />
+        </svg>
+        <div class="field-content">
+          <span class="field-label">{{ 'hero.searchLabel' | translate }}</span>
+          <input type="text" [placeholder]="'hero.searchPlaceholder' | translate" />
+        </div>
+      </div>
+
+      <button type="submit" class="search-btn">{{ 'hero.search' | translate }}</button>
+    </form>
+  </div>
+
+  <!-- Hero Promo Banner -->
+  <div class="promo-banner" aria-labelledby="hero-title">
+    <div class="banner-content">
+      <div class="promoted-tag">
+        <span class="tag-arrow">◀</span> {{ 'hero.promoted' | translate }}
+      </div>
+      <h1 id="hero-title">Electric Horizon Festival</h1>
+      <p class="hero-copy">
+        Experience it like never before. Exclusive VIP access available now.
+      </p>
+      <button type="button" class="btn-find-tickets">{{ 'hero.findTickets' | translate }}</button>
+    </div>
+  </div>
+</section>
+
