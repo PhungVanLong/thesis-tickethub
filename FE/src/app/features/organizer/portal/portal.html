@@ -407,6 +407,8 @@
         </div>
       } @else if (activeTab() === 'create-event') {
         <app-create-event-tab (navigateTo)="navigateToTab($event)"></app-create-event-tab>
+      } @else if (activeTab() === 'events') {
+        <app-events-tab (navigateTo)="navigateToTab($event)"></app-events-tab>
       } @else {
         <!-- Fallback placeholder for other tabs -->
         <div class="tab-placeholder">

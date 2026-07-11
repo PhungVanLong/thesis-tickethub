@@ -87,7 +87,7 @@ export class AdminService {
   }
 
   getEvents(status?: string): Observable<EventResponse[]> {
-    const params = status ? `?status=${status}` : '';
+    const params = (status && status !== 'ALL') ? `?status=${status}` : '';
     return this.http.get<EventResponse[]>(
       `${this.baseUrl}/api/events${params}`,
       { headers: this.getHeaders() }

@@ -4,7 +4,7 @@
   </div>
 
   <div class="event-grid">
-    @for (event of events; track event.title) {
+    @for (event of events(); track event.title) {
       <article class="event-card">
         <div class="image-area">
           @if (event.image) {

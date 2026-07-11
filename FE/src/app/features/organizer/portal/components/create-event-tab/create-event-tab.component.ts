@@ -33,6 +33,7 @@ export class CreateEventTabComponent implements OnInit {
   readonly isSubmitting = signal(false);
   readonly submitError = signal<string | null>(null);
   readonly submitSuccess = signal(false);
+  readonly safeMapUrl = signal<SafeResourceUrl | null>(null);
 
   readonly steps = [
     { label: 'Event Info' },
@@ -359,6 +360,16 @@ export class CreateEventTabComponent implements OnInit {
         this.router.navigate(['/']);
       }
     }
+
+    this.step1Form.get('venue')?.valueChanges.subscribe(venue => {
+      if (!venue) {
+        this.safeMapUrl.set(null);
+        return;
+      }
+      const query = encodeURIComponent(venue);
+      const url = `https://maps.google.com/maps?q=${query}&t=&z=14&ie=UTF8&iwloc=&output=embed`;
+      this.safeMapUrl.set(this.sanitizer.bypassSecurityTrustResourceUrl(url));
+    });
   }
 
   goToStep(step: number): void {
@@ -473,12 +484,4 @@ export class CreateEventTabComponent implements OnInit {
     return tiers.reduce((acc: number, t: any) => acc + (Number(t.quantityTotal) || 0), 0);
   }
 
-  getSafeMapUrl(): SafeResourceUrl | null {
-    const address = this.step1Form.get('city')?.value;
-    if (!address) return null;
-    
-    const query = encodeURIComponent(address);
-    const url = `https://maps.google.com/maps?q=${query}&t=&z=14&ie=UTF8&iwloc=&output=embed`;
-    return this.sanitizer.bypassSecurityTrustResourceUrl(url);
-  }
 }

@@ -69,6 +69,16 @@ export class EventApiService {
     return this.http.get<any[]>(this.API, { params });
   }
 
+  /** Organizer lấy danh sách sự kiện của mình */
+  getOrganizerEvents(): Observable<any[]> {
+    return this.http.get<any[]>(`${this.API}/organizer/my-events`);
+  }
+
+  /** Lấy chi tiết thông tin của một sự kiện */
+  getEventDetail(eventId: number): Observable<any> {
+    return this.http.get<any>(`${this.API}/${eventId}`);
+  }
+
   /** Organizer publish sự kiện (phải ở trạng thái APPROVED) */
   publishEvent(eventId: number): Observable<{ message: string }> {
     return this.http.post<{ message: string }>(`${this.API}/${eventId}/publish`, {});

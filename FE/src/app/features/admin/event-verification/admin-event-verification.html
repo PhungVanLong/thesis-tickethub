@@ -1,136 +1,302 @@
-<div class="page">
-  <div class="page-header">
-    <div>
-      <h1 class="page-title">Event Verification</h1>
-      <p class="page-sub">Review and approve or reject pending event submissions.</p>
-    </div>
-  </div>
-
-  @if (submitSuccess()) {
-    <div class="alert-success">
-      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
-      {{ submitSuccess() }}
-    </div>
-  }
-
-  <div class="filter-bar">
-    @for (s of statusOptions; track s) {
-      <button class="filter-btn" [class.active]="filterStatus() === s" (click)="onFilterChange(s)">
-        {{ s }}
-      </button>
-    }
-  </div>
-
-  <div class="card">
-    @if (loading()) {
-      <div class="loading-state">
-        <div class="spinner"></div>
-        <span>Loading events...</span>
-      </div>
-    } @else if (error()) {
-      <div class="error-state">{{ error() }}</div>
-    } @else if (events().length === 0) {
-      <div class="empty-state">
-        <span class="empty-icon">📅</span>
-        <p>No events with status <strong>{{ filterStatus() }}</strong></p>
-      </div>
-    } @else {
-      <table class="data-table">
-        <thead>
-          <tr>
-            <th>Event</th>
-            <th>Venue</th>
-            <th>City</th>
-            <th>Start Time</th>
-            <th>Status</th>
-            <th>Created</th>
-            <th>Actions</th>
-          </tr>
-        </thead>
-        <tbody>
-          @for (event of events(); track event.id) {
-            <tr>
-              <td>
-                <div class="event-cell">
-                  <div class="event-thumb" [style.background-image]="event.bannerUrl ? 'url(' + event.bannerUrl + ')' : 'none'">
-                    @if (!event.bannerUrl) { 🎫 }
-                  </div>
-                  <div>
-                    <span class="event-name">{{ event.title }}</span>
-                    <span class="event-id">#{{ event.id }}</span>
-                  </div>
-                </div>
-              </td>
-              <td>{{ event.venue }}</td>
-              <td>{{ event.city }}</td>
-              <td class="nowrap">{{ formatDate(event.startTime) }}</td>
-              <td>
-                <span class="badge" [ngClass]="getStatusBadgeClass(event.status)">{{ event.status }}</span>
-              </td>
-              <td class="nowrap">{{ formatDate(event.createdAt) }}</td>
-              <td>
-                <div class="action-btns">
-                  <button class="btn-detail" (click)="openDetail(event)">Detail</button>
-                  @if (event.status === 'PENDING') {
-                    <button class="btn-approve" (click)="openApprove(event, 'APPROVED')">Approve</button>
-                    <button class="btn-reject" (click)="openApprove(event, 'REJECTED')">Reject</button>
-                  }
-                </div>
-              </td>
-            </tr>
+@if (detailEvent(); as event) {
+  <!-- Detail Page View -->
+  <div class="page">
+    <div class="detail-page-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; padding-bottom: 16px; border-bottom: 1px solid #e2e8f0;">
+      <div>
+        <button class="btn-back-link" (click)="closeDetail()" style="background: none; border: none; color: #1d4ed8; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 4px; padding: 0; font-size: 14px; margin-bottom: 8px; outline: none;">
+          ← Back to Verification List
+        </button>
+        <div style="display: flex; align-items: center; gap: 12px;">
+          <h3 style="margin: 0; font-size: 18px; font-weight: 700; color: #0f172a;">{{ event.title }}</h3>
+          @if (event.status === 'PUBLISHED') {
+            <span class="status-badge published">PUBLISHED</span>
+          } @else if (event.status === 'PENDING') {
+            <span class="status-badge pending">PENDING</span>
+          } @else if (event.status === 'APPROVED') {
+            <span class="status-badge approved">APPROVED</span>
+          } @else if (event.status === 'CANCELLED') {
+            <span class="status-badge cancelled">CANCELLED</span>
           }
-        </tbody>
-      </table>
-    }
-  </div>
-</div>
-
-<!-- Detail Modal -->
-@if (detailEvent()) {
-  <div class="modal-backdrop" (click)="closeDetail()">
-    <div class="modal" (click)="$event.stopPropagation()">
-      <div class="modal-header">
-        <h2>{{ detailEvent()!.title }}</h2>
-        <button class="modal-close" (click)="closeDetail()">✕</button>
+        </div>
+        <p style="font-size: 13px; color: #64748b; font-weight: 500; margin: 4px 0 0;">
+          Organizer: <strong>{{ event.organizationName }}</strong> (ID: {{ event.organizationId }})
+        </p>
       </div>
-      <div class="modal-body detail-body">
-        @if (detailEvent()!.bannerUrl) {
-          <img [src]="detailEvent()!.bannerUrl" alt="Event Banner" class="event-banner-img" />
+      <div class="detail-page-actions" style="display: flex; gap: 8px;">
+        @if (event.status === 'PENDING') {
+          <button class="btn-approve" style="padding: 8px 16px; font-size: 13.5px;" (click)="openApprove(event, 'APPROVED'); closeDetail()">Approve</button>
+          <button class="btn-reject" style="padding: 8px 16px; font-size: 13.5px;" (click)="openApprove(event, 'REJECTED'); closeDetail()">Reject</button>
         }
-        <div class="detail-grid">
-          <div class="detail-row">
-            <span class="detail-label">Status</span>
-            <span class="badge" [ngClass]="getStatusBadgeClass(detailEvent()!.status)">{{ detailEvent()!.status }}</span>
+        <button class="btn-cancel" style="padding: 8px 16px; font-size: 13.5px;" (click)="closeDetail()">Close</button>
+      </div>
+    </div>
+
+    <div class="admin-detail-grid-page">
+      <!-- Left Side: Basic Info & Ticket Tiers -->
+      <div class="detail-left-col">
+        @if (event.bannerUrl) {
+          <div class="banner-preview-wrapper" style="border-radius: 12px; overflow: hidden; border: 1px solid #e2e8f0; margin-bottom: 20px; box-shadow: 0 1px 3px rgba(0,0,0,0.05);">
+            <img [src]="normalizeImageUrl(event.bannerUrl)" alt="Event Banner" class="detail-banner-img" />
           </div>
-          <div class="detail-row">
-            <span class="detail-label">Venue</span>
-            <span>{{ detailEvent()!.venue }}</span>
+        }
+        
+        <div class="card" style="padding: 24px; display: flex; flex-direction: column; gap: 16px; margin-bottom: 24px;">
+          <div class="detail-section">
+            <h4 class="section-title" style="margin-top: 0;">About Event</h4>
+            <p class="event-description-text" style="font-size: 14px; color: #475569; line-height: 1.6; margin: 0; white-space: pre-line;">
+              {{ event.description || 'No description provided.' }}
+            </p>
           </div>
-          <div class="detail-row">
-            <span class="detail-label">City</span>
-            <span>{{ detailEvent()!.city }}</span>
-          </div>
-          <div class="detail-row">
-            <span class="detail-label">Start Time</span>
-            <span>{{ formatDate(detailEvent()!.startTime) }}</span>
-          </div>
-          <div class="detail-row">
-            <span class="detail-label">End Time</span>
-            <span>{{ formatDate(detailEvent()!.endTime) }}</span>
-          </div>
-          <div class="detail-row">
-            <span class="detail-label">Description</span>
-            <span>{{ detailEvent()!.description || '—' }}</span>
+
+          <div class="info-grid-simple" style="border-top: 1px solid #f1f5f9; padding-top: 16px;">
+            <div class="info-cell">
+              <span class="info-label">Venue</span>
+              <span class="info-value">{{ event.venue }}</span>
+            </div>
+            <div class="info-cell">
+              <span class="info-label">City</span>
+              <span class="info-value">{{ event.city }}</span>
+            </div>
+            <div class="info-cell">
+              <span class="info-label">Start Time</span>
+              <span class="info-value">{{ formatDate(event.startTime) }}</span>
+            </div>
+            <div class="info-cell">
+              <span class="info-label">End Time</span>
+              <span class="info-value">{{ formatDate(event.endTime) }}</span>
+            </div>
+            <div class="info-cell">
+              <span class="info-label">GPS Coordinates</span>
+              <span class="info-value">{{ event.locationCoords || '—' }}</span>
+            </div>
+            <div class="info-cell">
+              <span class="info-label">Published Status</span>
+              <span class="info-value">
+                {{ event.isPublished ? 'Published' : 'Unpublished' }}
+              </span>
+            </div>
+            <div class="info-cell">
+              <span class="info-label">Created At</span>
+              <span class="info-value">{{ formatDate(event.createdAt) }}</span>
+            </div>
+            <div class="info-cell">
+              <span class="info-label">Last Updated</span>
+              <span class="info-value">{{ formatDate(event.updatedAt) }}</span>
+            </div>
           </div>
         </div>
+
+        <!-- Ticket Tiers & Sales Card -->
+        <div class="card" style="padding: 24px;">
+          <h4 class="section-title" style="margin-top: 0;">Ticket Tiers & Sales</h4>
+          @if (!event.ticketTiers || event.ticketTiers.length === 0) {
+            <p style="color: #64748b; font-style: italic; margin: 0;">No ticket tiers configured.</p>
+          } @else {
+            <div class="tiers-preview-list" style="display: flex; flex-direction: column; gap: 16px;">
+              @for (tier of event.ticketTiers; track tier.id) {
+                <div class="tier-preview-card" [style.border-left-color]="tier.colorCode || '#2563EB'">
+                  <div class="tier-card-header">
+                    <strong style="font-size: 14.5px;">{{ tier.name }}</strong>
+                    <span class="tier-type-badge">{{ tier.tierType }}</span>
+                  </div>
+                  <div class="tier-card-details">
+                    <div>Price: <strong style="color: #16a34a; font-size: 14px;">{{ tier.price | number }} ₫</strong></div>
+                    <div>Sold: <strong>{{ tier.quantitySold || 0 }}/{{ tier.quantityTotal }}</strong> ({{ tier.quantityAvailable }} left)</div>
+                  </div>
+                  <!-- Mini progress bar -->
+                  <div style="height: 8px; background: #e2e8f0; border-radius: 4px; overflow: hidden; width: 100%;">
+                    <div style="height: 100%; background: #2563eb;" [style.width.%]="tier.quantityTotal > 0 ? ((tier.quantitySold || 0) / tier.quantityTotal) * 100 : 0"></div>
+                  </div>
+                </div>
+              }
+            </div>
+          }
+        </div>
       </div>
-      <div class="modal-footer">
-        @if (detailEvent()!.status === 'PENDING') {
-          <button class="btn-approve" (click)="openApprove(detailEvent()!, 'APPROVED'); closeDetail()">Approve</button>
-          <button class="btn-reject" (click)="openApprove(detailEvent()!, 'REJECTED'); closeDetail()">Reject</button>
+
+      <!-- Right Side: Location Map & Seat Maps -->
+      <div class="detail-right-col">
+        <!-- Organizer & Creator Details Card (moved above Event Location Map) -->
+        <div class="card" style="padding: 24px;">
+          <h4 class="section-title" style="margin-top: 0;">Organizer & Creator Details</h4>
+          <div class="info-grid-simple">
+            <div class="info-cell">
+              <span class="info-label">Org Abbreviation</span>
+              <span class="info-value">{{ event.organizationAbbreviation || '—' }}</span>
+            </div>
+            <div class="info-cell">
+              <span class="info-label">Org Email</span>
+              <span class="info-value">{{ event.organizationEmail || '—' }}</span>
+            </div>
+            <div class="info-cell">
+              <span class="info-label">Org Hotline</span>
+              <span class="info-value">{{ event.organizationHotline || '—' }}</span>
+            </div>
+            <div class="info-cell">
+              <span class="info-label">Creator ID</span>
+              <span class="info-value">#{{ event.creatorId || '—' }}</span>
+            </div>
+            <div class="info-cell">
+              <span class="info-label">Creator Name</span>
+              <span class="info-value">{{ event.creatorName || '—' }}</span>
+            </div>
+            <div class="info-cell">
+              <span class="info-label">Creator Email</span>
+              <span class="info-value">{{ event.creatorEmail || '—' }}</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Event Location Map Card -->
+        @if (safeMapUrl(); as mapUrl) {
+          <div class="card" style="padding: 24px; margin-top: 24px;">
+            <h4 class="section-title" style="margin-top: 0;">Event Location Map</h4>
+            <div class="map-iframe-container" style="border-radius: 8px; overflow: hidden; border: 1px solid #e2e8f0; height: 320px; width: 100%;">
+              <iframe [src]="mapUrl" width="100%" height="100%" frameborder="0" style="border:0;" allowfullscreen="" loading="lazy"></iframe>
+            </div>
+          </div>
         }
-        <button class="btn-cancel" (click)="closeDetail()">Close</button>
+
+        <!-- Seat Map Preview -->
+        @if (event.seatMaps && event.seatMaps.length > 0) {
+          <div class="card" style="padding: 24px; margin-top: 24px;">
+            <h4 class="section-title" style="margin-top: 0;">Seat Map Layouts</h4>
+            @for (map of event.seatMaps; track map.id) {
+              <div class="map-layout-preview">
+                <div class="map-preview-header" style="display: flex; justify-content: space-between; align-items: center; padding-bottom: 8px; border-bottom: 1px solid #f1f5f9;">
+                  <div style="display: flex; align-items: center; gap: 8px;">
+                    <strong>{{ map.name }}</strong>
+                    <span class="map-preview-meta" style="color: #64748b; font-size: 12px;">Seats: {{ map.seats?.length || 0 }}</span>
+                  </div>
+                  <button class="btn-view-fullscreen" (click)="openFullScreenMap(map)" style="background: #eff6ff; color: #2563eb; border: 1px solid #bfdbfe; padding: 4px 8px; border-radius: 4px; font-size: 11px; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 4px;">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 3H5a2 2 0 0 0-2 2v3"></path><path d="M21 8V5a2 2 0 0 0-2-2h-3"></path><path d="M3 16v3a2 2 0 0 0 2 2h3"></path><path d="M16 21h3a2 2 0 0 0 2-2v-3"></path></svg> Full Map
+                  </button>
+                </div>
+                
+                <div class="static-canvas-container" 
+                     (wheel)="onWheel($event, map.id)"
+                     (mousedown)="onMouseDown($event)"
+                     (mouseleave)="onMouseLeave($event)"
+                     (mouseup)="onMouseUp($event)"
+                     (mousemove)="onMouseMove($event)"
+                     style="position: relative; width: 100%; height: 400px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; overflow: auto; margin-top: 8px; cursor: grab;">
+                  <div style="position: absolute; transform-origin: top left; width: 3000px; height: 3000px; padding: 16px;" [style.transform]="'scale(' + (mapScales()[map.id] || 1) + ')'">
+                    @for (item of parseLayoutJson(map.layoutJson); track item.id) {
+                      <div style="position: absolute;" [style.left.px]="item.x" [style.top.px]="item.y">
+                        @if (item.type === 'stage') {
+                          <div class="stage-element" [style.transform]="'rotate(' + (item.rotation || 0) + 'deg)'">STAGE</div>
+                        } @else if (item.type === 'block') {
+                          <div class="block-element" [style.border-color]="getTierColor(item.tierName || null, event.ticketTiers)" [style.transform]="'rotate(' + (item.rotation || 0) + 'deg)'">
+                            <div class="block-seats-grid" [style.gridTemplateRows]="'repeat(' + (item.rows || 1) + ', 1fr)'" [style.gridTemplateColumns]="'repeat(' + (item.cols || 1) + ', 1fr)'" style="width: fit-content; height: fit-content;">
+                              @for (r of getArray(item.rows); track $index) {
+                                @for (c of getArray(item.cols); track $index) {
+                                  <div class="seat-dot" [style.background-color]="getTierColor(item.tierName || null, event.ticketTiers)" [title]="getRowLabel(item.labelPrefix, r) + (c + (item.startCol || 1))">
+                                    {{ getRowLabel(item.labelPrefix, r) }}{{ c + (item.startCol || 1) }}
+                                  </div>
+                                }
+                              }
+                            </div>
+                          </div>
+                        }
+                      </div>
+                    }
+                  </div>
+                </div>
+              </div>
+            }
+          </div>
+        }
       </div>
+    </div>
+  </div>
+} @else {
+  <!-- Main List View -->
+  <div class="page">
+    <div class="events-header" style="margin-bottom: 24px;">
+      <div class="events-title-box">
+        <h2>Event Verification</h2>
+        <p>Review and approve or reject pending event submissions.</p>
+      </div>
+    </div>
+
+    @if (submitSuccess()) {
+      <div class="alert-success">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
+        {{ submitSuccess() }}
+      </div>
+    }
+
+    <div class="filter-bar">
+      @for (s of statusOptions; track s) {
+        <button class="filter-btn" [class.active]="filterStatus() === s" (click)="onFilterChange(s)">
+          {{ s }}
+        </button>
+      }
+    </div>
+
+    <div class="card">
+      @if (loading()) {
+        <div class="loading-state">
+          <div class="spinner"></div>
+          <span>Loading events...</span>
+        </div>
+      } @else if (error()) {
+        <div class="error-state">{{ error() }}</div>
+      } @else if (events().length === 0) {
+        <div class="empty-state">
+          <span class="empty-icon">📅</span>
+          <p>No events with status <strong>{{ filterStatus() }}</strong></p>
+        </div>
+      } @else {
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Event</th>
+              <th>Venue</th>
+              <th>City</th>
+              <th>Start Time</th>
+              <th>Status</th>
+              <th>Created</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (event of events(); track event.id) {
+              <tr>
+                <td>
+                  <div class="event-cell">
+                    <div class="event-thumb" [style.background-image]="event.bannerUrl ? 'url(' + normalizeImageUrl(event.bannerUrl) + ')' : 'none'">
+                      @if (!event.bannerUrl) { 🎫 }
+                    </div>
+                    <div>
+                      <span class="event-name" (click)="openDetail(event)" style="cursor: pointer; color: #1d4ed8; font-weight: 600;">
+                        {{ event.title }}
+                      </span>
+                      <span class="event-id">#{{ event.id }}</span>
+                    </div>
+                  </div>
+                </td>
+                <td>{{ event.venue }}</td>
+                <td>{{ event.city }}</td>
+                <td class="nowrap">{{ formatDate(event.startTime) }}</td>
+                <td>
+                  <span class="badge" [ngClass]="getStatusBadgeClass(event.status)">{{ event.status }}</span>
+                </td>
+                <td class="nowrap">{{ formatDate(event.createdAt) }}</td>
+                <td>
+                  <div class="action-btns">
+                    <button class="btn-detail" (click)="openDetail(event)">Detail</button>
+                    @if (event.status === 'PENDING') {
+                      <button class="btn-approve" (click)="openApprove(event, 'APPROVED')">Approve</button>
+                      <button class="btn-reject" (click)="openApprove(event, 'REJECTED')">Reject</button>
+                    }
+                  </div>
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      }
     </div>
   </div>
 }
@@ -167,6 +333,51 @@
             @if (submitting()) { Processing... } @else { Confirm Reject }
           </button>
         }
+      </div>
+    </div>
+  </div>
+}
+
+<!-- Full Screen Map Modal -->
+@if (fullScreenMap(); as map) {
+  <div class="modal-overlay" (click)="closeFullScreenMap()" style="z-index: 9999;">
+    <div class="modal-card" style="width: 95vw; height: 95vh; max-width: none; max-height: none;" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <div class="modal-header-title">
+          <h3>Full View: {{ map.name }}</h3>
+        </div>
+        <button class="modal-close-btn" (click)="closeFullScreenMap()">×</button>
+      </div>
+      <div class="modal-body" style="padding: 0; overflow: hidden; display: flex; flex-direction: column; flex: 1;">
+        <div class="static-canvas-container" 
+             (wheel)="onWheel($event, 'fs_' + map.id)"
+             (mousedown)="onMouseDown($event)"
+             (mouseleave)="onMouseLeave($event)"
+             (mouseup)="onMouseUp($event)"
+             (mousemove)="onMouseMove($event)"
+             style="position: relative; width: 100%; height: 100%; background: #f8fafc; overflow: auto; cursor: grab;">
+          <div style="position: absolute; transform-origin: top left; width: 3000px; height: 3000px; padding: 32px;" [style.transform]="'scale(' + (mapScales()['fs_' + map.id] || 1) + ')'">
+            @for (item of parseLayoutJson(map.layoutJson); track item.id) {
+              <div style="position: absolute;" [style.left.px]="item.x" [style.top.px]="item.y">
+                @if (item.type === 'stage') {
+                  <div class="stage-element" [style.transform]="'rotate(' + (item.rotation || 0) + 'deg)'">STAGE</div>
+                } @else if (item.type === 'block') {
+                  <div class="block-element" [style.border-color]="getTierColor(item.tierName || null, detailEvent()!.ticketTiers)" [style.transform]="'rotate(' + (item.rotation || 0) + 'deg)'">
+                    <div class="block-seats-grid" [style.gridTemplateRows]="'repeat(' + (item.rows || 1) + ', 1fr)'" [style.gridTemplateColumns]="'repeat(' + (item.cols || 1) + ', 1fr)'" style="width: fit-content; height: fit-content;">
+                      @for (r of getArray(item.rows); track $index) {
+                        @for (c of getArray(item.cols); track $index) {
+                          <div class="seat-dot" [style.background-color]="getTierColor(item.tierName || null, detailEvent()!.ticketTiers)" [title]="getRowLabel(item.labelPrefix, r) + (c + (item.startCol || 1))">
+                            {{ getRowLabel(item.labelPrefix, r) }}{{ c + (item.startCol || 1) }}
+                          </div>
+                        }
+                      }
+                    </div>
+                  </div>
+                }
+              </div>
+            }
+          </div>
+        </div>
       </div>
     </div>
   </div>

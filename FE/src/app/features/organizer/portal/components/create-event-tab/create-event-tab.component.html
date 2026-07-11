@@ -1,4 +1,4 @@
-﻿<!-- Shared Templates for Seat Map -->
+<!-- Shared Templates for Seat Map -->
 <ng-template #renderSeatItem let-item="item" let-isPreview="isPreview">
   @if (item.type === 'stage') {
     <div class="stage-element" [class.selected-element]="!isPreview && selectedItemId() === item.id" [style.transform]="'rotate(' + (item.rotation || 0) + 'deg)'">
@@ -97,10 +97,11 @@
                 <div class="form-group">
                   <label class="form-lbl" for="venueField">Venue Name <span class="required-star">*</span></label>
                   <input id="venueField" type="text" class="form-input" formControlName="venue" placeholder="e.g. Grand Convention Center" />
+                  <span class="form-hint" style="display: block; margin-top: 4px; color: #64748b; font-size: 12px;">* Google Maps will use this field to display the location map.</span>
                 </div>
                 <div class="form-group">
-                  <label class="form-lbl" for="cityField">Address <span class="required-star">*</span></label>
-                  <input id="cityField" type="text" class="form-input" formControlName="city" placeholder="e.g. 123 Main St, Ho Chi Minh City" />
+                  <label class="form-lbl" for="cityField">City <span class="required-star">*</span></label>
+                  <input id="cityField" type="text" class="form-input" formControlName="city" placeholder="e.g. Ho Chi Minh City" />
                 </div>
                 <div class="form-group">
                   <label class="form-lbl" for="coordsField">
@@ -111,7 +112,10 @@
                 </div>
 
                 <!-- Step Action Buttons -->
-                <div class="step-actions end">
+                <div class="step-actions">
+                  <button type="button" class="step-btn-back" (click)="navigateTo.emit('dashboard')">
+                    ← Cancel
+                  </button>
                   <button type="button" class="step-btn-next" [disabled]="step1Form.invalid" (click)="nextStep()">
                     Next: Ticket Tiers →
                   </button>
@@ -148,13 +152,13 @@
                 <div class="form-card map-card" style="padding: 1.5rem;">
                   <div class="form-section-title">Location Map</div>
                   <div class="venue-map-placeholder" style="padding: 0; overflow: hidden; height: 300px; border-radius: 8px; background: #f8fafc; display: flex; align-items: center; justify-content: center; margin-top: 1rem; border: 1px solid #e2e8f0;">
-                    @if (getSafeMapUrl()) {
+                    @if (safeMapUrl()) {
                       <iframe 
                         width="100%" 
                         height="100%" 
                         frameborder="0" 
                         style="border:0;" 
-                        [src]="getSafeMapUrl()" 
+                        [src]="safeMapUrl()" 
                         allowfullscreen>
                       </iframe>
                     } @else {
@@ -246,7 +250,7 @@
               </div>
 
               <div class="step-actions">
-                <button type="button" class="step-btn-back" (click)="prevStep()">← Back</button>
+                <button type="button" class="step-btn-back" (click)="prevStep()">← Previous: Event Info</button>
                 <button type="button" class="step-btn-next" [disabled]="step2Form.invalid" (click)="nextStep()">Next: Seat Map →</button>
               </div>
             </div>
@@ -385,7 +389,7 @@
               }
 
               <div class="step-actions">
-                <button type="button" class="step-btn-back" (click)="prevStep()">← Back</button>
+                <button type="button" class="step-btn-back" (click)="prevStep()">← Previous: Ticket Tiers</button>
                 <button type="button" class="step-btn-next" [disabled]="(getSeatedTiers().length > 0 && draggableItems().length === 0) || !seatMapValidation().valid" (click)="nextStep()">Next: Review →</button>
               </div>
             </div>
@@ -455,13 +459,13 @@
                       </div>
                     </div>
                     <div class="venue-map-placeholder" style="padding: 0; overflow: hidden;">
-                      @if (getSafeMapUrl()) {
+                      @if (safeMapUrl()) {
                         <iframe 
                           width="100%" 
                           height="100%" 
                           frameborder="0" 
                           style="border:0;" 
-                          [src]="getSafeMapUrl()" 
+                          [src]="safeMapUrl()" 
                           allowfullscreen>
                         </iframe>
                       } @else {
@@ -472,8 +476,8 @@
                       <span class="venue-lbl">Location Name</span>
                       <span class="venue-val-main">{{ step1Form.get('venue')?.value || '—' }}</span>
                       
-                      <span class="venue-lbl mt-3">Address</span>
-                      <span class="venue-val-sub">{{ step1Form.get('city')?.value || '—' }}</span>
+                      <span class="venue-lbl mt-3">City</span>
+                      <span class="venue-val-main">{{ step1Form.get('city')?.value || '—' }}</span>
                       
                       <div class="venue-divider"></div>
                       <span class="venue-lbl">Capacity</span>
@@ -557,7 +561,7 @@
                 <div class="hf-bottom-actions mt-5">
                   <button type="button" class="btn-prev-hf" (click)="prevStep()" [disabled]="isSubmitting()">
                     <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>
-                    Previous: Tickets
+                    Previous: Seat Map
                   </button>
                   <button type="button" class="btn-publish-hf" (click)="onSubmitEvent()" [disabled]="isSubmitting()">
                     @if (isSubmitting()) {

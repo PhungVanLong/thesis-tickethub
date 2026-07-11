@@ -1,7 +1,7 @@
 /* ── Admin Dashboard ── */
 
 .dashboard {
-  max-width: 1280px;
+  width: 100%;
 }
 
 .page-header {
@@ -183,8 +183,8 @@
 
 /* Event grid */
 .event-grid {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
+  display: flex;
+  flex-direction: column;
   gap: 10px;
 }
 
@@ -198,6 +198,7 @@
   border: 1px solid #e8ecf0;
   text-decoration: none;
   transition: background 0.2s;
+  min-width: 0;
 }
 
 .event-card-item:hover {
