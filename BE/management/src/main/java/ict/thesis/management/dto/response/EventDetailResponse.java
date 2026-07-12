@@ -17,6 +17,12 @@ public class EventDetailResponse {
     private Long id;
     private Long organizationId;
     private String organizationName;
+    private String organizationAbbreviation;
+    private String organizationEmail;
+    private String organizationHotline;
+    private Long creatorId;
+    private String creatorEmail;
+    private String creatorName;
     private String title;
     private String description;
     private String venue;

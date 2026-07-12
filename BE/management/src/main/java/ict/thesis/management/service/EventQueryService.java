@@ -5,21 +5,26 @@ import ict.thesis.management.dto.response.EventResponse;
 import ict.thesis.management.dto.response.SeatMapResponse;
 import ict.thesis.management.dto.response.SeatResponse;
 import ict.thesis.management.dto.response.TicketTierResponse;
+import ict.thesis.management.dto.response.IdentityUserResponse;
 import ict.thesis.management.entity.Events;
+import ict.thesis.management.entity.Organization;
 import ict.thesis.management.entity.OrganizationMember;
 import ict.thesis.management.entity.Seat;
 import ict.thesis.management.entity.SeatMap;
 import ict.thesis.management.entity.TicketTier;
 import ict.thesis.management.entity.enums.EventStatus;
+import ict.thesis.management.entity.enums.OrganizationRole;
 import ict.thesis.management.repository.EventsRepository;
 import ict.thesis.management.repository.OrganizationMemberRepository;
 import ict.thesis.management.repository.SeatMapRepository;
 import ict.thesis.management.repository.SeatRepository;
 import ict.thesis.management.repository.TicketTierRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.client.RestTemplate;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.util.List;
@@ -33,6 +38,10 @@ public class EventQueryService {
     private final TicketTierRepository ticketTierRepository;
     private final SeatMapRepository seatMapRepository;
     private final SeatRepository seatRepository;
+    private final RestTemplate restTemplate;
+
+    @Value("${identity.service.url}")
+    private String identityServiceUrl;
 
     @Transactional(readOnly = true)
     public List<EventResponse> getOrganizerEvents(Long userId) {
@@ -115,10 +124,49 @@ public class EventQueryService {
             })
             .toList();
 
+        Organization org = event.getOrganization();
+        String orgAbbrev = org != null ? org.getAbbreviationName() : null;
+        String orgEmail = org != null ? org.getOfficialEmail() : null;
+        String orgHotline = org != null ? org.getHotline() : null;
+
+        Long creatorId = null;
+        String creatorEmail = null;
+        String creatorName = null;
+
+        if (org != null) {
+            OrganizationMember ownerMember = organizationMemberRepository.findByOrganizationId(org.getId())
+                .stream()
+                .filter(m -> m.getMemberRole() == OrganizationRole.OWNER)
+                .findFirst()
+                .orElse(null);
+
+            if (ownerMember != null) {
+                creatorId = ownerMember.getUserId();
+                try {
+                    IdentityUserResponse user = restTemplate.getForObject(
+                        identityServiceUrl + "/api/users/" + creatorId, 
+                        IdentityUserResponse.class
+                    );
+                    if (user != null) {
+                        creatorEmail = user.getEmail();
+                        creatorName = user.getFullName();
+                    }
+                } catch (Exception e) {
+                    // Log and ignore to prevent failure of entire API if identity service is down
+                }
+            }
+        }
+
         return new EventDetailResponse(
             event.getId(),
-            event.getOrganization() != null ? event.getOrganization().getId() : null,
-            event.getOrganization() != null ? event.getOrganization().getName() : null,
+            org != null ? org.getId() : null,
+            org != null ? org.getName() : null,
+            orgAbbrev,
+            orgEmail,
+            orgHotline,
+            creatorId,
+            creatorEmail,
+            creatorName,
             event.getTitle(),
             event.getDescription(),
             event.getVenue(),

@@ -188,7 +188,7 @@ Content-Type: application/json
     "endTime": "2024-09-15T17:00:00Z",
     "bannerUrl": "https://cdn.example.com/banners/event.jpg",
     "status": "PENDING",
-    "published": false,
+    "isPublished": false,
     "createdAt": "2024-07-08T10:30:00Z",
     "updatedAt": "2024-07-08T10:30:00Z"
   }
@@ -225,7 +225,7 @@ Authorization: Bearer <jwt_token>
     "endTime": "2024-09-15T17:00:00Z",
     "bannerUrl": "https://cdn.example.com/banners/event.jpg",
     "status": "PENDING",
-    "published": false,
+    "isPublished": false,
     "createdAt": "2024-07-08T10:30:00Z",
     "updatedAt": "2024-07-08T10:30:00Z"
   }
@@ -246,6 +246,12 @@ Authorization: Bearer <jwt_token>
   "id": 42,
   "organizationId": 1,
   "organizationName": "Tech Org",
+  "organizationAbbreviation": "TO",
+  "organizationEmail": "contact@techorg.com",
+  "organizationHotline": "0987654321",
+  "creatorId": 7,
+  "creatorEmail": "creator@techorg.com",
+  "creatorName": "Nguyen Van A",
   "title": "Global Tech Summit 2024",
   "description": "Một hội nghị công nghệ quốc tế...",
   "venue": "Grand Convention Center",
@@ -255,7 +261,7 @@ Authorization: Bearer <jwt_token>
   "endTime": "2024-09-15T17:00:00Z",
   "bannerUrl": "https://cdn.example.com/banners/event.jpg",
   "status": "PENDING",
-  "published": false,
+  "isPublished": false,
   "createdAt": "2024-07-08T10:30:00Z",
   "updatedAt": "2024-07-08T10:30:00Z",
   "ticketTiers": [
@@ -425,10 +431,10 @@ export interface CreateEventPayload {
   description?: string;
   venue: string;
   city: string;
-  locationCoords?: string;
-  startTime: string;    // ISO-8601 UTC
-  endTime: string;      // ISO-8601 UTC
-  bannerUrl?: string;
+  locationCoords?: string | null;
+  startTime: string | null;    // ISO-8601 UTC
+  endTime: string | null;      // ISO-8601 UTC
+  bannerUrl?: string | null;
   ticketTiers?: TicketTierPayload[];
   seatMaps?: SeatMapPayload[];
 }
