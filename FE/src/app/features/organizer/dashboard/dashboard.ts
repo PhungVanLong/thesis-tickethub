@@ -1,0 +1,129 @@
+import { Component, inject, OnInit, signal, effect } from '@angular/core';
+import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
+import { AuthService } from '../../auth/auth.service';
+import { EventApiService } from '../../../core/services/event.service';
+import { TranslatePipe } from '../../../shared/pipes/translate.pipe';
+import { Navigation } from '../../../core/navigation/navigation';
+import { Footer } from '../../../core/footer/footer';
+
+interface MockEvent {
+  id: number;
+  title: string;
+  venue: string;
+  startTime: string;
+  status: 'PENDING' | 'APPROVED' | 'PUBLISHED' | 'CANCELLED';
+  ticketsSold: number;
+  revenue: string;
+}
+
+@Component({
+  selector: 'app-organization-dashboard',
+  standalone: true,
+  imports: [ReactiveFormsModule, TranslatePipe, Navigation, Footer],
+  templateUrl: './dashboard.html',
+  styleUrl: './dashboard.scss',
+})
+export class OrganizationDashboardComponent implements OnInit {
+  private readonly fb = inject(FormBuilder);
+  private readonly authService = inject(AuthService);
+  private readonly eventApi = inject(EventApiService);
+
+  readonly isSubmitting = signal(false);
+  readonly errorMessage = signal<string | null>(null);
+  readonly successMessage = signal<string | null>(null);
+  readonly isPendingApproval = signal(false);
+
+  // Expose user profile signal from AuthService
+  readonly userProfile = this.authService.currentUserProfile;
+
+  readonly mockEvents = signal<any[]>([]);
+
+  readonly orgForm = this.fb.nonNullable.group({
+    name: ['', [Validators.required]],
+    abbreviationName: [''],
+    taxCode: ['', [Validators.pattern(/^[0-9]{10}$|^[0-9]{13}$/)]],
+    representativeName: [''],
+    representativePosition: [''],
+    hotline: ['', [Validators.pattern(/^[0-9]{9,15}$/)]],
+    officialEmail: ['', [Validators.email]],
+    provinceCity: [''],
+    district: [''],
+    wardCommune: [''],
+    headquarterAddress: [''],
+    websiteUrl: [''],
+    fanpageUrl: [''],
+    description: [''],
+  });
+
+  constructor() {
+    // Check role and pending status whenever user profile updates
+    effect(() => {
+      const profile = this.userProfile();
+      if (profile) {
+        if (profile.role?.includes('ORGANIZER')) {
+          this.isPendingApproval.set(false);
+          localStorage.removeItem('pendingOrgReg');
+          this.fetchEvents();
+        }
+      }
+    });
+  }
+
+  ngOnInit(): void {
+    // Initial check for pending status in local storage
+    const isPending = localStorage.getItem('pendingOrgReg') === 'true';
+    const role = this.userProfile()?.role || '';
+    
+    if (isPending && !role.includes('ORGANIZER')) {
+      this.isPendingApproval.set(true);
+    }
+  }
+
+  fetchEvents(): void {
+    this.eventApi.getEvents().subscribe({
+      next: (events) => {
+        const mapped = events.map(e => ({
+          ...e,
+          ticketsSold: 0,
+          revenue: '0đ'
+        }));
+        this.mockEvents.set(mapped);
+      },
+      error: (err) => console.error('Failed to fetch events:', err)
+    });
+  }
+
+  onSubmitRegistration(): void {
+    if (this.orgForm.invalid) {
+      this.orgForm.markAllAsTouched();
+      return;
+    }
+
+    this.isSubmitting.set(true);
+    this.errorMessage.set(null);
+    this.successMessage.set(null);
+
+    const formValues = this.orgForm.value;
+
+    this.authService.registerOrganizer(formValues).subscribe({
+      next: () => {
+        this.isSubmitting.set(false);
+        this.successMessage.set('organizer.success');
+        localStorage.setItem('pendingOrgReg', 'true');
+        this.isPendingApproval.set(true);
+        this.orgForm.reset();
+      },
+      error: (err) => {
+        console.error('Failed to submit organization registration:', err);
+        let errorMsg = 'organizer.error';
+        if (err.error && typeof err.error === 'object') {
+          errorMsg = err.error.message || err.error.error || errorMsg;
+        } else if (err.error && typeof err.error === 'string') {
+          errorMsg = err.error;
+        }
+        this.errorMessage.set(errorMsg);
+        this.isSubmitting.set(false);
+      },
+    });
+  }
+}

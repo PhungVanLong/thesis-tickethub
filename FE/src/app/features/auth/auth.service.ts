@@ -11,8 +11,23 @@ export class AuthService {
   private readonly apiUrl = 'http://localhost:8080/api/auth/login';
 
   readonly currentUserToken = signal<string | null>(localStorage.getItem('accessToken'));
+  readonly currentUserProfile = signal<any>(null);
   readonly isLoggingIn = signal<boolean>(false);
   readonly loginError = signal<string | null>(null);
+
+  constructor() {
+    this.initializeProfile();
+  }
+
+  private initializeProfile(): void {
+    const token = this.currentUserToken();
+    if (token) {
+      this.getProfile().subscribe({
+        next: (profile) => this.currentUserProfile.set(profile),
+        error: () => this.logout(),
+      });
+    }
+  }
 
   login(credentials: LoginRequest): Observable<AuthResponse> {
     this.isLoggingIn.set(true);
@@ -23,6 +38,7 @@ export class AuthService {
         if (response.accessToken) {
           localStorage.setItem('accessToken', response.accessToken);
           this.currentUserToken.set(response.accessToken);
+          this.initializeProfile();
         }
         this.isLoggingIn.set(false);
       }),
@@ -52,6 +68,7 @@ export class AuthService {
   logout(): void {
     localStorage.removeItem('accessToken');
     this.currentUserToken.set(null);
+    this.currentUserProfile.set(null);
   }
 
   forgotPassword(email: string): Observable<string> {
@@ -74,7 +91,9 @@ export class AuthService {
       return throwError(() => new Error('Invalid token payload'));
     }
     const headers = { Authorization: `Bearer ${token}` };
-    return this.http.get(`http://localhost:8080/api/users/${userId}`, { headers });
+    return this.http.get(`http://localhost:8080/api/users/${userId}`, { headers }).pipe(
+      tap((profile) => this.currentUserProfile.set(profile))
+    );
   }
 
   updateProfile(data: any): Observable<any> {
@@ -87,7 +106,9 @@ export class AuthService {
       return throwError(() => new Error('Invalid token payload'));
     }
     const headers = { Authorization: `Bearer ${token}` };
-    return this.http.put(`http://localhost:8080/api/users/${userId}`, data, { headers });
+    return this.http.put(`http://localhost:8080/api/users/${userId}`, data, { headers }).pipe(
+      tap((profile) => this.currentUserProfile.set(profile))
+    );
   }
 
   getUserIdFromToken(token: string): string | null {
@@ -100,6 +121,15 @@ export class AuthService {
       console.error('Failed to decode JWT token:', e);
       return null;
     }
+  }
+
+  registerOrganizer(data: any): Observable<any> {
+    const token = this.currentUserToken();
+    if (!token) {
+      return throwError(() => new Error('No access token found'));
+    }
+    const headers = { Authorization: `Bearer ${token}` };
+    return this.http.post('http://localhost:8080/api/organizations', data, { headers });
   }
 
   isAuthenticated(): boolean {

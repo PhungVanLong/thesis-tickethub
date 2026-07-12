@@ -15,10 +15,24 @@ export class Navigation {
   private readonly langService = inject(LanguageService);
   
   readonly currentUserToken = this.authService.currentUserToken;
+  readonly currentUserProfile = this.authService.currentUserProfile;
   readonly showDropdown = signal(false);
   readonly showLangDropdown = signal(false);
   
   readonly currentLang = this.langService.currentLang;
+
+  get isOrganizer(): boolean {
+    const role = this.authService.currentUserProfile()?.role;
+    if (!role) return false;
+    return role.includes('ORGANIZER');
+  }
+
+  getInitials(name: string | null | undefined): string {
+    if (!name) {
+      return 'U';
+    }
+    return name.trim().charAt(0).toUpperCase();
+  }
 
   toggleDropdown(event: Event): void {
     event.stopPropagation();

@@ -1,0 +1,292 @@
+<div class="shell">
+  <app-navigation />
+
+  <main class="dashboard-container">
+    
+    <!-- CASE 1: USER IS ALREADY APPROVED (ORGANIZER) -->
+    @if (userProfile()?.role === 'ORGANIZER') {
+      <div class="dashboard-grid">
+        
+        <!-- Welcome banner -->
+        <div class="welcome-banner full-width">
+          <div class="banner-content">
+            <h1>{{ 'dashboard.welcomeTitle' | translate }}</h1>
+            <p>{{ 'dashboard.welcomeDesc' | translate }}</p>
+          </div>
+          <button class="btn-create-event">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24">
+              <line x1="12" y1="5" x2="12" y2="19"></line>
+              <line x1="5" y1="12" x2="19" y2="12"></line>
+            </svg>
+            {{ 'dashboard.createEvent' | translate }}
+          </button>
+        </div>
+
+        <!-- Metric Cards -->
+        <div class="metric-card">
+          <span class="metric-label">{{ 'dashboard.totalRevenue' | translate }}</span>
+          <h2 class="metric-value">900,000,000đ</h2>
+          <span class="metric-trend up">{{ 'dashboard.revenueTrend' | translate }}</span>
+        </div>
+
+        <div class="metric-card">
+          <span class="metric-label">{{ 'dashboard.ticketsSold' | translate }}</span>
+          <h2 class="metric-value">450</h2>
+          <span class="metric-trend up">{{ 'dashboard.occupancyTrend' | translate }}</span>
+        </div>
+
+        <div class="metric-card">
+          <span class="metric-label">{{ 'dashboard.eventsCount' | translate }}</span>
+          <h2 class="metric-value">3</h2>
+          <span class="metric-trend">{{ 'dashboard.eventsCountSummary' | translate }}</span>
+        </div>
+
+        <!-- Event list table -->
+        <div class="table-card full-width">
+          <h2 class="table-card-title">{{ 'dashboard.eventListTitle' | translate }}</h2>
+          
+          <div class="table-responsive">
+            <table class="event-table">
+              <thead>
+                <tr>
+                  <th>{{ 'dashboard.colTitle' | translate }}</th>
+                  <th>{{ 'dashboard.colVenue' | translate }}</th>
+                  <th>{{ 'dashboard.colStartTime' | translate }}</th>
+                  <th>{{ 'dashboard.colStatus' | translate }}</th>
+                  <th>{{ 'dashboard.colTicketsSold' | translate }}</th>
+                  <th>{{ 'dashboard.colRevenue' | translate }}</th>
+                  <th>{{ 'dashboard.colActions' | translate }}</th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (event of mockEvents(); track event.id) {
+                  <tr>
+                    <td class="event-name-cell">{{ event.title }}</td>
+                    <td>{{ event.venue }}</td>
+                    <td>{{ event.startTime }}</td>
+                    <td>
+                      <span class="status-badge" [class]="event.status.toLowerCase()">
+                        {{ event.status }}
+                      </span>
+                    </td>
+                    <td>{{ event.ticketsSold }}</td>
+                    <td class="revenue-cell">{{ event.revenue }}</td>
+                    <td>
+                      <button class="btn-table-action">{{ 'dashboard.btnDetails' | translate }}</button>
+                    </td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+      </div>
+    }
+    
+    <!-- CASE 2: REGISTRATION IS PENDING APPROVAL -->
+    @else if (isPendingApproval()) {
+      <div class="pending-card">
+        <div class="icon-wrapper">
+          <svg class="clock-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="10"></circle>
+            <polyline points="12 6 12 12 16 14"></polyline>
+          </svg>
+        </div>
+        <h1>{{ 'dashboard.pendingTitle' | translate }}</h1>
+        <p class="desc">
+          {{ 'dashboard.pendingDesc' | translate }}
+        </p>
+        <div class="note-box">
+          <p><strong>{{ 'dashboard.pendingNoteLabel' | translate }}</strong> {{ 'dashboard.pendingNoteText' | translate }}</p>
+        </div>
+        <a href="/" class="btn-back-home">{{ 'dashboard.btnBackHome' | translate }}</a>
+      </div>
+    }
+    
+    <!-- CASE 3: NOT REGISTERED YET -> SHOW REGISTRATION FORM -->
+    @else {
+      <div class="organizer-card">
+        <div class="organizer-header">
+          <h1>{{ 'organizer.title' | translate }}</h1>
+          <p class="subtitle">{{ 'organizer.subtitle' | translate }}</p>
+        </div>
+
+        <!-- Alerts -->
+        @if (errorMessage()) {
+          <div class="alert alert-error" role="alert">
+            <p>{{ errorMessage() | translate }}</p>
+          </div>
+        }
+        @if (successMessage()) {
+          <div class="alert alert-success" role="alert">
+            <p>{{ successMessage() | translate }}</p>
+          </div>
+        }
+
+        <form [formGroup]="orgForm" (ngSubmit)="onSubmitRegistration()" class="organizer-form">
+          <!-- Section 1: Basic Info -->
+          <div class="form-section">
+            <h2 class="section-title">{{ 'organizer.section1' | translate }}</h2>
+            <div class="form-grid">
+              <div class="form-group full-width">
+                <label for="name">{{ 'organizer.name' | translate }} <span class="required">*</span></label>
+                <div class="input-wrapper"
+                  [class.has-error]="orgForm.controls.name.invalid && orgForm.controls.name.touched">
+                  <input id="name" type="text" formControlName="name" placeholder="{{ 'organizer.placeholder.name' | translate }}" />
+                </div>
+                @if (orgForm.controls.name.invalid && orgForm.controls.name.touched) {
+                  <div class="error-message">
+                    {{ 'organizer.nameRequired' | translate }}
+                  </div>
+                }
+              </div>
+
+              <div class="form-group">
+                <label for="abbreviationName">{{ 'organizer.abbreviation' | translate }}</label>
+                <div class="input-wrapper">
+                  <input id="abbreviationName" type="text" formControlName="abbreviationName" placeholder="{{ 'organizer.placeholder.abbreviationName' | translate }}" />
+                </div>
+              </div>
+
+              <div class="form-group">
+                <label for="taxCode">{{ 'organizer.taxCode' | translate }}</label>
+                <div class="input-wrapper"
+                  [class.has-error]="orgForm.controls.taxCode.invalid && orgForm.controls.taxCode.touched">
+                  <input id="taxCode" type="text" formControlName="taxCode" placeholder="{{ 'organizer.placeholder.taxCode' | translate }}" />
+                </div>
+                @if (orgForm.controls.taxCode.invalid && orgForm.controls.taxCode.touched) {
+                  <div class="error-message">
+                    {{ 'organizer.taxCodePattern' | translate }}
+                  </div>
+                }
+              </div>
+            </div>
+          </div>
+
+          <!-- Section 2: Representative Info -->
+          <div class="form-section">
+            <h2 class="section-title">{{ 'organizer.section2' | translate }}</h2>
+            <div class="form-grid">
+              <div class="form-group">
+                <label for="representativeName">{{ 'organizer.repName' | translate }}</label>
+                <div class="input-wrapper">
+                  <input id="representativeName" type="text" formControlName="representativeName" placeholder="{{ 'organizer.placeholder.representativeName' | translate }}" />
+                </div>
+              </div>
+
+              <div class="form-group">
+                <label for="representativePosition">{{ 'organizer.repPosition' | translate }}</label>
+                <div class="input-wrapper">
+                  <input id="representativePosition" type="text" formControlName="representativePosition" placeholder="{{ 'organizer.placeholder.representativePosition' | translate }}" />
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Section 3: Contact Info -->
+          <div class="form-section">
+            <h2 class="section-title">{{ 'organizer.section3' | translate }}</h2>
+            <div class="form-grid">
+              <div class="form-group">
+                <label for="hotline">{{ 'organizer.hotline' | translate }}</label>
+                <div class="input-wrapper"
+                  [class.has-error]="orgForm.controls.hotline.invalid && orgForm.controls.hotline.touched">
+                  <input id="hotline" type="text" formControlName="hotline" placeholder="{{ 'organizer.placeholder.hotline' | translate }}" />
+                </div>
+                @if (orgForm.controls.hotline.invalid && orgForm.controls.hotline.touched) {
+                  <div class="error-message">
+                    {{ 'organizer.hotlineError' | translate }}
+                  </div>
+                }
+              </div>
+
+              <div class="form-group">
+                <label for="officialEmail">{{ 'organizer.email' | translate }}</label>
+                <div class="input-wrapper"
+                  [class.has-error]="orgForm.controls.officialEmail.invalid && orgForm.controls.officialEmail.touched">
+                  <input id="officialEmail" type="email" formControlName="officialEmail" placeholder="{{ 'organizer.placeholder.officialEmail' | translate }}" />
+                </div>
+                @if (orgForm.controls.officialEmail.invalid && orgForm.controls.officialEmail.touched) {
+                  <div class="error-message">
+                    {{ 'organizer.emailPattern' | translate }}
+                  </div>
+                }
+              </div>
+
+              <div class="form-group">
+                <label for="websiteUrl">{{ 'organizer.website' | translate }}</label>
+                <div class="input-wrapper">
+                  <input id="websiteUrl" type="url" formControlName="websiteUrl" placeholder="{{ 'organizer.placeholder.websiteUrl' | translate }}" />
+                </div>
+              </div>
+
+              <div class="form-group">
+                <label for="fanpageUrl">{{ 'organizer.fanpage' | translate }}</label>
+                <div class="input-wrapper">
+                  <input id="fanpageUrl" type="url" formControlName="fanpageUrl" placeholder="{{ 'organizer.placeholder.fanpageUrl' | translate }}" />
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Section 4: Address Info -->
+          <div class="form-section">
+            <h2 class="section-title">{{ 'organizer.section4' | translate }}</h2>
+            <div class="form-grid">
+              <div class="form-group">
+                <label for="provinceCity">{{ 'organizer.province' | translate }}</label>
+                <div class="input-wrapper">
+                  <input id="provinceCity" type="text" formControlName="provinceCity" placeholder="{{ 'organizer.placeholder.provinceCity' | translate }}" />
+                </div>
+              </div>
+
+              <div class="form-group">
+                <label for="district">{{ 'organizer.district' | translate }}</label>
+                <div class="input-wrapper">
+                  <input id="district" type="text" formControlName="district" placeholder="{{ 'organizer.placeholder.district' | translate }}" />
+                </div>
+              </div>
+
+              <div class="form-group">
+                <label for="wardCommune">{{ 'organizer.ward' | translate }}</label>
+                <div class="input-wrapper">
+                  <input id="wardCommune" type="text" formControlName="wardCommune" placeholder="{{ 'organizer.placeholder.wardCommune' | translate }}" />
+                </div>
+              </div>
+
+              <div class="form-group full-width">
+                <label for="headquarterAddress">{{ 'organizer.address' | translate }}</label>
+                <div class="input-wrapper">
+                  <input id="headquarterAddress" type="text" formControlName="headquarterAddress" placeholder="{{ 'organizer.placeholder.headquarterAddress' | translate }}" />
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Section 5: Introduction -->
+          <div class="form-section">
+            <h2 class="section-title">{{ 'organizer.section5' | translate }}</h2>
+            <div class="form-group full-width">
+              <label for="description">{{ 'organizer.description' | translate }}</label>
+              <textarea id="description" formControlName="description" rows="5" class="textarea-field" [placeholder]="'organizer.descriptionPlaceholder' | translate"></textarea>
+            </div>
+          </div>
+
+          <!-- Submit Button -->
+          <button type="submit" class="btn-submit" [disabled]="isSubmitting()">
+            @if (isSubmitting()) {
+              <span class="spinner"></span>
+              <span>{{ 'organizer.submitting' | translate }}</span>
+            } @else {
+              <span>{{ 'organizer.submit' | translate }}</span>
+            }
+          </button>
+        </form>
+      </div>
+    }
+
+  </main>
+
+  <app-footer />
+</div>

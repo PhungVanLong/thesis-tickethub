@@ -25,9 +25,9 @@ a:focus-visible {
 
 /* ── Main Topbar header: Dark background, white elements ── */
 .topbar {
-  background: #060b16; /* Dark navy/black */
+  background: #0052cc; /* Vibrant blue background */
   color: #ffffff;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+
 }
 
 .header-container {
@@ -160,6 +160,20 @@ a:focus-visible {
   height: 24px;
   border-radius: 50%;
   object-fit: cover;
+}
+
+.avatar-img-placeholder {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #478dfc, #0052cc);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #ffffff;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
 }
 
 .account-text {

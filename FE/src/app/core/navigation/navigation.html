@@ -14,7 +14,13 @@
 
     <div class="nav-actions">
       <!-- Đăng ký làm tổ chức (Visible always) -->
-      <a class="header-link organizer-link" href="#">{{ 'nav.organizer' | translate }}</a>
+      @if (!currentUserToken()) {
+        <a class="header-link organizer-link" routerLink="/login">{{ 'nav.createOrganizer' | translate }}</a>
+      } @else if (isOrganizer) {
+        <a class="header-link organizer-link" href="/organizer/dashboard" target="_blank">{{ 'nav.organizer' | translate }}</a>
+      } @else {
+        <a class="header-link organizer-link" routerLink="/organization-dashboard">{{ 'nav.createOrganizer' | translate }}</a>
+      }
 
       @if (currentUserToken()) {
         <!-- Vé của tôi (Only when logged in) -->
@@ -28,8 +34,14 @@
 
         <div class="dropdown-wrapper">
           <button type="button" class="account-btn" (click)="toggleDropdown($event)">
-            <img class="avatar-img" src="https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=80&q=80" alt="Avatar" />
-            <span class="account-text">{{ 'nav.account' | translate }}</span>
+            @if (currentUserProfile()?.avatarUrl) {
+              <img class="avatar-img" [src]="currentUserProfile().avatarUrl" alt="Avatar" />
+            } @else {
+              <div class="avatar-img-placeholder">
+                <span>{{ getInitials(currentUserProfile()?.fullName) }}</span>
+              </div>
+            }
+            <span class="account-text">{{ currentUserProfile()?.fullName || ('nav.account' | translate) }}</span>
             <span class="caret-icon" [class.open]="showDropdown()">▼</span>
           </button>
           

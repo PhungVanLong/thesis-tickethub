@@ -1,228 +1,346 @@
-# Management API Documentation
+# Tài liệu API - Management Service
 
-## 1) Overview
-`management` là service quản lý sự kiện của hệ thống.
-
-- **Service name:** `management`
-- **Base URL local:** `http://localhost:8082`
-- **API style:** REST
-- **Security at service level:** các route API hiện tại đang `permitAll()` trong `SecurityConfig`.
-- **Business usage:** service này nhận dữ liệu user từ `identity`, lưu bản ghi tham chiếu `RefUser`, cho phép `customer` apply event draft và xử lý luồng duyệt để promote lên `organizer` khi được duyệt.
-
-> Ghi chú: Khi đi qua `api-gateway`, các rule JWT của gateway có thể áp dụng thêm. Tài liệu này mô tả API của service `management` theo code hiện tại.
+Tài liệu này mô tả chi tiết các quy tắc nghiệp vụ, mô hình dữ liệu (Database Entities) và danh sách các API của **Management Service** (Dịch vụ quản lý sự kiện và tổ chức).
 
 ---
 
-## 2) Domain rules
+## 1. Thông tin chung (Overview)
 
-### 2.1. User reference sync
-`management` không lưu toàn bộ user gốc từ `identity`. Thay vào đó, service dùng bảng tham chiếu `RefUser` để:
-- đồng bộ thông tin user từ `identity`
-- làm organizer của event
-- làm admin thực hiện duyệt event
-- lưu role hiện tại của user tại thời điểm sync
-
-### 2.2. Event creation rule
-Khi customer/applicant tạo event draft:
-- `organizerId` là bắt buộc
-- `title` là bắt buộc
-- `startTime` và `endTime` là bắt buộc
-- `startTime` phải nhỏ hơn `endTime`
-- nếu organizer chưa có trong `RefUser`, service sẽ gọi sang `identity` để lấy user và sync về `management`
-- user phải `active=true` và `verified=true` mới được tạo event
-- organizer phải có `OrganizerProfile.status=APPROVED`
-- event mới tạo có trạng thái mặc định: `DRAFT`
-- `isPublished=false`
-
-> Ghi chú: field `organizerId` trong request đang đại diện cho user nộp đơn/apply event ở thời điểm tạo draft. Role thực tế của user có thể vẫn là `CUSTOMER`; chỉ sau khi event được duyệt thì user mới được promote thành `ORGANIZER`.
-
-### 2.3. Event approval rule
-Khi duyệt event:
-- `adminUserId` là bắt buộc
-- `decision` là bắt buộc
-- admin phải tồn tại trong `RefUser`
-- admin phải có role `ADMIN`
-- event phải tồn tại
-- organizer của event phải tồn tại
-- nếu `decision=APPROVED`:
-  - event đổi sang `APPROVED`
-  - nếu organizer hiện tại là `CUSTOMER`, hệ thống sẽ nâng role user đó thành `ORGANIZER` ở `identity`, sau đó sync lại về `management`
-  - `isPublished` vẫn để `false`
-- nếu `decision=REJECTED`:
-  - event đổi sang `CANCELLED`
-  - `isPublished=false`
-
-### 2.4. RefUser sync rule
-Khi `identity` thay đổi user:
-- `management` nhận payload user mới/cập nhật tại endpoint sync
-- `RefUser` sẽ được upsert theo `id`
-- nếu record đã tồn tại thì cập nhật lại thông tin
-- nếu chưa tồn tại thì tạo mới
-
-### 2.5. Organizer profile verification rule
-Luồng duyệt tổ chức dựa trên JWT access token:
-- user gửi hồ sơ tổ chức qua endpoint submit profile, hệ thống lấy `userId` từ JWT
-- hệ thống lưu `OrganizerProfile` với `status=PENDING`
-- admin duyệt hồ sơ bằng endpoint verify
-- nếu `decision=APPROVED`:
-  - profile đổi sang `APPROVED`
-  - nếu user hiện tại là `CUSTOMER`, hệ thống sẽ nâng role user đó thành `ORGANIZER` ở `identity`, sau đó sync lại về `management`
-- nếu `decision=REJECTED` hoặc `SUSPENDED`:
-  - profile cập nhật lại status tương ứng
-  - lưu thông tin admin duyệt, thời điểm duyệt và lý do
+- **Service Name**: `management`
+- **Base URL local**: `http://localhost:8082` (Hoặc gọi qua Gateway: `http://localhost:8080`)
+- **API Style**: REST API
+- **Xác thực**:
+  - Người dùng gửi yêu cầu sẽ được API Gateway xác thực JWT và đính kèm các thông tin định danh qua header (`X-User-Id`, `X-User-Role`, `X-User-Email`).
+  - Phía microservice sẽ lấy thông tin thông qua [UserContextHolder.java](file:///d:/thesis/BE/management/src/main/java/ict/thesis/management/security/UserContextHolder.java).
 
 ---
 
-## 3) Base endpoints
+## 2. Quy tắc nghiệp vụ (Domain Rules)
 
-### Events
-- `POST /api/events/create`
-- `POST /api/events/{eventId}/approve`
+### 2.1. Quản lý tổ chức (Organization) và thành viên (OrganizationMember)
+Thay vì sử dụng các tham chiếu trực tiếp dạng người dùng cũ, dịch vụ quản lý tổ chức thông qua hai thực thể:
+- [Organization.java](file:///d:/thesis/BE/management/src/main/java/ict/thesis/management/entity/Organization.java): Lưu thông tin hồ sơ tổ chức (tên, mã số thuế, hotline, email, mô tả, trạng thái).
+- [OrganizationMember.java](file:///d:/thesis/BE/management/src/main/java/ict/thesis/management/entity/OrganizationMember.java): Lưu thông tin thành viên thuộc tổ chức và vai trò của họ (`OWNER` hoặc `STAFF`).
 
-### User reference sync
-- `POST /api/ref-users/sync`
+#### Quy trình duyệt hồ sơ tổ chức:
+1. Người dùng (`CUSTOMER`) gửi hồ sơ tổ chức qua API đăng ký. Hồ sơ được tạo mới với trạng thái mặc định là `PENDING`.
+2. Người nộp đơn được tự động gán vai trò **`OWNER`** (Chủ sở hữu) của tổ chức đó.
+3. Admin thực hiện duyệt hồ sơ tổ chức:
+   - **Chấp thuận (`ACTIVE`)**: Tổ chức chuyển sang `ACTIVE`. Hệ thống tự động tạo một `OutboxEvent` dạng `USER_ROLE_PROMOTE` để gửi tín hiệu bất đồng bộ nâng quyền của user (chủ sở hữu) từ `CUSTOMER` thành `ORGANIZER` bên `identity-service`.
+   - **Từ chối (`REJECTED`)**: Tổ chức chuyển sang `REJECTED` (không thể thay đổi trạng thái sau đó). Hệ thống gửi email thông báo lý do từ chối đến email chính thức của tổ chức.
+   - **Khóa hoạt động (`BANNED`)**: Một tổ chức đang `ACTIVE` có thể bị khóa thành `BANNED`. Khi khóa, hệ thống kiểm tra xem chủ sở hữu tổ chức đó có còn làm `OWNER` của bất kỳ tổ chức `ACTIVE` nào khác hay không. Nếu không, hệ thống sẽ tạo một `OutboxEvent` dạng `USER_ROLE_DEMOTE` gửi tín hiệu hạ quyền user từ `ORGANIZER` thành `CUSTOMER` bên `identity-service`.
 
-### Organizer profiles
-- `POST /api/organizers/profiles`
-- `POST /api/organizers/{userId}/verify`
+### 2.2. Quy tắc tạo sự kiện (Create Event)
+- Người gửi yêu cầu tạo sự kiện phải là thành viên của tổ chức tương ứng và giữ vai trò **`OWNER`**.
+- Tổ chức sở hữu sự kiện phải đang ở trạng thái **`ACTIVE`**.
+- Thời gian bắt đầu sự kiện (`startTime`) phải nằm trong tương lai (lớn hơn thời điểm hiện tại).
+- Thời gian kết thúc (`endTime`) phải lớn hơn thời gian bắt đầu (`startTime`).
+- Địa điểm tổ chức (`venue` và `city`) không được để trống.
+- Sự kiện mới tạo sẽ có trạng thái mặc định là **`PENDING`** (chờ duyệt) và **`isPublished = false`** (chưa xuất bản).
+- Sau khi tạo sự kiện thành công, hệ thống sinh ra một `OutboxEvent` dạng `EVENT_PENDING` gửi thông báo cho Admin.
+
+### 2.3. Quy tắc duyệt sự kiện (Approve Event)
+- Admin duyệt sự kiện dựa trên mã định danh sự kiện (`eventId`) và gửi quyết định duyệt (`ApprovalDecision` gồm `APPROVED` hoặc `REJECTED`).
+- Nếu quyết định duyệt là **`APPROVED`**:
+  - Trạng thái sự kiện cập nhật thành **`APPROVED`**.
+  - `isPublished` vẫn giữ nguyên là `false` (chưa tự động xuất bản).
+- Nếu quyết định duyệt là **`REJECTED`**:
+  - Trạng thái sự kiện cập nhật thành **`CANCELLED`** (Hủy bỏ).
+
+### 2.4. Quy tắc xuất bản sự kiện (Publish Event)
+- Chỉ có chủ sở hữu tổ chức (**`OWNER`**) của sự kiện đó mới có quyền xuất bản sự kiện.
+- Sự kiện phải đang ở trạng thái **`APPROVED`**.
+- Khi xuất bản thành công:
+  - Trạng thái sự kiện chuyển thành **`PUBLISHED`**.
+  - Thuộc tính `isPublished` chuyển thành `true`.
+  - Hệ thống tạo một `OutboxEvent` dạng **`EVENT_PUBLISHED`** chứa toàn bộ payload thông tin sự kiện, hạng vé (`TicketTier`), và sơ đồ ghế (`SeatMap`, `Seat`) để đồng bộ sang `booking-service` phục vụ khách hàng mua vé.
+
+### 2.5. Quy tắc hủy sự kiện (Cancel Event)
+- Chỉ có chủ sở hữu tổ chức (**`OWNER`**) của sự kiện đó mới được phép hủy sự kiện.
+- Khi hủy thành công, trạng thái sự kiện cập nhật thành **`CANCELLED`**.
 
 ---
 
-## 4) Data model / enums
+## 3. Các Enums dùng trong Hệ thống (Data Models & Enums)
 
-### 4.1. `EventStatus`
-Các trạng thái đang có trong code:
-- `DRAFT`
-- `PENDING`
-- `APPROVED`
-- `PUBLISHED`
-- `CANCELLED`
+### 3.1. `EventStatus`
+Định nghĩa trong [EventStatus.java](file:///d:/thesis/BE/management/src/main/java/ict/thesis/management/entity/enums/EventStatus.java):
+- `PENDING`: Sự kiện đang chờ admin phê duyệt.
+- `APPROVED`: Sự kiện đã được admin phê duyệt và sẵn sàng xuất bản.
+- `PUBLISHED`: Sự kiện đã xuất bản công khai, người dùng có thể mua vé.
+- `CANCELLED`: Sự kiện đã bị hủy bỏ (hoặc bị từ chối phê duyệt).
 
-> Lưu ý: Luồng create hiện tại đặt `PENDING` (chờ duyệt). Luồng approve sẽ set `APPROVED` hoặc `CANCELLED`.
+### 3.2. `OrganizationStatus`
+Định nghĩa trong [OrganizationStatus.java](file:///d:/thesis/BE/management/src/main/java/ict/thesis/management/entity/enums/OrganizationStatus.java):
+- `PENDING`: Tổ chức mới đăng ký, chờ admin xác thực thông tin.
+- `ACTIVE`: Tổ chức hoạt động bình thường, có quyền tạo sự kiện.
+- `REJECTED`: Tổ chức bị từ chối phê duyệt.
+- `BANNED`: Tổ chức vi phạm quy định và bị khóa quyền hoạt động.
 
-### 4.2. `ApprovalDecision`
-- `APPROVED`
-- `REJECTED`
+### 3.3. `OrganizationRole`
+Định nghĩa trong [OrganizationRole.java](file:///d:/thesis/BE/management/src/main/java/ict/thesis/management/entity/enums/OrganizationRole.java):
+- `OWNER`: Người sở hữu / đại diện pháp lý cao nhất của tổ chức (có toàn quyền quản lý sự kiện).
+- `STAFF`: Nhân viên hỗ trợ tổ chức (chỉ được thực hiện các tác vụ giới hạn).
 
-### 4.3. `UserRole`
-- `CUSTOMER`
-- `ORGANIZER`
-- `STAFF`
-- `ADMIN`
+### 3.4. `ApprovalDecision`
+Định nghĩa trong [ApprovalDecision.java](file:///d:/thesis/BE/management/src/main/java/ict/thesis/management/entity/enums/ApprovalDecision.java):
+- `APPROVED`: Đồng ý phê duyệt.
+- `REJECTED`: Từ chối phê duyệt.
+
+### 3.5. `TierType`
+Định nghĩa trong [TierType.java](file:///d:/thesis/BE/management/src/main/java/ict/thesis/management/entity/enums/TierType.java):
+- `SEATED`: Vé có vị trí ngồi cố định.
+- `STANDING`: Vé đứng tự do (không chọn ghế).
+
+### 3.6. `SeatStatus`
+Định nghĩa trong [SeatStatus.java](file:///d:/thesis/BE/management/src/main/java/ict/thesis/management/entity/enums/SeatStatus.java):
+- `AVAILABLE`: Ghế trống, có thể đặt.
+- `HELD`: Ghế đang được giữ tạm thời.
+- `BOOKED`: Ghế đã được đặt mua thành công.
 
 ---
 
-## 5) Endpoint: Create Event
+## 4. Chi tiết các API Endpoints (Endpoint Details)
 
-### `POST /api/events/create`
-Tạo một event draft do `customer`/applicant nộp.
+### 4.1. Tạo hồ sơ đăng ký tổ chức (Submit Organization)
 
-### Request body
-Class: `CreateEventRequest`
+Dành cho người dùng nộp đơn đăng ký thông tin tổ chức của họ để nâng cấp quyền.
 
-| Field | Type | Required | Validation / note |
-|---|---|---:|---|
-| `organizationId` | `Long` | Yes | `@NotNull(message = "organizationId is required")` |
-| `title` | `String` | Yes | `@NotBlank(message = "title is required")` |
-| `description` | `String` | No | mô tả event |
-| `venue` | `String` | Yes | `@NotBlank(message = "venue is required")` |
-| `city` | `String` | Yes | `@NotBlank(message = "city is required")` |
-| `locationCoords` | `String` | No | tọa độ dạng text |
-| `startTime` | `Instant` | Yes | `@NotNull(message = "startTime is required")` |
-| `endTime` | `Instant` | Yes | `@NotNull(message = "endTime is required")` |
-| `bannerUrl` | `String` | No | link banner |
-| `ticketTiers` | `List<TicketTierRequest>` | No | `@Valid` danh sách các hạng vé |
-| `seatMaps` | `List<SeatMapRequest>` | No | `@Valid` danh sách sơ đồ ghế |
+- **URL**: `/api/organizations`
+- **Method**: `POST`
+- **Headers**:
+  - `Content-Type: application/json`
+  - `X-User-Id` (Long, bắt buộc): ID của người dùng đăng ký.
+- **Request Body** (Chi tiết tại [OrganizationRequest.java](file:///d:/thesis/BE/management/src/main/java/ict/thesis/management/dto/request/OrganizationRequest.java)):
 
-#### Class: `TicketTierRequest`
-| Field | Type | Required | Validation / note |
-|---|---|---:|---|
-| `name` | `String` | Yes | `@NotBlank(message = "Name is required")` |
-| `tierType` | `TierType` | Yes | `@NotNull(message = "Tier type is required")` |
-| `price` | `BigDecimal` | Yes | `@NotNull`, `@DecimalMin(value = "0.0")` |
-| `quantityTotal` | `Integer` | Yes | `@NotNull`, `@Min(value = 1)` |
-| `colorCode` | `String` | No | Mã màu HEX hiển thị |
-| `saleStart` | `Instant` | No | Thời điểm bắt đầu bán vé |
-| `saleEnd` | `Instant` | No | Thời điểm kết thúc bán vé |
+| Trường | Kiểu dữ liệu | Bắt buộc | Ràng buộc | Mô tả |
+| :--- | :--- | :---: | :--- | :--- |
+| `name` | String | Có | Tối đa 255 ký tự | Tên tổ chức |
+| `abbreviationName` | String | Không | Tối đa 50 ký tự | Tên viết tắt |
+| `taxCode` | String | Không | 10 hoặc 13 chữ số | Mã số thuế (Kiểm tra duy nhất trùng lặp) |
+| `representativeName` | String | Không | Tối đa 255 ký tự | Tên người đại diện pháp luật |
+| `representativePosition` | String | Không | Tối đa 255 ký tự | Chức vụ của người đại diện |
+| `hotline` | String | Không | Số từ 9 đến 15 ký tự | Số điện thoại liên hệ chính thức |
+| `officialEmail` | String | Không | Định dạng Email | Email liên hệ chính thức |
+| `provinceCity` | String | Không | Tối đa 100 ký tự | Tỉnh / Thành phố trụ sở |
+| `district` | String | Không | Tối đa 100 ký tự | Quận / Huyện trụ sở |
+| `wardCommune` | String | Không | Tối đa 100 ký tự | Phường / Xã trụ sở |
+| `headquarterAddress` | String | Không | Tối đa 1000 ký tự | Địa chỉ chi tiết trụ sở |
+| `websiteUrl` | String | Không | Tối đa 255 ký tự | Website tổ chức |
+| `fanpageUrl` | String | Không | Tối đa 255 ký tự | Fanpage Facebook |
+| `description` | String | Không | Tối đa 5000 ký tự | Thông tin giới thiệu tổ chức |
 
-#### Class: `SeatMapRequest`
-| Field | Type | Required | Validation / note |
-|---|---|---:|---|
-| `name` | `String` | Yes | `@NotBlank(message = "Seat map name is required")` |
-| `totalRows` | `Integer` | Yes | `@NotNull(message = "Total rows is required")` |
-| `totalCols` | `Integer` | Yes | `@NotNull(message = "Total columns is required")` |
-| `layoutJson` | `String` | No | Layout chi tiết sơ đồ ghế dạng JSON |
-| `seats` | `List<SeatRequest>` | No | Danh sách ghế chi tiết của sơ đồ này |
-
-#### Class: `SeatRequest`
-| Field | Type | Required | Validation / note |
-|---|---|---:|---|
-| `seatCode` | `String` | Yes | `@NotBlank(message = "Seat code is required")` |
-| `rowLabel` | `String` | Yes | `@NotBlank(message = "Row label is required")` |
-| `colNumber` | `Integer` | Yes | `@NotNull(message = "Column number is required")` |
-| `ticketTierName` | `String` | Yes | `@NotBlank(message = "Ticket tier name is required")` |
-
-### Example request
-```http
-POST /api/events/create
-Content-Type: application/json
-```
-
+*Ví dụ Request:*
 ```json
 {
-  "organizationId": 1,
-  "title": "Tech Conference 2026",
-  "description": "Annual conference for developers",
-  "venue": "Convention Center",
-  "city": "Ho Chi Minh City",
-  "locationCoords": "10.7769,106.7009",
-  "startTime": "2026-08-01T09:00:00Z",
-  "endTime": "2026-08-01T17:00:00Z",
-  "bannerUrl": "https://example.com/banner.png",
+  "name": "Công ty Giải trí TicketHub",
+  "abbreviationName": "TicketHub Ent",
+  "taxCode": "0102030405",
+  "representativeName": "Nguyễn Văn A",
+  "representativePosition": "Giám đốc",
+  "hotline": "0988777666",
+  "officialEmail": "contact@tickethub.com",
+  "provinceCity": "Hà Nội",
+  "district": "Cầu Giấy",
+  "wardCommune": "Dịch Vọng",
+  "headquarterAddress": "Số 1 Duy Tân",
+  "websiteUrl": "https://tickethub.vn",
+  "fanpageUrl": "https://facebook.com/tickethub",
+  "description": "Đơn vị chuyên tổ chức sự kiện âm nhạc quy mô lớn."
+}
+```
+
+- **Response thành công (HTTP 201 Created)** (Chi tiết tại [OrganizationResponse.java](file:///d:/thesis/BE/management/src/main/java/ict/thesis/management/dto/response/OrganizationResponse.java)):
+  *Trả về thông tin hồ sơ tổ chức đã lưu cùng trạng thái mặc định `PENDING`.*
+  ```json
+  {
+    "id": 10,
+    "name": "Công ty Giải trí TicketHub",
+    "abbreviationName": "TicketHub Ent",
+    "taxCode": "0102030405",
+    "representativeName": "Nguyễn Văn A",
+    "representativePosition": "Giám đốc",
+    "hotline": "0988777666",
+    "officialEmail": "contact@tickethub.com",
+    "provinceCity": "Hà Nội",
+    "district": "Cầu Giấy",
+    "wardCommune": "Dịch Vọng",
+    "headquarterAddress": "Số 1 Duy Tân",
+    "websiteUrl": "https://tickethub.vn",
+    "fanpageUrl": "https://facebook.com/tickethub",
+    "description": "Đơn vị chuyên tổ chức sự kiện âm nhạc quy mô lớn.",
+    "status": "PENDING",
+    "verifiedByAdminId": null,
+    "verifiedAt": null,
+    "verificationReason": null,
+    "syncedAt": "2026-07-08T03:45:00Z"
+  }
+  ```
+
+---
+
+### 4.2. Phê duyệt hồ sơ tổ chức (Verify Organization)
+
+Dành cho Admin duyệt, từ chối hoặc khóa tổ chức đăng ký.
+
+- **URL**: `/api/organizations/{id}/verify`
+- **Method**: `POST`
+- **Headers**:
+  - `Content-Type: application/json`
+  - `X-User-Id` (Long, bắt buộc): ID của Admin thực hiện phê duyệt.
+- **Path Parameters**:
+  - `id` (Long, bắt buộc): ID của tổ chức cần duyệt.
+- **Request Body** (Chi tiết tại [OrganizationVerificationRequest.java](file:///d:/thesis/BE/management/src/main/java/ict/thesis/management/dto/request/OrganizationVerificationRequest.java)):
+
+| Trường | Kiểu dữ liệu | Bắt buộc | Ràng buộc | Mô tả |
+| :--- | :--- | :---: | :--- | :--- |
+| `decision` | String (Enum) | Có | `ACTIVE` / `REJECTED` / `BANNED` | Quyết định duyệt |
+| `reason` | String | Không | Không | Lý do duyệt / từ chối / khóa |
+
+*Ví dụ Request:*
+```json
+{
+  "decision": "ACTIVE",
+  "reason": "Hồ sơ đầy đủ, thông tin doanh nghiệp chính xác."
+}
+```
+
+- **Response thành công (HTTP 200 OK)** (Chi tiết tại [OrganizationResponse.java](file:///d:/thesis/BE/management/src/main/java/ict/thesis/management/dto/response/OrganizationResponse.java)):
+  *Trả về thông tin hồ sơ tổ chức sau khi duyệt thành công.*
+  ```json
+  {
+    "id": 10,
+    "name": "Công ty Giải trí TicketHub",
+    "status": "ACTIVE",
+    "verifiedByAdminId": 1,
+    "verifiedAt": "2026-07-08T03:50:00Z",
+    "verificationReason": "Hồ sơ đầy đủ, thông tin doanh nghiệp chính xác.",
+    "syncedAt": "2026-07-08T03:50:00Z"
+  }
+  ```
+
+---
+
+### 4.3. Lấy danh sách đăng ký tổ chức (Get All Organizations)
+
+Dành cho Admin (hoặc giao diện quản lý) lấy danh sách các tổ chức đăng ký trong hệ thống, hỗ trợ lọc theo trạng thái.
+
+- **URL**: `/api/organizations`
+- **Method**: `GET`
+- **Xác thực**: Cần đăng nhập (Admin)
+- **Request Parameters**:
+  - `status` (String, Tùy chọn): Lọc theo trạng thái tổ chức (`PENDING`, `ACTIVE`, `REJECTED`, `BANNED`). Nếu không truyền, API trả về tất cả tổ chức.
+
+- **Response thành công (HTTP 200 OK)**:
+  *Trả về danh sách các JSON Object dạng `OrganizationResponse`.*
+  ```json
+  [
+    {
+      "id": 10,
+      "name": "Công ty Giải trí TicketHub",
+      "abbreviationName": "TicketHub Ent",
+      "taxCode": "0102030405",
+      "representativeName": "Nguyễn Văn A",
+      "representativePosition": "Giám đốc",
+      "hotline": "0988777666",
+      "officialEmail": "contact@tickethub.com",
+      "provinceCity": "Hà Nội",
+      "district": "Cầu Giấy",
+      "wardCommune": "Dịch Vọng",
+      "headquarterAddress": "Số 1 Duy Tân",
+      "websiteUrl": "https://tickethub.vn",
+      "fanpageUrl": "https://facebook.com/tickethub",
+      "description": "Đơn vị chuyên tổ chức sự kiện âm nhạc quy mô lớn.",
+      "status": "ACTIVE",
+      "verifiedByAdminId": 1,
+      "verifiedAt": "2026-07-08T03:50:00Z",
+      "verificationReason": "Hồ sơ hợp lệ",
+      "syncedAt": "2026-07-08T03:50:00Z"
+    }
+  ]
+  ```
+
+---
+
+### 4.4. Tạo sự kiện mới (Create Event)
+
+Dành cho chủ sở hữu tổ chức (`OWNER`) tạo một sự kiện nháp.
+
+- **URL**: `/api/events/create`
+- **Method**: `POST`
+- **Xác thực**: Cần đăng nhập (Lấy thông tin `userId` từ SecurityContext)
+- **Headers**:
+  - `Content-Type: application/json`
+- **Request Body** (Chi tiết tại [CreateEventRequest.java](file:///d:/thesis/BE/management/src/main/java/ict/thesis/management/dto/request/CreateEventRequest.java)):
+
+| Trường | Kiểu dữ liệu | Bắt buộc | Mô tả |
+| :--- | :--- | :---: | :--- |
+| `organizationId` | Long | Có | ID của tổ chức sở hữu sự kiện (User gửi yêu cầu phải là Owner của tổ chức này) |
+| `title` | String | Có | Tiêu đề của sự kiện |
+| `description` | String | Không | Nội dung mô tả sự kiện |
+| `venue` | String | Có | Địa điểm tổ chức (ví dụ: Sân vận động Mỹ Đình) |
+| `city` | String | Có | Thành phố tổ chức |
+| `locationCoords` | String | Không | Tọa độ GPS của địa điểm (dạng: `"10.7769,106.7009"`) |
+| `startTime` | String (ISO-8601) | Có | Thời gian bắt đầu sự kiện (Phải trong tương lai) |
+| `endTime` | String (ISO-8601) | Có | Thời gian kết thúc sự kiện (Phải sau startTime) |
+| `bannerUrl` | String | Không | Đường dẫn ảnh banner sự kiện |
+| `ticketTiers` | List | Không | Danh sách các hạng vé cung cấp (Xem cấu trúc TicketTierRequest) |
+| `seatMaps` | List | Không | Danh sách sơ đồ ghế (Xem cấu trúc SeatMapRequest) |
+
+#### Đối tượng con: `TicketTierRequest` ([TicketTierRequest.java](file:///d:/thesis/BE/management/src/main/java/ict/thesis/management/dto/request/TicketTierRequest.java))
+- `name` (String, Bắt buộc): Tên hạng vé (Ví dụ: "VVIP", "Standard").
+- `tierType` (String, Bắt buộc): Loại hạng vé (`SEATED` - Có vị trí ngồi, hoặc `STANDING` - Vé đứng tự do).
+- `price` (BigDecimal, Bắt buộc): Giá vé (phải >= 0).
+- `quantityTotal` (Integer, Bắt buộc): Tổng số lượng vé phát hành (phải >= 1).
+- `colorCode` (String, Tùy chọn): Mã màu hiển thị dạng Hex.
+- `saleStart` (ISO-8601, Tùy chọn): Thời gian bắt đầu mở bán.
+- `saleEnd` (ISO-8601, Tùy chọn): Thời gian kết thúc bán vé.
+
+#### Đối tượng con: `SeatMapRequest` ([SeatMapRequest.java](file:///d:/thesis/BE/management/src/main/java/ict/thesis/management/dto/request/SeatMapRequest.java))
+- `name` (String, Bắt buộc): Tên sơ đồ ghế (ví dụ: "Khu vực khán đài A").
+- `totalRows` (Integer, Bắt buộc): Tổng số hàng ghế.
+- `totalCols` (Integer, Bắt buộc): Tổng số cột ghế.
+- `layoutJson` (String, Tùy chọn): Dữ liệu cấu hình layout dạng JSON.
+- `seats` (List, Tùy chọn): Danh sách chi tiết ghế ngồi thuộc sơ đồ này.
+  - Cấu trúc `SeatRequest` ([SeatRequest.java](file:///d:/thesis/BE/management/src/main/java/ict/thesis/management/dto/request/SeatRequest.java)):
+    - `seatCode` (String, Bắt buộc): Mã ghế định danh (Ví dụ: "A-01").
+    - `rowLabel` (String, Bắt buộc): Nhãn hàng ghế (Ví dụ: "A").
+    - `colNumber` (Integer, Bắt buộc): Số thứ tự cột.
+    - `ticketTierName` (String, Bắt buộc): Tên hạng vé áp dụng cho ghế này (Phải trùng khớp với tên một hạng vé định nghĩa trong `ticketTiers`).
+
+*Ví dụ Request:*
+```json
+{
+  "organizationId": 10,
+  "title": "Liveshow Âm Nhạc TicketHub 2026",
+  "description": "Đêm nhạc đặc sắc quy tụ các ngôi sao hàng đầu.",
+  "venue": "Trung tâm Hội nghị Quốc gia",
+  "city": "Hà Nội",
+  "locationCoords": "21.0069,105.7836",
+  "startTime": "2026-09-01T12:00:00Z",
+  "endTime": "2026-09-01T15:00:00Z",
+  "bannerUrl": "https://example.com/liveshow-banner.png",
   "ticketTiers": [
     {
       "name": "VIP",
       "tierType": "SEATED",
-      "price": 1500000.0,
-      "quantityTotal": 100,
-      "colorCode": "#FFD700",
-      "saleStart": "2026-07-10T00:00:00Z",
-      "saleEnd": "2026-07-31T23:59:59Z"
-    },
-    {
-      "name": "Standard",
-      "tierType": "SEATED",
-      "price": 500000.0,
-      "quantityTotal": 500,
-      "colorCode": "#C0C0C0",
-      "saleStart": "2026-07-10T00:00:00Z",
-      "saleEnd": "2026-07-31T23:59:59Z"
+      "price": 2000000.00,
+      "quantityTotal": 10,
+      "colorCode": "#FFD700"
     }
   ],
   "seatMaps": [
     {
-      "name": "Main Hall",
-      "totalRows": 10,
+      "name": "Khán đài VIP",
+      "totalRows": 1,
       "totalCols": 10,
-      "layoutJson": "{\"rows\": 10, \"cols\": 10}",
+      "layoutJson": "{}",
       "seats": [
         {
-          "seatCode": "A-1",
+          "seatCode": "VIP-01",
           "rowLabel": "A",
           "colNumber": 1,
           "ticketTierName": "VIP"
-        },
-        {
-          "seatCode": "A-2",
-          "rowLabel": "A",
-          "colNumber": 2,
-          "ticketTierName": "VIP"
-        },
-        {
-          "seatCode": "B-1",
-          "rowLabel": "B",
-          "colNumber": 1,
-          "ticketTierName": "Standard"
         }
       ]
     }
@@ -230,240 +348,151 @@ Content-Type: application/json
 }
 ```
 
-### Processing rule
-1. Tìm thành viên tổ chức dựa trên `organizationId` và `userId` (lấy từ Token).
-2. Nếu không tìm thấy, trả về lỗi `400 Bad Request`.
-3. Kiểm tra xem tổ chức đó có đang hoạt động hay không (`status = ACTIVE`). Nếu không hoạt động, trả về lỗi `403 Forbidden`.
-4. Kiểm tra quyền của thành viên tổ chức. Chỉ `OWNER` mới có quyền tạo sự kiện. Nếu không phải `OWNER`, trả về lỗi `403 Forbidden`.
-5. Validate thời gian: `startTime` phải ở tương lai, và `endTime` phải diễn ra sau `startTime`. Nếu sai trả về lỗi `400 Bad Request`.
-6. Validate địa điểm: `venue` và `city` không được null hay trống.
-7. Tạo thực thể `Events` với trạng thái mặc định là `PENDING` và `isPublished = false`.
-8. Lưu event vào Database.
-9. Lưu các hạng vé (`TicketTier`) liên kết với event.
-10. Lưu sơ đồ ghế (`SeatMap`) liên kết với event và các ghế (`Seat`) liên kết với sơ đồ ghế tương ứng.
-11. Tạo `OutboxEvent` dạng `EVENT_PENDING` để thông báo cho Admin.
-12. Trả về thông tin event mới tạo thành công.
-
-### Success response
-HTTP status: `201 Created`
-
-Class: `CreateEventResponse`
-
-| Field | Type |
-|---|---|
-| `id` | `Long` |
-| `status` | `EventStatus` |
-| `createdAt` | `Instant` |
-| `updatedAt` | `Instant` |
-
-### Example response
-```json
-{
-  "id": 101,
-  "status": "PENDING",
-  "createdAt": "2026-07-07T08:30:00Z",
-  "updatedAt": "2026-07-07T08:30:00Z"
-}
-```
-
-### Failure cases
-- `400 Bad Request`
-  - `organizationId` null
-  - `title` null hoặc rỗng
-  - `venue` hoặc `city` null hoặc rỗng
-  - `startTime` ở quá khứ hoặc `startTime` >= `endTime`
-  - Sai thông tin ticketTier liên kết với ghế
-- `403 Forbidden`
-  - User không phải là thành viên của tổ chức
-  - Tổ chức không ở trạng thái ACTIVE
-  - User không có vai trò OWNER trong tổ chức
-- `404 Not Found`
-  - Không tìm thấy tài nguyên tương ứng
+- **Response thành công (HTTP 201 Created)** (Chi tiết tại [CreateEventResponse.java](file:///d:/thesis/BE/management/src/main/java/ict/thesis/management/dto/response/CreateEventResponse.java)):
+  *Trả về thông tin sự kiện với trạng thái mặc định `PENDING`.*
+  ```json
+  {
+    "id": 101,
+    "status": "PENDING",
+    "createdAt": "2026-07-08T04:00:00Z",
+    "updatedAt": "2026-07-08T04:00:00Z"
+  }
+  ```
 
 ---
 
-## 6) Endpoint: Approve / Reject Event
+### 4.5. Phê duyệt sự kiện (Approve Event)
 
-### `POST /api/events/{eventId}/approve`
-Dùng để admin duyệt hoặc từ chối event.
+Dành cho Admin duyệt hoặc từ chối sự kiện nháp.
 
-### Path parameter
-| Field | Type | Required |
-|---|---|---:|
-| `eventId` | `Long` | Yes |
+- **URL**: `/api/events/{eventId}/approve`
+- **Method**: `POST`
+- **Xác thực**: Cần quyền Admin (Lấy thông tin `adminUserId` từ SecurityContext)
+- **Path Parameters**:
+  - `eventId` (Long, bắt buộc): ID của sự kiện cần duyệt.
+- **Request Body** (Chi tiết tại [ApprovalRequest.java](file:///d:/thesis/BE/management/src/main/java/ict/thesis/management/dto/request/ApprovalRequest.java)):
 
-### Request body
-Class: `ApprovalRequest`
+| Trường | Kiểu dữ liệu | Bắt buộc | Ràng buộc | Mô tả |
+| :--- | :--- | :---: | :--- | :--- |
+| `decision` | String (Enum) | Có | `APPROVED` / `REJECTED` | Quyết định duyệt |
+| `reason` | String | Không | Không | Lý do phê duyệt hoặc từ chối |
 
-| Field | Type | Required | Note |
-|---|---|---:|---|
-| `decision` | `ApprovalDecision` | Yes | `APPROVED` hoặc `REJECTED` |
-| `reason` | `String` | No | lý do duyệt / từ chối |
-
-### Example request
-```http
-POST /api/events/100/approve
-Content-Type: application/json
-```
-
+*Ví dụ Request:*
 ```json
 {
   "decision": "APPROVED",
-  "reason": "Looks good"
+  "reason": "Sự kiện đủ điều kiện tổ chức."
 }
 ```
 
-### Processing rule
-1. Lấy `adminUserId` từ token thông qua Security Context.
-2. Kiểm tra `adminUserId` và `decision` (nếu null -> lỗi `400 Bad Request`).
-2. Tìm event theo `eventId`
-3. Tìm admin trong `RefUser`
-4. Kiểm tra role admin:
-   - nếu không phải `ADMIN` -> `403 Forbidden`
-5. Lấy organizer của event
-6. Tạo record `EventApprovals`
-7. Nếu `APPROVED`:
-   - event.status = `APPROVED`
-   - event.isPublished = `false`
-   - nếu applicant/organizer hiện tại là `CUSTOMER`:
-     - gọi sang `identity` để đổi role user đó thành `ORGANIZER`
-     - sync lại `RefUser` từ identity
-8. Nếu `REJECTED`:
-   - event.status = `CANCELLED`
-   - event.isPublished = `false`
-9. Lưu event + approval
-10. Trả response approval
-
-### Success response
-HTTP status: `200 OK`
-
-Class: `EventApprovalResponse`
-
-| Field | Type |
-|---|---|
-| `approvalId` | `Long` |
-| `eventId` | `Long` |
-| `organizerId` | `Long` |
-| `organizerRole` | `String` |
-| `adminUserId` | `Long` |
-| `decision` | `ApprovalDecision` |
-| `eventStatus` | `EventStatus` |
-| `reason` | `String` |
-| `decidedAt` | `Instant` |
-
-### Example response
-```json
-{
-  "approvalId": 55,
-  "eventId": 100,
-  "organizerId": 1,
-  "organizerRole": "ORGANIZER",
-  "adminUserId": 10,
-  "decision": "APPROVED",
-  "eventStatus": "APPROVED",
-  "reason": "Looks good",
-  "decidedAt": "2026-05-26T03:10:00Z"
-}
-```
-
-### Failure cases
-- `400 Bad Request`
-  - token thiếu thông tin user / `adminUserId` null
-  - `decision` null
-  - event organizer missing
-  - invalid business rule
-- `403 Forbidden`
-  - admin user không có role `ADMIN`
-- `404 Not Found`
-  - event không tồn tại
-  - admin user không tồn tại
+- **Response thành công (HTTP 200 OK)** (Chi tiết tại [EventApprovalResponse.java](file:///d:/thesis/BE/management/src/main/java/ict/thesis/management/dto/response/EventApprovalResponse.java)):
+  *Trả về kết quả phê duyệt và trạng thái cập nhật của sự kiện.*
+  ```json
+  {
+    "approvalId": 15,
+    "eventId": 101,
+    "organizerId": 2,
+    "organizerRole": "OWNER",
+    "adminUserId": 1,
+    "decision": "APPROVED",
+    "eventStatus": "APPROVED",
+    "reason": "Sự kiện đủ điều kiện tổ chức.",
+    "decidedAt": "2026-07-08T04:05:00Z"
+  }
+  ```
 
 ---
 
-## 7) Endpoint: Sync RefUser from Identity
+### 4.6. Lấy danh sách sự kiện (Get All Events)
 
-### `POST /api/ref-users/sync`
-Upsert user reference từ `identity` sang `management`.
+Dành cho Admin hoặc giao diện quản trị xem danh sách tất cả các sự kiện đã tạo, hỗ trợ lọc theo trạng thái sự kiện.
 
-### Request body
-Class: `IdentityUserResponse`
+- **URL**: `/api/events`
+- **Method**: `GET`
+- **Xác thực**: Cần đăng nhập
+- **Request Parameters**:
+  - `status` (String, Tùy chọn): Lọc theo trạng thái sự kiện (`PENDING`, `APPROVED`, `PUBLISHED`, `CANCELLED`). Nếu không truyền, trả về tất cả các sự kiện.
 
-| Field | Type | Required |
-|---|---|---:|
-| `id` | `Long` | Yes |
-| `email` | `String` | No |
-| `fullName` | `String` | No |
-| `role` | `String` | No |
-| `verified` | `boolean` | Yes |
-| `active` | `boolean` | Yes |
-
-### Example request
-```http
-POST /api/ref-users/sync
-Content-Type: application/json
-```
-
-```json
-{
-  "id": 1,
-  "email": "user@example.com",
-  "fullName": "Nguyen Van A",
-  "role": "CUSTOMER",
-  "verified": true,
-  "active": true
-}
-```
-
-### Processing rule
-1. Tìm `RefUser` theo `id`
-2. Nếu chưa có -> tạo mới
-3. Nếu đã có -> cập nhật
-4. Map `role`:
-   - nếu role null/blank/không hợp lệ -> `CUSTOMER`
-5. Set `syncedAt = now`
-
-### Success response
-HTTP status: `200 OK`
-
-Response body là entity `RefUser` sau khi upsert.
-
-### Example response
-```json
-{
-  "id": 1,
-  "fullName": "Nguyen Van A",
-  "email": "user@example.com",
-  "role": "CUSTOMER",
-  "syncedAt": "2026-05-26T03:15:00Z"
-}
-```
+- **Response thành công (HTTP 200 OK)** (Chi tiết tại [EventResponse.java](file:///d:/thesis/BE/management/src/main/java/ict/thesis/management/dto/response/EventResponse.java)):
+  *Trả về danh sách các JSON Object dạng `EventResponse`.*
+  ```json
+  [
+    {
+      "id": 101,
+      "organizationId": 10,
+      "organizationName": "Công ty Giải trí TicketHub",
+      "title": "Liveshow Âm Nhạc TicketHub 2026",
+      "description": "Đêm nhạc đặc sắc quy tụ các ngôi sao hàng đầu.",
+      "venue": "Trung tâm Hội nghị Quốc gia",
+      "city": "Hà Nội",
+      "locationCoords": "21.0069,105.7836",
+      "startTime": "2026-09-01T12:00:00Z",
+      "endTime": "2026-09-01T15:00:00Z",
+      "bannerUrl": "https://example.com/liveshow-banner.png",
+      "status": "APPROVED",
+      "isPublished": false,
+      "createdAt": "2026-07-08T04:00:00Z",
+      "updatedAt": "2026-07-08T04:05:00Z"
+    }
+  ]
+  ```
 
 ---
 
-## 8) Error handling
-Service đang dùng `GlobalExceptionHandler` để chuyển lỗi thành response rõ ràng.
+### 4.7. Xuất bản sự kiện (Publish Event)
 
-### 8.1. `IllegalArgumentException`
-HTTP status: `400 Bad Request`
+Dành cho chủ sở hữu tổ chức (`OWNER`) công bố sự kiện ra công chúng sau khi đã được phê duyệt.
 
-Response format:
+- **URL**: `/api/events/{eventId}/publish`
+- **Method**: `POST`
+- **Xác thực**: Cần đăng nhập (Lấy thông tin `userId` từ SecurityContext)
+- **Path Parameters**:
+  - `eventId` (Long, bắt buộc): ID của sự kiện cần xuất bản.
+
+- **Response thành công (HTTP 200 OK)**:
+  ```json
+  {
+    "message": "Event published successfully"
+  }
+  ```
+  > [!NOTE]
+  > Khi xuất bản thành công, một Outbox Event `EVENT_PUBLISHED` được lưu xuống DB để Kafka tự động đẩy thông tin đồng bộ toàn bộ cấu trúc sự kiện, hạng vé, ghế ngồi sang `booking-service`.
+
+---
+
+### 4.8. Hủy sự kiện (Cancel Event)
+
+Dành cho chủ sở hữu tổ chức (`OWNER`) hủy bỏ một sự kiện.
+
+- **URL**: `/api/events/{eventId}/cancel`
+- **Method**: `POST`
+- **Xác thực**: Cần đăng nhập (Lấy thông tin `userId` từ SecurityContext)
+- **Path Parameters**:
+  - `eventId` (Long, bắt buộc): ID của sự kiện cần hủy.
+
+- **Response thành công (HTTP 200 OK)**:
+  ```json
+  {
+    "message": "Event cancelled successfully"
+  }
+  ```
+
+---
+
+## 5. Định dạng phản hồi lỗi (Error Response Format)
+
+Khi có ngoại lệ xảy ra, [GlobalExceptionHandler.java](file:///d:/thesis/BE/management/src/main/java/ict/thesis/management/controller/GlobalExceptionHandler.java) sẽ xử lý và trả về:
+
+### 5.1. Lỗi tham số không hợp lệ / Ràng buộc nghiệp vụ (`IllegalArgumentException` / `ResponseStatusException`)
+HTTP Status: `400 Bad Request`, `403 Forbidden`, `404 Not Found` hoặc `500 Internal Server Error`.
 ```json
 {
-  "error": "message lỗi"
+  "error": "Thông điệp mô tả chi tiết lỗi phát sinh từ hệ thống"
 }
 ```
 
-### 8.2. Validation error
-HTTP status: `400 Bad Request`
-
-Response format:
-```json
-{
-  "fieldName": "message validation"
-}
-```
-
-Ví dụ:
+### 5.2. Lỗi Validation dữ liệu đầu vào (`MethodArgumentNotValidException`)
+HTTP Status: `400 Bad Request`. Trả về map chứa danh sách các trường bị lỗi kèm lý do tương ứng.
 ```json
 {
   "organizationId": "organizationId is required",
@@ -471,81 +500,12 @@ Ví dụ:
 }
 ```
 
-### 8.3. `ResponseStatusException`
-- `404 Not Found`
-- `403 Forbidden`
-- `400 Bad Request`
-
-tuỳ theo rule nghiệp vụ trong service.
-
 ---
 
-## 9) Security rule hiện tại
+## 6. Kết luận
 
-### Tại service level
-Trong `SecurityConfig`, API routes đang được permit all.
-
-### Ở gateway level
-Nếu hệ thống đi qua `api-gateway`, internal request có thể bị chặn nếu không có JWT hợp lệ.
-
-### Ghi chú quan trọng
-- Public API nên đi qua gateway mà không cần token.
-- Internal API nên có token.
-- Gateway sẽ gắn thêm user headers cho downstream service.
-
----
-
-## 10) Tóm tắt luồng nghiệp vụ
-
-### 10.1. Customer tạo draft event
-1. Customer đăng ký / đăng nhập ở `identity`
-2. `identity` sync user sang `management`
-3. Customer gọi `POST /api/events/create`
-4. `management` kiểm tra thành viên tổ chức dựa trên `organizationId` và `userId` từ token
-5. Event được tạo với status `PENDING`
-6. Role của user chưa đổi ngay; vẫn có thể là `CUSTOMER` cho tới khi admin duyệt
-
-### 10.2. Admin duyệt event
-1. Admin gọi `POST /api/events/{eventId}/approve`
-2. Nếu `APPROVED`:
-   - event chuyển sang `APPROVED`
-   - nếu user đang là `CUSTOMER`, hệ thống nâng role thành `ORGANIZER`
-3. `identity` cập nhật user
-4. `management` sync lại `RefUser`
-
----
-
-## 11) Best practices khi gọi API
-
-- `organizationId` trong event phải là tổ chức hợp lệ có trạng thái ACTIVE
-- User gửi yêu cầu tạo phải là OWNER của tổ chức đó
-- Chỉ admin mới được gọi approve endpoint
-- Nếu đổi role / active / verified ở `identity`, gọi sync để `management` cập nhật theo
-- Dùng `Instant` chuẩn ISO-8601 trong request body
-
----
-
-## 12) API checklist
-
-- [x] Tạo event
-- [x] Duyệt / từ chối event
-- [x] Sync user reference
-- [x] Validation errors trả về 400
-- [x] Admin role check cho approval
-- [x] Organizer promotion sau khi approved
-
----
-
-## 13) Kết luận
-`management` hiện cung cấp 3 nhóm API chính:
-1. Event creation
-2. Event approval
-3. RefUser synchronization
-
-Toàn bộ luồng được thiết kế để:
-- nhận user từ `identity`
-- tạo event draft cho customer/applicant
-- duyệt event bởi admin
-- nâng customer thành organizer khi event được duyệt
-- đồng bộ user reference trong `management` khi user ở `identity` thay đổi
+Service `management` hiện cung cấp các nhóm API chính sau:
+1. Đăng ký, quản lý và phê duyệt tổ chức (`Organization` & `OrganizationMember`).
+2. Quản lý vòng đời sự kiện (`Events`, `TicketTier`, `SeatMap`, `Seat`) bao gồm các bước: Tạo mới -> Phê duyệt -> Xuất bản / Hủy bỏ.
+3. Cơ chế đồng bộ trạng thái tài khoản (`CUSTOMER` <-> `ORGANIZER`) thông qua Outbox Pattern và Kafka Broker.
 
