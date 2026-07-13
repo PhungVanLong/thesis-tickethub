@@ -9,6 +9,7 @@ import org.springframework.web.client.RestTemplate;
 
 @SpringBootApplication
 @EnableDiscoveryClient
+@org.springframework.scheduling.annotation.EnableScheduling
 public class BookingApplication {
 
     public static void main(String[] args) {

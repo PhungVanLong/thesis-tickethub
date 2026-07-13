@@ -8,24 +8,19 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.util.List;
 import java.util.Map;
 
 @RestController
-@RequestMapping("/api/orders")
+@RequestMapping("/api/tickets")
 @RequiredArgsConstructor
-public class OrderController {
+public class TicketController {
 
     private final BookingService bookingService;
 
-    @GetMapping("/{orderId}")
-    public ResponseEntity<Map<String, Object>> getOrderDetails(@PathVariable Long orderId) {
-        Map<String, Object> details = bookingService.getOrderDetail(orderId);
-        return ResponseEntity.ok(details);
-    }
-
     @GetMapping("/customer/{customerId}")
-    public ResponseEntity<java.util.List<Map<String, Object>>> getCustomerOrders(@PathVariable Long customerId) {
-        java.util.List<Map<String, Object>> orders = bookingService.getCustomerOrders(customerId);
-        return ResponseEntity.ok(orders);
+    public ResponseEntity<List<Map<String, Object>>> getCustomerTickets(@PathVariable Long customerId) {
+        List<Map<String, Object>> tickets = bookingService.getCustomerTickets(customerId);
+        return ResponseEntity.ok(tickets);
     }
 }

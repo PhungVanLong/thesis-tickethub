@@ -1,5 +1,4 @@
 package ict.thesis.booking.service;
-
 import ict.thesis.booking.dto.BookingDtos.CreateBookingRequest;
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -26,6 +25,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.client.RestTemplate;
 import ict.thesis.booking.enties.Order;
 import ict.thesis.booking.enties.OrderItem;
+import ict.thesis.booking.enties.Ticket;
 
 @Service
 @RequiredArgsConstructor
@@ -38,6 +38,8 @@ public class BookingService {
     private final RestTemplate restTemplate;
     private final ict.thesis.booking.config.VNPayConfig vnPayConfig;
     private final ict.thesis.booking.repository.OutboxEventRepository outboxEventRepository;
+    private final TicketService ticketService;
+    private final ict.thesis.booking.repository.TicketRepository ticketRepository;
     
     @Value("${gateway.shared-secret}")
     private String gatewaySharedSecret;
@@ -124,6 +126,9 @@ public class BookingService {
             order.setUpdatedAt(java.time.Instant.now());
             orderRepository.save(order);
             log.info("Mock payment completed for order ID: {}", orderId);
+
+            // Generate tickets and send Kafka notification
+            ticketService.generateTicketsAndNotify(order);
 
             java.util.List<Long> seatIds = orderItemRepository.findByOrderId(orderId).stream()
                 .map(ict.thesis.booking.enties.OrderItem::getSeat)
@@ -383,6 +388,7 @@ public class BookingService {
         Map<String, Object> response = new java.util.HashMap<>();
         response.put("orderId", order.getId());
         response.put("orderCode", order.getOrderCode());
+        response.put("eventId", order.getEventId());
         response.put("subtotal", order.getSubtotal());
         response.put("totalAmount", order.getTotalAmount());
         response.put("status", order.getStatus().toString());
@@ -466,5 +472,97 @@ public class BookingService {
         response.put("items", itemsList);
 
         return response;
+    }
+
+    @org.springframework.transaction.annotation.Transactional(readOnly = true)
+    public java.util.List<java.util.Map<String, Object>> getCustomerOrders(Long customerId) {
+        java.util.List<Order> orders = orderRepository.findByCustomerOrderByCreatedAtDesc(customerId);
+        java.util.List<java.util.Map<String, Object>> result = new java.util.ArrayList<>();
+        
+        java.util.Map<Long, String> eventTitleCache = new java.util.HashMap<>();
+        HttpHeaders headers = buildInternalHeaders();
+        HttpEntity<Void> entity = new HttpEntity<>(headers);
+        
+        for (Order order : orders) {
+            java.util.Map<String, Object> orderMap = new java.util.HashMap<>();
+            orderMap.put("id", order.getId());
+            orderMap.put("orderCode", order.getOrderCode());
+            orderMap.put("totalAmount", order.getTotalAmount());
+            orderMap.put("status", order.getStatus().toString());
+            orderMap.put("createdAt", order.getCreatedAt());
+            orderMap.put("eventId", order.getEventId());
+            
+            String eventTitle = eventTitleCache.get(order.getEventId());
+            if (eventTitle == null) {
+                String eventUrl = managementServiceUrl + "/api/events/" + order.getEventId();
+                try {
+                    ResponseEntity<Map> eventResponse = restTemplate.exchange(eventUrl, HttpMethod.GET, entity, Map.class);
+                    Map<String, Object> event = eventResponse.getBody();
+                    if (event != null) {
+                        eventTitle = (String) event.get("title");
+                        eventTitleCache.put(order.getEventId(), eventTitle);
+                    }
+                } catch (Exception e) {
+                    log.error("Failed to fetch event title for order {}", order.getId(), e);
+                    eventTitle = "Sự kiện " + order.getEventId();
+                }
+            }
+            orderMap.put("eventTitle", eventTitle);
+            result.add(orderMap);
+        }
+        return result;
+    }
+
+    @org.springframework.transaction.annotation.Transactional(readOnly = true)
+    public java.util.List<java.util.Map<String, Object>> getCustomerTickets(Long customerId) {
+        java.util.List<Ticket> tickets = ticketRepository.findByCustomerId(customerId);
+        java.util.List<java.util.Map<String, Object>> result = new java.util.ArrayList<>();
+        
+        java.util.Map<Long, java.util.Map<String, Object>> eventCache = new java.util.HashMap<>();
+        HttpHeaders headers = buildInternalHeaders();
+        HttpEntity<Void> entity = new HttpEntity<>(headers);
+        
+        for (Ticket ticket : tickets) {
+            java.util.Map<String, Object> ticketMap = new java.util.HashMap<>();
+            ticketMap.put("id", ticket.getId());
+            ticketMap.put("ticketCode", ticket.getTicketCode());
+            ticketMap.put("status", ticket.getStatus().toString());
+            ticketMap.put("seatLabel", ticket.getSeatCode() != null ? ticket.getSeatCode() : ("Seat " + ticket.getSeat()));
+            ticketMap.put("qrCodeUrl", ticket.getQrCodeUrl());
+            
+            OrderItem item = ticket.getOrderItem();
+            if (item != null && item.getOrder() != null) {
+                Long eventId = item.getOrder().getEventId();
+                java.util.Map<String, Object> eventData = eventCache.get(eventId);
+                if (eventData == null) {
+                    String eventUrl = managementServiceUrl + "/api/events/" + eventId;
+                    try {
+                        ResponseEntity<Map> eventResponse = restTemplate.exchange(eventUrl, HttpMethod.GET, entity, Map.class);
+                        Map<String, Object> event = eventResponse.getBody();
+                        if (event != null) {
+                            eventData = new java.util.HashMap<>();
+                            eventData.put("eventTitle", event.get("title"));
+                            eventData.put("eventDate", event.get("startTime"));
+                            eventData.put("venue", event.get("venue"));
+                            eventCache.put(eventId, eventData);
+                        }
+                    } catch (Exception e) {
+                        log.error("Failed to fetch event details for ticket {}", ticket.getId(), e);
+                    }
+                }
+                
+                if (eventData != null) {
+                    ticketMap.put("eventTitle", eventData.get("eventTitle"));
+                    ticketMap.put("eventDate", eventData.get("eventDate"));
+                    ticketMap.put("venue", eventData.get("venue"));
+                } else {
+                    ticketMap.put("eventTitle", "Sự kiện " + eventId);
+                    ticketMap.put("eventDate", ticket.getExpiresAt());
+                    ticketMap.put("venue", "Chưa xác định");
+                }
+            }
+            result.add(ticketMap);
+        }
+        return result;
     }
 }

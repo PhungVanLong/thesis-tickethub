@@ -52,4 +52,57 @@ public class EmailService {
             log.error("Failed to send email to {}", toEmail, e);
         }
     }
+
+    @Async
+    public void sendTicketPurchaseSuccessEmail(
+            String toEmail,
+            String eventTitle,
+            String eventVenue,
+            String eventDate,
+            String orderCode,
+            java.math.BigDecimal totalAmount,
+            java.util.List<java.util.Map<String, Object>> tickets) {
+        if (toEmail == null || toEmail.trim().isEmpty()) {
+            log.warn("Cannot send ticket purchase success email: recipient address is empty.");
+            return;
+        }
+        try {
+            SimpleMailMessage message = new SimpleMailMessage();
+            message.setFrom("longberray88@gmail.com");
+            message.setTo(toEmail);
+
+            String subject = "[TicketHub] Xác nhận đặt vé thành công: " + eventTitle;
+            message.setSubject(subject);
+
+            StringBuilder body = new StringBuilder();
+            body.append("Xin chào quý khách,\n\n");
+            body.append("Chúc mừng bạn đã đặt vé thành công trên hệ thống TicketHub!\n\n");
+            body.append("--- THÔNG TIN ĐƠN HÀNG ---\n");
+            body.append("Mã đơn hàng: ").append(orderCode).append("\n");
+            body.append("Sự kiện: ").append(eventTitle).append("\n");
+            body.append("Địa điểm: ").append(eventVenue).append("\n");
+            body.append("Thời gian: ").append(eventDate).append("\n");
+            body.append("Tổng thanh toán: ").append(totalAmount).append(" VND\n\n");
+
+            body.append("--- THÔNG TIN VÉ ---\n");
+            for (int i = 0; i < tickets.size(); i++) {
+                java.util.Map<String, Object> t = tickets.get(i);
+                body.append("Vé số ").append(i + 1).append(":\n");
+                body.append("  - Hạng vé: ").append(t.get("ticketTierName")).append("\n");
+                body.append("  - Vị trí ghế: ").append(t.get("seatCode")).append("\n");
+                body.append("  - Mã vé: ").append(t.get("ticketCode")).append("\n");
+                body.append("  - Quét mã QR check-in tại đây: ").append(t.get("qrCodeUrl")).append("\n\n");
+            }
+
+            body.append("Cảm ơn bạn đã đồng hành cùng TicketHub. Hẹn gặp lại bạn tại sự kiện!\n\n");
+            body.append("Trân trọng,\nBan quản trị TicketHub");
+            message.setText(body.toString());
+
+            log.info("Sending ticket success email to customer: {}", toEmail);
+            mailSender.send(message);
+            log.info("Ticket email sent successfully to {}", toEmail);
+        } catch (Exception e) {
+            log.error("Failed to send ticket success email to {}", toEmail, e);
+        }
+    }
 }
