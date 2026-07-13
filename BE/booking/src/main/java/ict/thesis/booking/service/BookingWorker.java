@@ -1,3 +1,4 @@
+
 package ict.thesis.booking.service;
 
 import ict.thesis.booking.dto.BookingDtos.BookingItemRequest;
@@ -146,8 +147,21 @@ public class BookingWorker {
                 .toList();
             bookingService.publishSeatStatus(request.eventId(), seatIds, "RESERVED");
             
-            // Notify Frontend via SSE
-            bookingService.notifyBookingSuccess(message.getRequestId(), savedOrder.getId());
+            // Notify Frontend via SSE AFTER transaction commit to avoid 404 race condition (Pay-To-Win logic)
+            final String finalRequestId = message.getRequestId();
+            final Long finalOrderId = savedOrder.getId();
+            if (org.springframework.transaction.support.TransactionSynchronizationManager.isActualTransactionActive()) {
+                org.springframework.transaction.support.TransactionSynchronizationManager.registerSynchronization(
+                    new org.springframework.transaction.support.TransactionSynchronization() {
+                        @Override
+                        public void afterCommit() {
+                            bookingService.notifyBookingSuccess(finalRequestId, finalOrderId);
+                        }
+                    }
+                );
+            } else {
+                bookingService.notifyBookingSuccess(finalRequestId, finalOrderId);
+            }
             
         } catch (Exception e) {
             String rId = (message != null) ? message.getRequestId() : "UNKNOWN";
