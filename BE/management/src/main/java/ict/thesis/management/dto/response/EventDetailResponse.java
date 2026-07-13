@@ -31,6 +31,7 @@ public class EventDetailResponse {
     private Instant startTime;
     private Instant endTime;
     private String bannerUrl;
+    private String category;
     private EventStatus status;
     private boolean isPublished;
     private Instant createdAt;
