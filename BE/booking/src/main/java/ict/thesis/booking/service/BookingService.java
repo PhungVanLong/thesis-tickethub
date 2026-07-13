@@ -234,6 +234,7 @@ public class BookingService {
         }
     }
 
+    @org.springframework.transaction.annotation.Transactional(readOnly = true)
     public Map<String, Object> getOrderDetail(Long orderId) {
         Order order = orderRepository.findById(orderId)
             .orElseThrow(() -> new org.springframework.web.server.ResponseStatusException(
@@ -250,6 +251,7 @@ public class BookingService {
         HttpHeaders headers = buildInternalHeaders();
         HttpEntity<Void> entity = new HttpEntity<>(headers);
 
+        Map<String, String> tierColorMap = new java.util.HashMap<>();
         String eventUrl = managementServiceUrl + "/api/events/" + order.getEventId();
         try {
             ResponseEntity<Map> eventResponse = restTemplate.exchange(eventUrl, HttpMethod.GET, entity, Map.class);
@@ -259,6 +261,17 @@ public class BookingService {
                 response.put("eventDate", event.get("startTime"));
                 response.put("eventVenue", event.get("venue"));
                 response.put("bannerUrl", event.get("bannerUrl"));
+
+                if (event.get("ticketTiers") != null) {
+                    List<Map<String, Object>> tiers = (List<Map<String, Object>>) event.get("ticketTiers");
+                    for (Map<String, Object> tier : tiers) {
+                        String name = (String) tier.get("name");
+                        String color = (String) tier.get("colorCode");
+                        if (name != null && color != null) {
+                            tierColorMap.put(name, color);
+                        }
+                    }
+                }
             }
         } catch (Exception e) {
             log.error("Failed to fetch event details from management service", e);
@@ -294,9 +307,11 @@ public class BookingService {
         List<OrderItem> items = orderItemRepository.findByOrderId(orderId);
         for (OrderItem item : items) {
             Map<String, Object> itemMap = new java.util.HashMap<>();
-            itemMap.put("ticketTierName", item.getTicketTier() != null ? item.getTicketTier().getName() : "Standard");
+            String tierName = item.getTicketTier() != null ? item.getTicketTier().getName() : "Standard";
+            itemMap.put("ticketTierName", tierName);
             itemMap.put("price", item.getFinalPrice());
             itemMap.put("quantity", 1);
+            itemMap.put("ticketTierColor", tierColorMap.getOrDefault(tierName, "#2563eb"));
             
             String seatLabel = item.getSeatCode();
             if (seatLabel == null && item.getSeat() != null) {

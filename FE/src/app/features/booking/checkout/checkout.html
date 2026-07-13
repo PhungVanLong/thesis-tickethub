@@ -131,7 +131,12 @@
             <div class="co-seat-badges">
               @for (item of order.items; track $index) {
                 @if (item.seatLabel) {
-                  <span class="co-seat-badge">{{ item.seatLabel }}</span>
+                  <span class="co-seat-badge"
+                        [style.background-color]="item.ticketTierColor ? (item.ticketTierColor + '20') : 'rgba(37, 99, 235, 0.15)'"
+                        [style.color]="item.ticketTierColor || '#60a5fa'"
+                        [style.border-color]="item.ticketTierColor ? (item.ticketTierColor + '50') : 'rgba(37, 99, 235, 0.3)'">
+                    {{ item.seatLabel }}
+                  </span>
                 }
               }
             </div>
