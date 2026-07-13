@@ -512,6 +512,26 @@ $radius:    12px;
   .co-card { margin-bottom: 0; }
 }
 
+.co-seat-badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-top: 1rem;
+  padding-top: 0.75rem;
+  border-top: 1px dashed rgba(255, 255, 255, 0.08);
+}
+
+.co-seat-badge {
+  background: rgba(37, 99, 235, 0.15);
+  color: #60a5fa;
+  border: 1px solid rgba(37, 99, 235, 0.3);
+  padding: 0.25rem 0.6rem;
+  border-radius: 6px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+}
+
 /* ════════════ CUSTOM MODAL STYLES ════════════ */
 .custom-modal-overlay {
   position: fixed;
