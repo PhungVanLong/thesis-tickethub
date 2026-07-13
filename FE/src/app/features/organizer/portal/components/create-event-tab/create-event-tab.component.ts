@@ -529,6 +529,7 @@ export class CreateEventTabComponent implements OnInit {
     return {
       organizationId,
       title: s1.title,
+      category: s1.category,
       description: s1.description || '',
       startTime: s1.startTime ? new Date(s1.startTime).toISOString() : null,
       endTime: s1.endTime ? new Date(s1.endTime).toISOString() : null,

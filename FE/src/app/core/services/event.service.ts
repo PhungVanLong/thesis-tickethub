@@ -69,6 +69,17 @@ export class EventApiService {
     return this.http.get<any[]>(this.API, { params });
   }
 
+  /** Lấy danh sách sự kiện trang chủ (discovery) theo bộ lọc */
+  getDiscoveryEvents(filters: { category?: string; city?: string; timeRange?: string; sortBy?: string; limit?: number }): Observable<any[]> {
+    const params: any = {};
+    if (filters.category) params['category'] = filters.category;
+    if (filters.city) params['city'] = filters.city;
+    if (filters.timeRange) params['timeRange'] = filters.timeRange;
+    if (filters.sortBy) params['sortBy'] = filters.sortBy;
+    if (filters.limit) params['limit'] = filters.limit;
+    return this.http.get<any[]>(`${this.API}/discovery`, { params });
+  }
+
   /** Organizer lấy danh sách sự kiện của mình */
   getOrganizerEvents(): Observable<any[]> {
     return this.http.get<any[]>(`${this.API}/organizer/my-events`);

@@ -1,0 +1,121 @@
+<app-navigation></app-navigation>
+
+<main class="explore-wrapper">
+  <!-- Search and filter panel -->
+  <div class="filters-container">
+    <div class="filters-panel">
+      <!-- Search input -->
+      <div class="filter-field search-box">
+        <svg class="icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="11" cy="11" r="8" />
+          <line x1="21" y1="21" x2="16.65" y2="16.65" />
+        </svg>
+        <input type="text" [(ngModel)]="searchQuery" (ngModelChange)="applyFilters()" placeholder="Bạn tìm gì hôm nay?" />
+      </div>
+
+      <div class="divider"></div>
+
+      <!-- City dropdown -->
+      <div class="filter-field">
+        <select [(ngModel)]="cityFilter" (change)="applyFilters()">
+          <option value="">Tất cả địa điểm</option>
+          @for (city of cities; track city) {
+            <option [value]="city">{{ city }}</option>
+          }
+        </select>
+      </div>
+
+      <div class="divider"></div>
+
+      <!-- Category dropdown -->
+      <div class="filter-field">
+        <select [(ngModel)]="categoryFilter" (change)="applyFilters()">
+          <option value="">Tất cả danh mục</option>
+          @for (cat of categories; track cat) {
+            <option [value]="cat">{{ cat }}</option>
+          }
+        </select>
+      </div>
+
+      <div class="divider"></div>
+
+      <!-- TimeRange dropdown -->
+      <div class="filter-field">
+        <select [(ngModel)]="timeRangeFilter" (change)="applyFilters()">
+          <option value="">Tất cả thời gian</option>
+          @for (range of timeRanges; track range.value) {
+            <option [value]="range.value">{{ range.label }}</option>
+          }
+        </select>
+      </div>
+
+      <div class="divider"></div>
+
+      <!-- Sorting dropdown -->
+      <div class="filter-field sort-field">
+        <select [(ngModel)]="sortByFilter" (change)="applyFilters()">
+          <option value="CHRONOLOGICAL">Mới nhất</option>
+          <option value="TRENDING">Bán chạy nhất</option>
+        </select>
+      </div>
+
+      <button type="button" class="btn-clear" (click)="clearFilters()">Xóa lọc</button>
+    </div>
+  </div>
+
+  <div class="results-container">
+    <div class="results-header">
+      <h1 class="results-title">Kết quả tìm kiếm:</h1>
+      <span class="results-count">{{ events().length }} sự kiện</span>
+    </div>
+
+    @if (loading()) {
+      <div class="loading-state">
+        <div class="spinner"></div>
+        <p>Đang tìm kiếm sự kiện...</p>
+      </div>
+    } @else if (events().length === 0) {
+      <div class="empty-state">
+        <div class="empty-icon">🎟️</div>
+        <h3>Không tìm thấy sự kiện nào</h3>
+        <p>Thử thay đổi bộ lọc hoặc từ khóa tìm kiếm khác nhé.</p>
+        <button class="btn-reset" (click)="clearFilters()">Xem tất cả sự kiện</button>
+      </div>
+    } @else {
+      <div class="event-grid">
+        @for (event of events(); track event.id) {
+          <article class="event-card" [routerLink]="['/event', event.id]">
+            <div class="image-area">
+              @if (event.image) {
+                <img [src]="event.image" [alt]="event.alt" />
+              } @else {
+                <div class="ticket-pass-bg">
+                  <svg class="ticket-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M2 9a3 3 0 0 1 0 6v2a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-2a3 3 0 0 1 0-6V7a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2Z" />
+                    <line x1="9" y1="5" x2="9" y2="19" stroke-dasharray="3 3" />
+                  </svg>
+                </div>
+              }
+            </div>
+            <div class="event-body">
+              <h3 class="event-title">{{ event.title }}</h3>
+              <p class="event-price">{{ event.price }}</p>
+              <div class="event-meta">
+                <span class="meta-item date-item">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>
+                  {{ event.date }}
+                </span>
+                <span class="meta-item location-item">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path><circle cx="12" cy="10" r="3"></circle></svg>
+                  {{ event.location }}
+                </span>
+              </div>
+            </div>
+          </article>
+        }
+      </div>
+    }
+  </div>
+</main>
+
+<app-footer></app-footer>

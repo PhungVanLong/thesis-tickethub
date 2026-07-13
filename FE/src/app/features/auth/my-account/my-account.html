@@ -214,7 +214,7 @@
                         <!-- Row 4: Action buttons -->
                         <div class="ticket-item-actions">
                           <button type="button" class="btn-download-ticket">Download Ticket</button>
-                          <button type="button" class="btn-details-ticket">Details</button>
+                          <a [routerLink]="['/tickets', ticket.ticketCode]" class="btn-details-ticket" style="text-decoration: none; display: inline-flex; align-items: center; justify-content: center;">Details</a>
                         </div>
                       </div>
 

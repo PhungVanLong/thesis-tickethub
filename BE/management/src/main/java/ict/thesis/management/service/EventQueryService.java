@@ -70,7 +70,65 @@ public class EventQueryService {
                    .map(this::toEventResponse)
                    .toList();
     }
-
+    @Transactional(readOnly = true)
+    public List<EventResponse> getDiscoveryEvents(
+            String category,
+            String city,
+            String timeRange,
+            String sortBy,
+            Integer limit) {
+        
+        EventStatus status = EventStatus.PUBLISHED; // Mặc định cho người dùng xem trên trang chủ
+        
+        java.time.Instant startTime = null;
+        java.time.Instant endTime = null;
+        
+        java.time.Instant now = java.time.Instant.now();
+        
+        if ("WEEKEND".equalsIgnoreCase(timeRange)) {
+            // Tính toán cuối tuần (Thứ Sáu, Thứ Bảy, Chủ Nhật) của tuần hiện tại
+            java.time.ZonedDateTime nowZoned = java.time.ZonedDateTime.now(java.time.ZoneId.of("Asia/Ho_Chi_Minh"));
+            
+            java.time.ZonedDateTime friday = nowZoned.with(java.time.temporal.TemporalAdjusters.nextOrSame(java.time.DayOfWeek.FRIDAY))
+                    .withHour(0).withMinute(0).withSecond(0).withNano(0);
+            
+            if (nowZoned.getDayOfWeek() == java.time.DayOfWeek.SATURDAY) {
+                friday = friday.minusDays(1);
+            } else if (nowZoned.getDayOfWeek() == java.time.DayOfWeek.SUNDAY) {
+                friday = friday.minusDays(2);
+            }
+            
+            java.time.ZonedDateTime sundayEnd = friday.plusDays(2)
+                    .withHour(23).withMinute(59).withSecond(59).withNano(999999999);
+            
+            startTime = friday.toInstant();
+            endTime = sundayEnd.toInstant();
+        } else if ("MONTH".equalsIgnoreCase(timeRange)) {
+            // Từ bây giờ đến cuối tháng này
+            java.time.ZonedDateTime nowZoned = java.time.ZonedDateTime.now(java.time.ZoneId.of("Asia/Ho_Chi_Minh"));
+            java.time.ZonedDateTime endOfMonth = nowZoned.with(java.time.temporal.TemporalAdjusters.lastDayOfMonth())
+                    .withHour(23).withMinute(59).withSecond(59).withNano(999999999);
+            
+            startTime = now.isBefore(endOfMonth.toInstant()) ? now : endOfMonth.toInstant();
+            endTime = endOfMonth.toInstant();
+        }
+        
+        boolean sortByTrending = "TRENDING".equalsIgnoreCase(sortBy);
+        
+        List<Events> list;
+        if (sortByTrending) {
+            list = eventsRepository.findEventsTrending(status, category, city, startTime, endTime);
+        } else {
+            list = eventsRepository.findEventsChronological(status, category, city, startTime, endTime);
+        }
+        
+        int limitVal = (limit != null && limit > 0) ? limit : 10;
+        
+        return list.stream()
+                   .limit(limitVal)
+                   .map(this::toEventResponse)
+                   .toList();
+    }
     @Transactional(readOnly = true)
     public EventDetailResponse getEventDetail(Long eventId) {
         Events event = eventsRepository.findById(eventId)
@@ -164,6 +222,9 @@ public class EventQueryService {
             orgAbbrev,
             orgEmail,
             orgHotline,
+            org != null ? org.getDescription() : null,
+            org != null ? org.getHeadquarterAddress() : null,
+            org != null ? org.getWebsiteUrl() : null,
             creatorId,
             creatorEmail,
             creatorName,

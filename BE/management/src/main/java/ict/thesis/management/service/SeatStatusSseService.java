@@ -36,6 +36,9 @@ public class SeatStatusSseService {
         try {
             emitter.send(SseEmitter.event().name("INIT").data("Connected to event " + eventId + " seat map stream"));
         } catch (IOException e) {
+            try {
+                emitter.complete();
+            } catch (Exception ex) {}
             removeEmitter(eventId, emitter);
         }
 
@@ -58,6 +61,9 @@ public class SeatStatusSseService {
             } catch (IOException | IllegalStateException e) {
                 log.info("Client disconnected from seat map stream ({}). Removing emitter.", e.getMessage());
                 deadEmitters.add(emitter);
+                try {
+                    emitter.complete();
+                } catch (Exception ex) {}
             }
         }
         
@@ -96,6 +102,9 @@ public class SeatStatusSseService {
                     emitter.send(SseEmitter.event().name("HEARTBEAT").data("ping"));
                 } catch (IOException | IllegalStateException e) {
                     deadEmitters.add(emitter);
+                    try {
+                        emitter.complete();
+                    } catch (Exception ex) {}
                 }
             }
 

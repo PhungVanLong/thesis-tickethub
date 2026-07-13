@@ -8,4 +8,5 @@ import java.util.UUID;
 
 @Repository
 public interface CheckinRepository extends JpaRepository<Checkin, UUID> {
+    java.util.List<Checkin> findByTicketId(Long ticketId);
 }

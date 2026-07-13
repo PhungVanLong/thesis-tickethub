@@ -48,6 +48,17 @@ public class EventController {
         return ResponseEntity.ok(eventQueryService.getAllEvents(status));
     }
 
+    @GetMapping("/discovery")
+    public ResponseEntity<List<EventResponse>> getDiscoveryEvents(
+        @RequestParam(required = false) String category,
+        @RequestParam(required = false) String city,
+        @RequestParam(required = false) String timeRange,
+        @RequestParam(required = false) String sortBy,
+        @RequestParam(required = false) Integer limit
+    ) {
+        return ResponseEntity.ok(eventQueryService.getDiscoveryEvents(category, city, timeRange, sortBy, limit));
+    }
+
     @GetMapping("/organizer/my-events")
     public ResponseEntity<List<EventResponse>> getOrganizerEvents() {
         Long userId = UserContextHolder.getContext().getUserId();

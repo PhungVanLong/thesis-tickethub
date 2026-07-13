@@ -13,6 +13,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.server.ResponseStatusException;
 
 import ict.thesis.identity.dto.UpdateUserRequest;
@@ -35,6 +36,23 @@ public class UserController {
     @GetMapping("/{id}")
     public ResponseEntity<UserResponse> getUser(@PathVariable Long id) {
         Optional<User> u = userRepository.findById(id);
+        if (u.isEmpty()) return ResponseEntity.notFound().build();
+        User user = u.get();
+        UserResponse resp = new UserResponse();
+        resp.setId(user.getId());
+        resp.setEmail(user.getEmail());
+        resp.setFullName(user.getFullName());
+        resp.setRole(user.getRole());
+        resp.setVerified(user.isVerified());
+        resp.setActive(user.isActive());
+        resp.setCreatedAt(user.getCreatedAt());
+        resp.setUpdatedAt(user.getUpdatedAt());
+        return ResponseEntity.ok(resp);
+    }
+
+    @GetMapping("/by-email")
+    public ResponseEntity<UserResponse> getUserByEmail(@RequestParam String email) {
+        Optional<User> u = userRepository.findByEmail(email);
         if (u.isEmpty()) return ResponseEntity.notFound().build();
         User user = u.get();
         UserResponse resp = new UserResponse();

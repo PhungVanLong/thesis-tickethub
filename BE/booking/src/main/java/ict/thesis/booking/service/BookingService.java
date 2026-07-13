@@ -41,6 +41,7 @@ public class BookingService {
     private final ict.thesis.booking.repository.OutboxEventRepository outboxEventRepository;
     private final TicketService ticketService;
     private final ict.thesis.booking.repository.TicketRepository ticketRepository;
+    private final ict.thesis.booking.repository.CheckinRepository checkinRepository;
 
     @Value("${gateway.shared-secret}")
     private String gatewaySharedSecret;
@@ -596,5 +597,95 @@ public class BookingService {
             result.add(ticketMap);
         }
         return result;
+    }
+
+    @org.springframework.transaction.annotation.Transactional(readOnly = true)
+    public java.util.Map<String, Object> getTicketDetailByCode(String ticketCode) {
+        Ticket ticket = ticketRepository.findByTicketCode(ticketCode)
+                .orElseThrow(() -> new org.springframework.web.server.ResponseStatusException(
+                        org.springframework.http.HttpStatus.NOT_FOUND, "Ticket not found"));
+
+        java.util.Map<String, Object> response = new java.util.HashMap<>();
+        
+        // 1. Ticket basic info
+        response.put("id", ticket.getId());
+        response.put("ticketCode", ticket.getTicketCode());
+        response.put("status", ticket.getStatus() != null ? ticket.getStatus().toString() : null);
+        response.put("issuedAt", ticket.getIssuedAt());
+        response.put("expiresAt", ticket.getExpiresAt());
+        
+        String qrCodeUrl = ticket.getQrCodeUrl();
+        if (qrCodeUrl == null || qrCodeUrl.trim().isEmpty()) {
+            qrCodeUrl = "https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=" + ticket.getTicketCode();
+        }
+        response.put("qrCodeUrl", qrCodeUrl);
+
+        // 2. Seat info
+        response.put("seatId", ticket.getSeat());
+        response.put("seatLabel", ticket.getSeatCode() != null ? ticket.getSeatCode() : ("Seat " + ticket.getSeat()));
+
+        // 3. Price & Tier details
+        OrderItem item = ticket.getOrderItem();
+        if (item != null) {
+            response.put("originalPrice", item.getOriginalPrice());
+            response.put("finalPrice", item.getFinalPrice());
+            if (item.getTicketTier() != null) {
+                response.put("ticketTierId", item.getTicketTier().getId());
+                response.put("ticketTierName", item.getTicketTier().getName());
+                response.put("ticketTierColor", "#2563eb");
+            }
+            
+            // 4. Order info
+            Order order = item.getOrder();
+            if (order != null) {
+                response.put("orderId", order.getId());
+                response.put("orderCode", order.getOrderCode());
+                response.put("customerId", order.getCustomer());
+                response.put("customerEmail", order.getCustomerEmail());
+                response.put("orderStatus", order.getStatus() != null ? order.getStatus().toString() : null);
+                response.put("orderCreatedAt", order.getCreatedAt());
+
+                // 5. Event details (Fetch from Management service)
+                Long eventId = order.getEventId();
+                response.put("eventId", eventId);
+                
+                String eventUrl = managementServiceUrl + "/api/events/" + eventId;
+                HttpHeaders headers = buildInternalHeaders();
+                HttpEntity<Void> entity = new HttpEntity<>(headers);
+                try {
+                    ResponseEntity<Map> eventResponse = restTemplate.exchange(eventUrl, HttpMethod.GET, entity, Map.class);
+                    Map<String, Object> event = eventResponse.getBody();
+                    if (event != null) {
+                        response.put("eventTitle", event.get("title"));
+                        response.put("eventDate", event.get("startTime"));
+                        response.put("venue", event.get("venue"));
+                        response.put("bannerUrl", event.get("bannerUrl"));
+                        response.put("eventCity", event.get("city"));
+                    }
+                } catch (Exception e) {
+                    log.error("Failed to fetch event details for ticket detail {}", ticket.getId(), e);
+                    response.put("eventTitle", "Sự kiện " + eventId);
+                    response.put("eventDate", ticket.getExpiresAt());
+                    response.put("venue", "Chưa xác định");
+                    response.put("bannerUrl", null);
+                }
+            }
+        }
+
+        // 6. Check-in history
+        java.util.List<ict.thesis.booking.enties.Checkin> checkins = checkinRepository.findByTicketId(ticket.getId());
+        java.util.List<java.util.Map<String, Object>> checkinList = new java.util.ArrayList<>();
+        for (ict.thesis.booking.enties.Checkin checkin : checkins) {
+            java.util.Map<String, Object> checkinMap = new java.util.HashMap<>();
+            checkinMap.put("id", checkin.getId());
+            checkinMap.put("staffId", checkin.getStaff());
+            checkinMap.put("method", checkin.getMethod() != null ? checkin.getMethod().toString() : null);
+            checkinMap.put("deviceId", checkin.getDeviceId());
+            checkinMap.put("checkedInAt", checkin.getCheckedInAt());
+            checkinList.add(checkinMap);
+        }
+        response.put("checkins", checkinList);
+
+        return response;
     }
 }

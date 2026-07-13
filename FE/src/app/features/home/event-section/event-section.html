@@ -1,32 +1,175 @@
-<section class="events-section" id="events" aria-labelledby="events-title">
-  <div class="section-heading">
-    <h2 id="events-title">{{ 'home.eventsLike' | translate }}</h2>
+<!-- 1. TRENDING NOW SECTION -->
+<section class="events-section" id="trending-events" aria-labelledby="trending-title" style="margin-bottom: 4rem;">
+  <div class="section-heading" style="display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 1.5rem;">
+    <div>
+      <h2 id="trending-title" style="font-size: 1.5rem; font-weight: 800; color: #0f172a; margin: 0;">Trending Now</h2>
+      <p style="font-size: 0.9rem; color: #64748b; margin: 4px 0 0 0;">The hottest events everyone is talking about.</p>
+    </div>
+    <a [routerLink]="['/explore']" [queryParams]="{ sortBy: 'TRENDING' }" style="font-size: 0.9rem; color: #2563eb; font-weight: 700; text-decoration: none;">View All ›</a>
   </div>
 
-  <div class="event-grid">
-    @for (event of events(); track event.title) {
-      <article class="event-card">
-        <div class="image-area">
-          @if (event.image) {
-            <img [src]="event.image" [alt]="event.alt" />
-          } @else {
-            <div class="ticket-pass-bg">
-              <svg class="ticket-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M2 9a3 3 0 0 1 0 6v2a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-2a3 3 0 0 1 0-6V7a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2Z" />
-                <line x1="9" y1="5" x2="9" y2="19" stroke-dasharray="3 3" />
-              </svg>
-            </div>
-          }
-        </div>
-        <div class="event-body">
-          <p class="event-meta">{{ event.date }}</p>
-          <h3 class="event-title">{{ event.title }}</h3>
-          <p class="event-location">{{ event.location }}</p>
-          <button type="button" class="btn-action" [routerLink]="['/event', event.id]">
-            {{ (event.buttonText === 'See Tickets' ? ('action.seeTickets' | translate) : ('action.seePasses' | translate)) }}
-          </button>
-        </div>
-      </article>
-    }
+  @if (trendingEvents().length === 0) {
+    <div style="padding: 2.5rem; text-align: center; color: #94a3b8; border: 1px dashed #cbd5e1; border-radius: 8px; font-size: 14px;">
+      No trending events available right now.
+    </div>
+  } @else {
+    <div class="event-grid">
+      @for (event of trendingEvents(); track event.id) {
+        <article class="event-card">
+          <div class="image-area">
+            @if (event.image) {
+              <img [src]="event.image" [alt]="event.alt" />
+            } @else {
+              <div class="ticket-pass-bg">
+                <svg class="ticket-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M2 9a3 3 0 0 1 0 6v2a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-2a3 3 0 0 1 0-6V7a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2Z" />
+                  <line x1="9" y1="5" x2="9" y2="19" stroke-dasharray="3 3" />
+                </svg>
+              </div>
+            }
+          </div>
+          <div class="event-body">
+            <p class="event-meta" style="color: #2563eb; font-weight: 700;">{{ event.date }}</p>
+            <h3 class="event-title">{{ event.title }}</h3>
+            <p class="event-location">{{ event.location }}</p>
+            <button type="button" class="btn-action" [routerLink]="['/event', event.id]">
+              Book Now
+            </button>
+          </div>
+        </article>
+      }
+    </div>
+  }
+</section>
+
+<!-- 2. MUSIC & CONCERTS SECTION -->
+<section class="events-section" id="music-events" aria-labelledby="music-title" style="margin-bottom: 4rem;">
+  <div class="section-heading" style="display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 1.5rem;">
+    <div>
+      <h2 id="music-title" style="font-size: 1.5rem; font-weight: 800; color: #0f172a; margin: 0;">Music & Concerts</h2>
+      <p style="font-size: 0.9rem; color: #64748b; margin: 4px 0 0 0;">From stadium tours to intimate jazz clubs.</p>
+    </div>
+    <a [routerLink]="['/explore']" [queryParams]="{ category: 'Concerts' }" style="font-size: 0.9rem; color: #2563eb; font-weight: 700; text-decoration: none;">Explore Music ›</a>
   </div>
+
+  @if (musicEvents().length === 0) {
+    <div style="padding: 2.5rem; text-align: center; color: #94a3b8; border: 1px dashed #cbd5e1; border-radius: 8px; font-size: 14px;">
+      No music events available right now.
+    </div>
+  } @else {
+    <div class="event-grid">
+      @for (event of musicEvents(); track event.id) {
+        <article class="event-card">
+          <div class="image-area">
+            @if (event.image) {
+              <img [src]="event.image" [alt]="event.alt" />
+            } @else {
+              <div class="ticket-pass-bg">
+                <svg class="ticket-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M2 9a3 3 0 0 1 0 6v2a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-2a3 3 0 0 1 0-6V7a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2Z" />
+                  <line x1="9" y1="5" x2="9" y2="19" stroke-dasharray="3 3" />
+                </svg>
+              </div>
+            }
+          </div>
+          <div class="event-body">
+            <p class="event-meta" style="color: #2563eb; font-weight: 700;">{{ event.date }}</p>
+            <h3 class="event-title">{{ event.title }}</h3>
+            <p class="event-location">{{ event.location }}</p>
+            <button type="button" class="btn-action" [routerLink]="['/event', event.id]">
+              Book Now
+            </button>
+          </div>
+        </article>
+      }
+    </div>
+  }
+</section>
+
+<!-- 3. SPORTS & ACTIVITIES SECTION -->
+<section class="events-section" id="sports-events" aria-labelledby="sports-title" style="margin-bottom: 4rem;">
+  <div class="section-heading" style="display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 1.5rem;">
+    <div>
+      <h2 id="sports-title" style="font-size: 1.5rem; font-weight: 800; color: #0f172a; margin: 0;">Sports & Activities</h2>
+      <p style="font-size: 0.9rem; color: #64748b; margin: 4px 0 0 0;">Catch the thrill of live competition.</p>
+    </div>
+    <a [routerLink]="['/explore']" [queryParams]="{ category: 'Sports' }" style="font-size: 0.9rem; color: #2563eb; font-weight: 700; text-decoration: none;">See All Sports ›</a>
+  </div>
+
+  @if (sportsEvents().length === 0) {
+    <div style="padding: 2.5rem; text-align: center; color: #94a3b8; border: 1px dashed #cbd5e1; border-radius: 8px; font-size: 14px;">
+      No sports events available right now.
+    </div>
+  } @else {
+    <div class="event-grid" style="grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));">
+      @for (event of sportsEvents(); track event.id) {
+        <article class="event-card">
+          <div class="image-area">
+            @if (event.image) {
+              <img [src]="event.image" [alt]="event.alt" />
+            } @else {
+              <div class="ticket-pass-bg">
+                <svg class="ticket-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M2 9a3 3 0 0 1 0 6v2a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-2a3 3 0 0 1 0-6V7a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2Z" />
+                  <line x1="9" y1="5" x2="9" y2="19" stroke-dasharray="3 3" />
+                </svg>
+              </div>
+            }
+          </div>
+          <div class="event-body">
+            <p class="event-meta" style="color: #2563eb; font-weight: 700;">{{ event.date }}</p>
+            <h3 class="event-title">{{ event.title }}</h3>
+            <p class="event-location">{{ event.location }}</p>
+            <button type="button" class="btn-action" [routerLink]="['/event', event.id]">
+              Book Now
+            </button>
+          </div>
+        </article>
+      }
+    </div>
+  }
+</section>
+
+<!-- 4. WEEKEND EVENTS SECTION -->
+<section class="events-section" id="weekend-events" aria-labelledby="weekend-title" style="margin-bottom: 4rem;">
+  <div class="section-heading" style="display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 1.5rem;">
+    <div>
+      <h2 id="weekend-title" style="font-size: 1.5rem; font-weight: 800; color: #0f172a; margin: 0;">Featured This Weekend</h2>
+      <p style="font-size: 0.9rem; color: #64748b; margin: 4px 0 0 0;">Supercharge your Saturday & Sunday plans.</p>
+    </div>
+    <a [routerLink]="['/explore']" [queryParams]="{ timeRange: 'WEEKEND' }" style="font-size: 0.9rem; color: #2563eb; font-weight: 700; text-decoration: none;">View All Weekend ›</a>
+  </div>
+
+  @if (weekendEvents().length === 0) {
+    <div style="padding: 2.5rem; text-align: center; color: #94a3b8; border: 1px dashed #cbd5e1; border-radius: 8px; font-size: 14px;">
+      No events scheduled for this weekend yet.
+    </div>
+  } @else {
+    <div class="event-grid">
+      @for (event of weekendEvents(); track event.id) {
+        <article class="event-card">
+          <div class="image-area">
+            @if (event.image) {
+              <img [src]="event.image" [alt]="event.alt" />
+            } @else {
+              <div class="ticket-pass-bg">
+                <svg class="ticket-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M2 9a3 3 0 0 1 0 6v2a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-2a3 3 0 0 1 0-6V7a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2Z" />
+                  <line x1="9" y1="5" x2="9" y2="19" stroke-dasharray="3 3" />
+                </svg>
+              </div>
+            }
+          </div>
+          <div class="event-body">
+            <p class="event-meta" style="color: #2563eb; font-weight: 700;">{{ event.date }}</p>
+            <h3 class="event-title">{{ event.title }}</h3>
+            <p class="event-location">{{ event.location }}</p>
+            <button type="button" class="btn-action" [routerLink]="['/event', event.id]">
+              Book Now
+            </button>
+          </div>
+        </article>
+      }
+    </div>
+  }
 </section>

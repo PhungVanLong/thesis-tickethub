@@ -53,6 +53,13 @@
           </button>
         </div>
 
+        <!-- Dashed Divider (Tear Line) -->
+        <div class="ticket-tear-divider">
+          <div class="tear-circle top"></div>
+          <div class="dashed-line"></div>
+          <div class="tear-circle bottom"></div>
+        </div>
+
         <!-- Right Column: Poster Image -->
         <div class="hero-card-right">
           @if (event.bannerUrl) {
@@ -90,21 +97,51 @@
               <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
               Organizer
             </h2>
-            <div class="organizer-body">
-              <div class="organizer-avatar">
-                <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>
+            <div class="organizer-body" style="display: flex; gap: 16px; align-items: flex-start;">
+              <div class="organizer-avatar" style="flex-shrink: 0; width: 48px; height: 48px; border-radius: 50%; background: #eff6ff; display: flex; align-items: center; justify-content: center; border: 1px solid #cbd5e1;">
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#2563eb" stroke-width="1.5"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>
               </div>
-              <div class="organizer-info">
-                <h3 class="organizer-name">{{ event.organizationName }}</h3>
-                <p class="organizer-sub">Event Organizer · ID: {{ event.organizationId }}</p>
-                <div class="organizer-badges">
-                  <span class="org-badge verified">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
-                    Verified Organizer
-                  </span>
+              <div class="organizer-info" style="flex-grow: 1;">
+                <h3 class="organizer-name" style="margin: 0 0 4px 0; font-size: 15px; font-weight: 700; color: #0f172a;">{{ event.organizationName }}</h3>
+                <p class="organizer-sub" style="margin: 0 0 12px 0; font-size: 12px; color: #64748b; font-weight: 500;">Event Organizer</p>
+                
+                <div class="organizer-meta-grid" style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px 16px; font-size: 13px;">
+                  @if (event.organizationAddress) {
+                    <div class="org-meta-item" style="display: flex; align-items: center; gap: 8px; color: #475569;">
+                      <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#2563eb" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink: 0;"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path><circle cx="12" cy="10" r="3"></circle></svg>
+                      <span>{{ event.organizationAddress }}</span>
+                    </div>
+                  }
+                  @if (event.organizationEmail) {
+                    <div class="org-meta-item" style="display: flex; align-items: center; gap: 8px; color: #475569;">
+                      <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#2563eb" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink: 0;"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path><polyline points="22,6 12,13 2,6"></polyline></svg>
+                      <a href="mailto:{{ event.organizationEmail }}" style="color: #2563eb; text-decoration: none; word-break: break-all;">{{ event.organizationEmail }}</a>
+                    </div>
+                  }
+                  @if (event.organizationHotline) {
+                    <div class="org-meta-item" style="display: flex; align-items: center; gap: 8px; color: #475569;">
+                      <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#2563eb" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink: 0;"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path></svg>
+                      <a href="tel:{{ event.organizationHotline }}" style="color: #475569; text-decoration: none;">{{ event.organizationHotline }}</a>
+                    </div>
+                  }
+                  @if (event.organizationWebsite) {
+                    <div class="org-meta-item" style="display: flex; align-items: center; gap: 8px; color: #475569;">
+                      <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#2563eb" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink: 0;"><circle cx="12" cy="12" r="10"></circle><line x1="2" y1="12" x2="22" y2="12"></line><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path></svg>
+                      <a [href]="event.organizationWebsite" target="_blank" style="color: #2563eb; text-decoration: none; word-break: break-all;">{{ event.organizationWebsite }}</a>
+                    </div>
+                  }
                 </div>
               </div>
             </div>
+
+            <!-- Organizer Description -->
+            @if (event.organizationDescription) {
+              <div class="organizer-details-extra" style="margin-top: 12px; padding-top: 12px; border-top: 1px solid #f1f5f9;">
+                <p class="organizer-description" style="font-size: 13px; color: #475569; line-height: 1.6; margin: 0;">
+                  {{ event.organizationDescription }}
+                </p>
+              </div>
+            }
           </section>
         }
 

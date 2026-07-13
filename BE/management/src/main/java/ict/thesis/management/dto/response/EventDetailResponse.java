@@ -20,6 +20,9 @@ public class EventDetailResponse {
     private String organizationAbbreviation;
     private String organizationEmail;
     private String organizationHotline;
+    private String organizationDescription;
+    private String organizationAddress;
+    private String organizationWebsite;
     private Long creatorId;
     private String creatorEmail;
     private String creatorName;

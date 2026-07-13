@@ -30,11 +30,11 @@ $shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.07), 0 2px 4px -2px rgba(0, 0, 0, 0.0
 
 .hero-card-main {
   background: #ffffff;
-  border: 1px solid #e2e8f0;
+  border: none;
   border-radius: 12px;
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.04);
   display: grid;
-  grid-template-columns: 37% 63%;
+  grid-template-columns: 37% 32px 1fr;
   align-items: stretch;
   overflow: hidden;
   height: 350px;
@@ -45,11 +45,56 @@ $shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.07), 0 2px 4px -2px rgba(0, 0, 0, 0.0
   }
 }
 
+.ticket-tear-divider {
+  width: 32px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: space-between;
+  position: relative;
+  background: #e5e7eb;
+
+  .tear-circle {
+    width: 32px;
+    height: 16px;
+    background: #f8fafc;
+    position: absolute;
+    right: -16px;
+    border: none;
+    z-index: 20;
+
+    &.top {
+      top: -1px;
+      border-bottom-left-radius: 32px;
+      border-bottom-right-radius: 32px;
+    }
+
+    &.bottom {
+      bottom: -1px;
+      border-top-left-radius: 32px;
+      border-top-right-radius: 32px;
+    }
+  }
+
+  .dashed-line {
+    height: calc(100% - 32px);
+    width: 1px;
+    border-left: 2px dashed #94a3b8;
+    position: absolute;
+    right: 0;
+    top: 16px;
+  }
+
+  @media (max-width: 900px) {
+    display: none;
+  }
+}
+
 .hero-card-left {
   display: flex;
   flex-direction: column;
   padding: 1.25rem 2rem;
-  background: #ffffff;
+  background: #e5e7eb;
   justify-content: center;
 
   @media (max-width: 768px) {
