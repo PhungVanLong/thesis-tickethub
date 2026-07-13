@@ -1,0 +1,513 @@
+/* ═══════════════════════════════════
+   Checkout / Payment Page
+   Dark theme matching the design
+   ═══════════════════════════════════ */
+
+$bg:        #0d0d0e;
+$card-bg:   #1a1a1c;
+$border:    rgba(255,255,255,0.08);
+$text:      #ffffff;
+$text-muted: rgba(255,255,255,0.5);
+$blue:      #2563eb;
+$green:     #4ade80;
+$radius:    12px;
+
+:host {
+  display: block;
+  background: $bg;
+  min-height: 100vh;
+  font-family: 'Inter', -apple-system, sans-serif;
+  color: $text;
+}
+
+/* ── Loading ── */
+.co-loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 50vh;
+  gap: 12px;
+  color: $text-muted;
+  font-weight: 600;
+}
+
+.co-spinner {
+  width: 32px;
+  height: 32px;
+  border: 3px solid rgba(37,99,235,0.2);
+  border-top-color: $blue;
+  border-radius: 50%;
+  animation: spin 0.7s linear infinite;
+
+  &--sm {
+    width: 18px;
+    height: 18px;
+    border-width: 2px;
+    display: inline-block;
+  }
+}
+
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* ── Hero Banner ── */
+.co-hero {
+  position: relative;
+  height: 200px;
+  overflow: hidden;
+  display: flex;
+  align-items: flex-end;
+}
+
+.co-hero-bg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.co-hero-bg-fallback {
+  background: linear-gradient(135deg, #1e3a8a 0%, #312e81 50%, #1e1b4b 100%);
+}
+
+.co-hero-overlay {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(to top, rgba(0,0,0,0.85) 0%, rgba(0,0,0,0.2) 100%);
+}
+
+.co-hero-content {
+  position: relative;
+  z-index: 2;
+  padding: 1.5rem 2rem 1.25rem;
+  max-width: 1200px;
+  margin: 0 auto;
+  width: 100%;
+}
+
+.co-hero-title {
+  font-size: 1.5rem;
+  font-weight: 800;
+  margin: 0 0 0.5rem;
+  line-height: 1.2;
+}
+
+.co-hero-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem 1.5rem;
+}
+
+.co-meta-item {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.82rem;
+  color: rgba(255,255,255,0.7);
+
+  svg { flex-shrink: 0; }
+}
+
+/* ── Page ── */
+.co-page {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 1.5rem 2rem 3rem;
+}
+
+/* Timer bar */
+.co-timer-bar {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.85rem;
+  color: $text-muted;
+  margin-bottom: 1.5rem;
+  padding: 0.75rem 1rem;
+  background: rgba(37,99,235,0.08);
+  border: 1px solid rgba(37,99,235,0.15);
+  border-radius: 8px;
+
+  strong {
+    color: $blue;
+    font-size: 1.1rem;
+    letter-spacing: 0.05em;
+  }
+
+  &.co-timer-danger {
+    background: rgba(239,68,68,0.1);
+    border-color: rgba(239,68,68,0.2);
+
+    strong {
+      color: #ef4444;
+      animation: blink 1s infinite;
+    }
+  }
+}
+
+@keyframes blink {
+  0%, 100% { opacity: 1; }
+  50%      { opacity: 0.4; }
+}
+
+.co-section-heading {
+  font-size: 1.1rem;
+  font-weight: 800;
+  color: $blue;
+  letter-spacing: 0.08em;
+  margin: 0 0 1.5rem;
+}
+
+/* ── Grid ── */
+.co-grid {
+  display: grid;
+  grid-template-columns: 1fr 340px;
+  gap: 1.5rem;
+  align-items: start;
+
+  @media (max-width: 900px) {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* ── Card ── */
+.co-card {
+  background: $card-bg;
+  border: 1px solid $border;
+  border-radius: $radius;
+  padding: 1.25rem 1.5rem;
+  margin-bottom: 1rem;
+}
+
+.co-card-title {
+  font-size: 0.85rem;
+  font-weight: 700;
+  margin: 0 0 0.75rem;
+
+  &--blue {
+    color: $blue;
+  }
+}
+
+.co-card-header-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 0.75rem;
+
+  .co-card-title { margin-bottom: 0; }
+}
+
+.co-link-btn {
+  background: none;
+  border: none;
+  color: $blue;
+  font-size: 0.78rem;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 0;
+  text-decoration: none;
+  transition: opacity 0.15s;
+
+  &:hover { opacity: 0.7; }
+}
+
+.co-card-text {
+  font-size: 0.85rem;
+  color: $text-muted;
+  line-height: 1.5;
+  margin: 0 0 0.25rem;
+
+  strong { color: $text; }
+}
+
+.co-card-email {
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: $text;
+  margin: 0;
+}
+
+/* ── Promo Code ── */
+.co-promo-input-wrap {
+  display: flex;
+  align-items: center;
+  background: rgba(255,255,255,0.04);
+  border: 1px solid $border;
+  border-radius: 8px;
+  padding: 0.65rem 0.85rem;
+  gap: 0.75rem;
+}
+
+.co-promo-icon {
+  font-size: 1.2rem;
+  color: $text-muted;
+  font-weight: 300;
+  line-height: 1;
+}
+
+.co-promo-input {
+  flex: 1;
+  background: transparent;
+  border: none;
+  outline: none;
+  color: $text;
+  font-size: 0.85rem;
+  font-family: inherit;
+
+  &::placeholder {
+    color: rgba(255,255,255,0.25);
+  }
+}
+
+/* ── Payment Methods ── */
+.co-pay-option {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.85rem 1rem;
+  border-radius: 8px;
+  cursor: pointer;
+  margin-bottom: 0.5rem;
+  transition: background 0.15s;
+
+  &:hover { background: rgba(255,255,255,0.03); }
+
+  &.co-pay-active {
+    background: rgba(37,99,235,0.06);
+  }
+
+  input[type="radio"] {
+    accent-color: $blue;
+    width: 18px;
+    height: 18px;
+    flex-shrink: 0;
+  }
+
+  span {
+    font-size: 0.88rem;
+    font-weight: 600;
+    color: $text;
+  }
+}
+
+.co-pay-logo {
+  width: 40px;
+  height: 28px;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+
+  &--vnpay  { background: rgba(37,99,235,0.1); }
+  &--vietqr { background: rgba(37,99,235,0.1); }
+  &--shopee { background: rgba(238,77,45,0.1); }
+
+  svg { width: 20px; height: 20px; }
+}
+
+/* ── Booking Summary Card ── */
+.co-summary-card {
+  .co-card-header-row {
+    margin-bottom: 1rem;
+    padding-bottom: 0.75rem;
+    border-bottom: 1px solid $border;
+  }
+}
+
+.co-summary-title {
+  font-size: 0.95rem;
+  font-weight: 800;
+  margin: 0;
+  color: $text;
+}
+
+.co-summary-table {
+  margin-bottom: 0.75rem;
+}
+
+.co-summary-header {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.72rem;
+  color: $text-muted;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-bottom: 0.5rem;
+}
+
+.co-summary-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.4rem 0;
+}
+
+.co-ticket-name {
+  font-size: 0.9rem;
+  font-weight: 800;
+  color: $text;
+  text-transform: uppercase;
+}
+
+.co-ticket-price {
+  font-size: 0.78rem;
+  color: $text-muted;
+  margin-top: 2px;
+}
+
+.co-ticket-qty {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: $text;
+}
+
+.co-summary-subtotal {
+  display: flex;
+  justify-content: flex-end;
+  padding: 0.6rem 0;
+  border-top: 1px solid $border;
+
+  strong {
+    font-size: 0.95rem;
+    font-weight: 800;
+  }
+}
+
+.co-seat-badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  margin-top: 0.5rem;
+}
+
+.co-seat-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.25rem 0.6rem;
+  background: rgba(255,255,255,0.06);
+  border: 1px solid $border;
+  border-radius: 4px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: $text-muted;
+  letter-spacing: 0.03em;
+}
+
+/* ── Order Information Card ── */
+.co-order-card {
+  margin-top: 1rem;
+}
+
+.co-order-title {
+  font-size: 0.95rem;
+  font-weight: 800;
+  margin: 0 0 1rem;
+  color: $text;
+}
+
+.co-order-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.88rem;
+  color: $text-muted;
+  padding: 0.25rem 0;
+}
+
+.co-order-divider {
+  border-top: 1px dashed $border;
+  margin: 0.75rem 0;
+}
+
+.co-order-total {
+  span {
+    font-weight: 700;
+    color: $text;
+  }
+  strong {
+    font-size: 1.15rem;
+    font-weight: 800;
+    color: $blue;
+  }
+}
+
+.co-terms-text {
+  font-size: 0.7rem;
+  color: $text-muted;
+  margin: 1rem 0 1.25rem;
+  line-height: 1.5;
+
+  a {
+    color: $blue;
+    text-decoration: underline;
+    &:hover { opacity: 0.8; }
+  }
+}
+
+.co-pay-error {
+  background: rgba(239,68,68,0.1);
+  border: 1px solid rgba(239,68,68,0.25);
+  color: #f87171;
+  font-size: 0.78rem;
+  padding: 0.6rem 0.75rem;
+  border-radius: 8px;
+  margin-bottom: 0.75rem;
+  text-align: center;
+}
+
+.co-pay-btn {
+  width: 100%;
+  padding: 0.875rem 1rem;
+  background: $blue;
+  color: #fff;
+  border: none;
+  border-radius: 10px;
+  font-size: 0.95rem;
+  font-weight: 700;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  transition: all 0.2s;
+
+  &:hover:not(:disabled) {
+    background: lighten($blue, 6%);
+    transform: translateY(-1px);
+    box-shadow: 0 6px 20px rgba(37,99,235,0.35);
+  }
+
+  &:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+  }
+}
+
+/* ── Error state ── */
+.co-error-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 40vh;
+  color: $text-muted;
+  text-align: center;
+  gap: 0.5rem;
+
+  h2 { color: $text; font-size: 1.3rem; }
+
+  a {
+    color: $blue;
+    text-decoration: none;
+    font-weight: 600;
+    margin-top: 0.5rem;
+    &:hover { text-decoration: underline; }
+  }
+}
+
+/* Right column stacking */
+.co-right {
+  .co-card { margin-bottom: 0; }
+}

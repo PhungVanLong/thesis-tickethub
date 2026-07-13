@@ -1,10 +1,11 @@
 import { Component, inject, OnInit, signal } from '@angular/core';
+import { RouterLink } from '@angular/router';
 import { TranslatePipe } from '../../../shared/pipes/translate.pipe';
 import { EventApiService } from '../../../core/services/event.service';
 
 @Component({
   selector: 'app-event-section',
-  imports: [TranslatePipe],
+  imports: [TranslatePipe, RouterLink],
   templateUrl: './event-section.html',
   styleUrl: './event-section.scss',
 })

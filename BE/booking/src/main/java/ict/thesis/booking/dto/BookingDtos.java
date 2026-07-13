@@ -16,6 +16,7 @@ public final class BookingDtos {
     }
 
     public record CreateBookingRequest(
+            Long eventId,
             Long customerId,
             String idempotencyKey,
             String voucherCode,

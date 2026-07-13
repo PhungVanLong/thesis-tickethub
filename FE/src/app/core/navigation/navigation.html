@@ -4,13 +4,20 @@
       TicketHub
     </a>
 
-    <nav class="primary-nav" aria-label="Primary categories">
-      <a href="#">{{ 'nav.concerts' | translate }}</a>
-      <a href="#">{{ 'nav.sports' | translate }}</a>
-      <a href="#">{{ 'nav.arts' | translate }}</a>
-      <a href="#">{{ 'nav.family' | translate }}</a>
-      <a href="#">{{ 'nav.cities' | translate }}</a>
-    </nav>
+    @if (navMode === 'search') {
+      <div class="nav-search-bar">
+        <svg class="nav-search-icon" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+        <input type="text" class="nav-search-input" placeholder="Search events, artists, venues..." [(ngModel)]="searchQuery" (keydown.enter)="onSearch()" />
+      </div>
+    } @else {
+      <nav class="primary-nav" aria-label="Primary categories">
+        <a href="#">{{ 'nav.concerts' | translate }}</a>
+        <a href="#">{{ 'nav.sports' | translate }}</a>
+        <a href="#">{{ 'nav.arts' | translate }}</a>
+        <a href="#">{{ 'nav.family' | translate }}</a>
+        <a href="#">{{ 'nav.cities' | translate }}</a>
+      </nav>
+    }
 
     <div class="nav-actions">
       <!-- Đăng ký làm tổ chức (Visible always) -->
@@ -24,7 +31,7 @@
 
       @if (currentUserToken()) {
         <!-- Vé của tôi (Only when logged in) -->
-        <a class="header-link my-tickets-link" href="#">
+        <a class="header-link my-tickets-link" routerLink="/my-account" [queryParams]="{ tab: 'tickets' }">
           <svg class="link-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <path d="M2 9a3 3 0 0 1 0 6v2a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-2a3 3 0 0 1 0-6V7a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2Z" />
             <line x1="9" y1="5" x2="9" y2="19" stroke-dasharray="3 3" />
@@ -47,14 +54,14 @@
           
           @if (showDropdown()) {
             <div class="dropdown-menu">
-              <a href="#" class="dropdown-item">
+              <a routerLink="/my-account" [queryParams]="{ tab: 'tickets' }" class="dropdown-item">
                 <svg class="dropdown-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
                   <path d="M2 9a3 3 0 0 1 0 6v2a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-2a3 3 0 0 1 0-6V7a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2Z" />
                   <line x1="9" y1="5" x2="9" y2="19" stroke-dasharray="3 3" />
                 </svg>
                 <span>{{ 'nav.myTicketsDropdown' | translate }}</span>
               </a>
-              <a href="#" class="dropdown-item">
+              <a routerLink="/my-account" [queryParams]="{ tab: 'orders' }" class="dropdown-item">
                 <svg class="dropdown-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
                   <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
                   <line x1="16" y1="2" x2="16" y2="6" />
@@ -63,7 +70,7 @@
                 </svg>
                 <span>{{ 'nav.myEvents' | translate }}</span>
               </a>
-              <a routerLink="/my-account" class="dropdown-item">
+              <a routerLink="/my-account" [queryParams]="{ tab: 'settings' }" class="dropdown-item">
                 <svg class="dropdown-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
                   <circle cx="12" cy="12" r="10" />
                   <circle cx="12" cy="10" r="3" />
@@ -146,4 +153,16 @@
       </div>
     </div>
   </div>
+
+  @if (navMode === 'search') {
+    <div class="category-sub-bar">
+      <div class="category-sub-container">
+        <a href="#">Concerts</a>
+        <a href="#">Sports</a>
+        <a href="#">Arts, Theater & Comedy</a>
+        <a href="#">Family</a>
+        <a href="#">Cities</a>
+      </div>
+    </div>
+  }
 </header>

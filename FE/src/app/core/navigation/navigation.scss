@@ -4,6 +4,9 @@
 
 :host {
   display: block;
+  position: sticky;
+  top: 0;
+  z-index: 1000;
 }
 
 a {
@@ -27,7 +30,45 @@ a:focus-visible {
 .topbar {
   background: #0052cc; /* Vibrant blue background */
   color: #ffffff;
+}
 
+/* ── Search bar (replaces categories on detail pages) ── */
+.nav-search-bar {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  background: rgba(255, 255, 255, 0.15);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 8px;
+  padding: 0.4rem 0.85rem;
+  flex: 1;
+  max-width: 480px;
+  transition: background 0.2s, border-color 0.2s;
+
+  &:focus-within {
+    background: rgba(255, 255, 255, 0.22);
+    border-color: rgba(255, 255, 255, 0.4);
+  }
+}
+
+.nav-search-icon {
+  flex-shrink: 0;
+  opacity: 0.6;
+}
+
+.nav-search-input {
+  flex: 1;
+  background: transparent;
+  border: none;
+  outline: none;
+  color: #ffffff;
+  font-size: 14px;
+  font-family: inherit;
+  font-weight: 500;
+
+  &::placeholder {
+    color: rgba(255, 255, 255, 0.5);
+  }
 }
 
 .header-container {
@@ -379,4 +420,32 @@ a:focus-visible {
     font-size: 20px;
   }
 }
+
+/* ── Category Sub-bar ── */
+.category-sub-bar {
+  background: #0052cc;
+  border-top: 1px solid rgba(255, 255, 255, 0.15);
+  padding: 0.75rem 0;
+}
+
+.category-sub-container {
+  display: flex;
+  align-items: center;
+  gap: 2rem;
+  width: min(1200px, calc(100% - 48px));
+  margin: 0 auto;
+
+  a {
+    color: #ffffff;
+    font-size: 14px;
+    font-weight: 600;
+    text-decoration: none;
+    transition: opacity 0.2s;
+
+    &:hover {
+      opacity: 0.8;
+    }
+  }
+}
+
 

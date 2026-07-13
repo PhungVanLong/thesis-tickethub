@@ -10,9 +10,15 @@ import { AdminShellComponent } from './features/admin/shell/admin-shell';
 import { AdminDashboardComponent } from './features/admin/dashboard/admin-dashboard';
 import { AdminOrganizationVerificationComponent } from './features/admin/organization-verification/admin-organization-verification';
 import { AdminEventVerificationComponent } from './features/admin/event-verification/admin-event-verification';
+import { EventDetailsComponent } from './features/home/event-details/event-details';
+import { SeatSelectionComponent } from './features/home/seat-selection/seat-selection';
+import { CheckoutComponent } from './features/booking/checkout/checkout';
 
 export const routes: Routes = [
   { path: '', component: HomeComponent },
+  { path: 'event/:id', component: EventDetailsComponent },
+  { path: 'event/:id/booking', component: SeatSelectionComponent },
+  { path: 'checkout/:orderId', component: CheckoutComponent },
   { path: 'login', component: LoginComponent },
   { path: 'register', component: RegisterComponent },
   { path: 'forgot-password', component: ForgotPasswordComponent },
