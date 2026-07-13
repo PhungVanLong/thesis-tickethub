@@ -29,7 +29,6 @@ export class CheckoutComponent implements OnInit, OnDestroy {
   readonly paymentError = signal('');
 
   paymentMethod = 'VNPAY';
-  promoCode     = '';
   paymentCompleted = false;
 
   readonly showLeaveModal = signal(false);
