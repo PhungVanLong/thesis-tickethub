@@ -50,7 +50,7 @@ export class CheckoutComponent implements OnInit, OnDestroy {
       // Check query params for payment error
       this.route.queryParams.subscribe(params => {
         if (params['error'] === 'payment_failed') {
-          this.paymentError.set('Thanh toán không thành công hoặc đã bị hủy từ VNPay.');
+          this.paymentError.set('Payment was unsuccessful or cancelled by VNPay.');
         }
       });
     } else {
@@ -147,7 +147,7 @@ export class CheckoutComponent implements OnInit, OnDestroy {
         },
         error: (err) => {
           this.paying.set(false);
-          this.paymentError.set(err?.error?.message || 'Không thể khởi tạo thanh toán VNPay.');
+          this.paymentError.set(err?.error?.message || 'Failed to initiate VNPay payment.');
         }
       });
     } else {
@@ -160,7 +160,7 @@ export class CheckoutComponent implements OnInit, OnDestroy {
         },
         error: (err) => {
           this.paying.set(false);
-          this.paymentError.set(err?.error?.message || 'Thanh toán thất bại.');
+          this.paymentError.set(err?.error?.message || 'Payment failed.');
         }
       });
     }

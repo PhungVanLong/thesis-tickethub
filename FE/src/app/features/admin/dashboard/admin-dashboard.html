@@ -21,7 +21,7 @@
       <!-- Organization Verifications -->
       <div class="action-section">
         <div class="action-section-header">
-          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="section-icon"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+          <svg stroke-linejoin="round" stroke-linecap="round" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="section-icon"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
           <span class="section-title">Organization Verifications ({{ pendingOrgs().length }})</span>
           <a routerLink="/admin/organizations" class="view-all">View All</a>
         </div>
@@ -34,7 +34,9 @@
         } @else if (errorOrgs()) {
           <div class="empty-state error">{{ errorOrgs() }}</div>
         } @else if (pendingOrgs().length === 0) {
-          <div class="empty-state">✅ No pending organizations</div>
+          <div class="empty-state">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width: 1em; height: 1em; color: #10b981; margin-right: 8px; vertical-align: middle;"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg> No pending organizations
+          </div>
         } @else {
           <div class="item-list">
             @for (org of pendingOrgs().slice(0, 3); track org.id) {
@@ -44,7 +46,7 @@
                   <span class="item-name">{{ org.name }}</span>
                   <span class="item-sub">Submitted {{ formatDate(org.syncedAt || '') }}</span>
                 </div>
-                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="chevron-icon"><polyline points="9 18 15 12 9 6"/></svg>
+                <svg stroke-linejoin="round" stroke-linecap="round" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="chevron-icon"><polyline points="9 18 15 12 9 6"/></svg>
               </a>
             }
           </div>
@@ -54,7 +56,7 @@
       <!-- Event Approvals -->
       <div class="action-section">
         <div class="action-section-header">
-          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="section-icon"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+          <svg stroke-linejoin="round" stroke-linecap="round" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="section-icon"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
           <span class="section-title">Event Approvals ({{ pendingEvents().length }})</span>
           <a routerLink="/admin/events" class="view-all">View All</a>
         </div>
@@ -67,14 +69,18 @@
         } @else if (errorEvents()) {
           <div class="empty-state error">{{ errorEvents() }}</div>
         } @else if (pendingEvents().length === 0) {
-          <div class="empty-state">✅ No pending events</div>
+          <div class="empty-state">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width: 1em; height: 1em; color: #10b981; margin-right: 8px; vertical-align: middle;"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg> No pending events
+          </div>
         } @else {
           <div class="event-grid">
             @for (event of pendingEvents().slice(0, 4); track event.id) {
               <a [routerLink]="['/admin/events']" class="event-card-item">
                 <div class="event-banner" [style.background-image]="event.bannerUrl ? 'url(' + event.bannerUrl + ')' : 'none'">
                   @if (!event.bannerUrl) {
-                    <span class="event-emoji">🎫</span>
+                    <span class="event-emoji">
+                      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width: 1em; height: 1em;"><path d="M4 14a2 2 0 0 1-2-2 2 2 0 0 1 2-2V6a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v4a2 2 0 0 1 2 2 2 2 0 0 1-2 2v4a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2z"/><line x1="9" y1="8" x2="15" y2="8"/><line x1="9" y1="12" x2="15" y2="12"/><line x1="9" y1="16" x2="15" y2="16"/></svg>
+                    </span>
                   }
                 </div>
                 <div class="event-info">
@@ -95,14 +101,18 @@
         <h2 class="card-title">Overview</h2>
         <div class="stat-row">
           <div class="stat-item stat-blue">
-            <span class="stat-icon">🏢</span>
+            <span class="stat-icon">
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width: 1em; height: 1em;"><rect x="4" y="2" width="16" height="20" rx="2" ry="2"/><path d="M9 22v-4h6v4"/><path d="M8 6h.01"/><path d="M16 6h.01"/><path d="M12 6h.01"/><path d="M12 10h.01"/><path d="M12 14h.01"/><path d="M16 10h.01"/><path d="M16 14h.01"/><path d="M8 10h.01"/><path d="M8 14h.01"/></svg>
+            </span>
             <div>
               <div class="stat-value">{{ pendingOrgs().length }}</div>
               <div class="stat-label">Pending Orgs</div>
             </div>
           </div>
           <div class="stat-item stat-orange">
-            <span class="stat-icon">📅</span>
+            <span class="stat-icon">
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width: 1em; height: 1em;"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+            </span>
             <div>
               <div class="stat-value">{{ pendingEvents().length }}</div>
               <div class="stat-label">Pending Events</div>
@@ -117,17 +127,17 @@
         <div class="quick-list">
           <a routerLink="/admin/organizations" class="quick-item">
             <div class="quick-icon blue">
-              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+              <svg stroke-linejoin="round" stroke-linecap="round" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
             </div>
             <span>Review Organizations</span>
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="chevron-icon"><polyline points="9 18 15 12 9 6"/></svg>
+            <svg stroke-linejoin="round" stroke-linecap="round" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="chevron-icon"><polyline points="9 18 15 12 9 6"/></svg>
           </a>
           <a routerLink="/admin/events" class="quick-item">
             <div class="quick-icon green">
-              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+              <svg stroke-linejoin="round" stroke-linecap="round" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
             </div>
             <span>Approve Events</span>
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="chevron-icon"><polyline points="9 18 15 12 9 6"/></svg>
+            <svg stroke-linejoin="round" stroke-linecap="round" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="chevron-icon"><polyline points="9 18 15 12 9 6"/></svg>
           </a>
         </div>
       </div>

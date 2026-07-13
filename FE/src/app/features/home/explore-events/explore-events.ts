@@ -33,9 +33,9 @@ export class ExploreEventsComponent implements OnInit {
   readonly categories = ['Concerts', 'Sports', 'Arts & Theater', 'Family', 'Conference', 'Festival', 'Exhibition', 'Special'];
   readonly cities = ['Hà Nội', 'Hồ Chí Minh', 'Đà Nẵng'];
   readonly timeRanges = [
-    { value: 'TODAY', label: 'Hôm nay' },
-    { value: 'WEEKEND', label: 'Cuối tuần này' },
-    { value: 'MONTH_END', label: 'Cuối tháng này' }
+    { value: 'TODAY', label: 'Today' },
+    { value: 'WEEKEND', label: 'This Weekend' },
+    { value: 'MONTH_END', label: 'End of Month' }
   ];
 
   ngOnInit() {

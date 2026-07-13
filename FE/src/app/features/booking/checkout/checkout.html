@@ -172,13 +172,13 @@
     <div class="custom-modal-overlay">
       <div class="custom-modal-card">
         <div class="custom-modal-icon warning">⚠️</div>
-        <h3 class="custom-modal-title">Xác nhận rời khỏi trang?</h3>
+        <h3 class="custom-modal-title">Leave this page?</h3>
         <p class="custom-modal-desc">
-          Hóa đơn đặt vé tạm thời của bạn sẽ bị hủy và các vị trí ghế đã chọn sẽ được giải phóng cho người khác nếu bạn rời đi. Bạn có chắc muốn rời đi?
+          Your temporary booking will be cancelled and the selected seats will be released if you leave. Are you sure you want to leave?
         </p>
         <div class="custom-modal-actions">
-          <button class="custom-btn custom-btn-cancel" (click)="confirmLeave(false)">Ở lại thanh toán</button>
-          <button class="custom-btn custom-btn-confirm" (click)="confirmLeave(true)">Xác nhận rời đi</button>
+          <button class="custom-btn custom-btn-cancel" (click)="confirmLeave(false)">Stay on page</button>
+          <button class="custom-btn custom-btn-confirm" (click)="confirmLeave(true)">Confirm Leave</button>
         </div>
       </div>
     </div>
@@ -189,12 +189,12 @@
     <div class="custom-modal-overlay">
       <div class="custom-modal-card">
         <div class="custom-modal-icon success">✓</div>
-        <h3 class="custom-modal-title">Thanh toán thành công!</h3>
+        <h3 class="custom-modal-title">Payment Successful!</h3>
         <p class="custom-modal-desc">
-          Giao dịch giả lập đã được hoàn tất. Vé và thông tin ghế ngồi của bạn đã được ghi nhận trên hệ thống.
+          Your simulated transaction has been completed. Your tickets and seat information have been recorded in the system.
         </p>
         <div class="custom-modal-actions">
-          <button class="custom-btn custom-btn-success" (click)="closeSuccessModal()">Đi tới Vé của tôi</button>
+          <button class="custom-btn custom-btn-success" (click)="closeSuccessModal()">Go to My Tickets</button>
         </div>
       </div>
     </div>

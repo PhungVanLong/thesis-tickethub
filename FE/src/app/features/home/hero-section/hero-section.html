@@ -8,13 +8,13 @@
           <circle cx="12" cy="10" r="3" />
         </svg>
         <div class="field-content">
-          <span class="field-label">THÀNH PHỐ</span>
+          <span class="field-label">CITY</span>
           <select [ngModel]="searchCity()" (ngModelChange)="searchCity.set($event)" name="city">
-            <option value="">Tất cả thành phố</option>
-            <option value="Hà Nội">Hà Nội</option>
-            <option value="Hồ Chí Minh">Hồ Chí Minh</option>
-            <option value="Đà Nẵng">Đà Nẵng</option>
-            <option value="Sân vận động Mỹ Đình">Sân vận động Mỹ Đình</option>
+            <option value="">All Cities</option>
+            <option value="Hà Nội">Hanoi</option>
+            <option value="Hồ Chí Minh">Ho Chi Minh City</option>
+            <option value="Đà Nẵng">Da Nang</option>
+            <option value="Sân vận động Mỹ Đình">My Dinh Stadium</option>
           </select>
         </div>
       </div>
@@ -68,7 +68,7 @@
               </div>
               <h1 id="hero-title" style="color: #fff; font-size: 3rem; font-weight: 800; line-height: 1.1; margin: 12px 0 8px; letter-spacing: -0.01em;">{{ event.title }}</h1>
               <p class="hero-copy" style="color: #cbd5e1; font-size: 18px; font-weight: 400; max-width: 600px; margin: 0 0 24px; opacity: 0.95;">
-                {{ event.description || 'Trải nghiệm sự kiện đẳng cấp chưa từng có. Đặt vé tham gia ngay hôm nay!' }}
+                {{ event.description || 'Experience a world-class event like never before. Book your tickets today!' }}
               </p>
               <div style="display: flex; gap: 12px;">
                 <a [routerLink]="['/event', event.id]" class="btn-find-tickets" style="background: #0052cc; color: #fff; padding: 12px 24px; border-radius: 4px; font-weight: 700; text-decoration: none; display: inline-flex; align-items: center; justify-content: center; gap: 8px; font-size: 14px; transition: background 0.2s;" onmouseover="this.style.background='#0043b3';" onmouseout="this.style.background='#0052cc';">

@@ -46,11 +46,11 @@ export class ForgotPasswordComponent {
         this.isSubmitting.set(false);
         this.requestEmail.set(email);
         this.currentStep.set(2);
-        this.successMessage.set('Mã xác thực OTP đã được gửi về email của bạn.');
+        this.successMessage.set('A verification OTP code has been sent to your email.');
       },
       error: (err) => {
         this.isSubmitting.set(false);
-        let errorMsg = 'Yêu cầu thất bại. Vui lòng kiểm tra lại email.';
+        let errorMsg = 'Request failed. Please check your email again.';
         if (err.error && typeof err.error === 'object') {
           errorMsg = err.error.message || err.error.error || errorMsg;
         } else if (err.error && typeof err.error === 'string') {
@@ -75,14 +75,14 @@ export class ForgotPasswordComponent {
     this.authService.resetPassword({ token, newPassword }).subscribe({
       next: () => {
         this.isSubmitting.set(false);
-        this.successMessage.set('Đổi mật khẩu thành công! Bạn đang được chuyển hướng về trang đăng nhập...');
+        this.successMessage.set('Password changed successfully! You are being redirected to the login page...');
         setTimeout(() => {
           this.router.navigate(['/login']);
         }, 2500);
       },
       error: (err) => {
         this.isSubmitting.set(false);
-        let errorMsg = 'Mã xác thực không hợp lệ hoặc đã hết hạn.';
+        let errorMsg = 'Invalid or expired verification code.';
         if (err.error && typeof err.error === 'object') {
           errorMsg = err.error.message || err.error.error || errorMsg;
         } else if (err.error && typeof err.error === 'string') {

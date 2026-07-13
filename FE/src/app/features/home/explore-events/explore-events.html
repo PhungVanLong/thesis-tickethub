@@ -10,7 +10,7 @@
           <circle cx="11" cy="11" r="8" />
           <line x1="21" y1="21" x2="16.65" y2="16.65" />
         </svg>
-        <input type="text" [(ngModel)]="searchQuery" (ngModelChange)="applyFilters()" placeholder="Bạn tìm gì hôm nay?" />
+        <input type="text" [(ngModel)]="searchQuery" (ngModelChange)="applyFilters()" placeholder="What are you looking for?" />
       </div>
 
       <div class="divider"></div>
@@ -18,7 +18,7 @@
       <!-- City dropdown -->
       <div class="filter-field">
         <select [(ngModel)]="cityFilter" (change)="applyFilters()">
-          <option value="">Tất cả địa điểm</option>
+          <option value="">All Locations</option>
           @for (city of cities; track city) {
             <option [value]="city">{{ city }}</option>
           }
@@ -30,7 +30,7 @@
       <!-- Category dropdown -->
       <div class="filter-field">
         <select [(ngModel)]="categoryFilter" (change)="applyFilters()">
-          <option value="">Tất cả danh mục</option>
+          <option value="">All Categories</option>
           @for (cat of categories; track cat) {
             <option [value]="cat">{{ cat }}</option>
           }
@@ -42,7 +42,7 @@
       <!-- TimeRange dropdown -->
       <div class="filter-field">
         <select [(ngModel)]="timeRangeFilter" (change)="applyFilters()">
-          <option value="">Tất cả thời gian</option>
+          <option value="">All Time</option>
           @for (range of timeRanges; track range.value) {
             <option [value]="range.value">{{ range.label }}</option>
           }
@@ -54,32 +54,32 @@
       <!-- Sorting dropdown -->
       <div class="filter-field sort-field">
         <select [(ngModel)]="sortByFilter" (change)="applyFilters()">
-          <option value="CHRONOLOGICAL">Mới nhất</option>
-          <option value="TRENDING">Bán chạy nhất</option>
+          <option value="CHRONOLOGICAL">Newest</option>
+          <option value="TRENDING">Best Selling</option>
         </select>
       </div>
 
-      <button type="button" class="btn-clear" (click)="clearFilters()">Xóa lọc</button>
+      <button type="button" class="btn-clear" (click)="clearFilters()">Clear Filters</button>
     </div>
   </div>
 
   <div class="results-container">
     <div class="results-header">
-      <h1 class="results-title">Kết quả tìm kiếm:</h1>
-      <span class="results-count">{{ events().length }} sự kiện</span>
+      <h1 class="results-title">Search Results:</h1>
+      <span class="results-count">{{ events().length }} events</span>
     </div>
 
     @if (loading()) {
       <div class="loading-state">
         <div class="spinner"></div>
-        <p>Đang tìm kiếm sự kiện...</p>
+        <p>Searching for events...</p>
       </div>
     } @else if (events().length === 0) {
       <div class="empty-state">
         <div class="empty-icon">🎟️</div>
-        <h3>Không tìm thấy sự kiện nào</h3>
-        <p>Thử thay đổi bộ lọc hoặc từ khóa tìm kiếm khác nhé.</p>
-        <button class="btn-reset" (click)="clearFilters()">Xem tất cả sự kiện</button>
+        <h3>No events found</h3>
+        <p>Try changing the filters or search keywords.</p>
+        <button class="btn-reset" (click)="clearFilters()">View all events</button>
       </div>
     } @else {
       <div class="event-grid">

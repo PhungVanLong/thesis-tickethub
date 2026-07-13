@@ -199,7 +199,7 @@ export class EventDetailsComponent implements OnInit, OnDestroy {
       next: (res: any) => this.listenBookingResult(res.requestId),
       error: (err)     => {
         this.bookingStatus.set('FAILED');
-        this.errorMessage.set(err?.error?.message || 'Đặt vé thất bại.');
+        this.errorMessage.set(err?.error?.message || 'Booking failed.');
       },
     });
   }
@@ -215,13 +215,13 @@ export class EventDetailsComponent implements OnInit, OnDestroy {
 
     this.sse.addEventListener('FAILED', (e: any) => {
       this.bookingStatus.set('FAILED');
-      this.errorMessage.set(e.data || 'Đặt vé thất bại.');
+      this.errorMessage.set(e.data || 'Booking failed.');
       this.closeSse();
     });
 
     this.sse.onerror = () => {
       this.bookingStatus.set('FAILED');
-      this.errorMessage.set('Mất kết nối, vui lòng thử lại.');
+      this.errorMessage.set('Connection lost, please try again.');
       this.closeSse();
     };
   }

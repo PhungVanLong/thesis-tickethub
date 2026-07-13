@@ -2,10 +2,10 @@
   <div class="city-section__inner">
     <div class="section-heading">
       <div>
-        <h2 id="city-title">Khám phá theo thành phố</h2>
-        <p class="section-sub">Tìm sự kiện gần bạn nhất</p>
+        <h2 id="city-title">Explore by City</h2>
+        <p class="section-sub">Find events near you</p>
       </div>
-      <a [routerLink]="['/explore']" class="view-all">Xem tất cả <span class="arrow">›</span></a>
+      <a [routerLink]="['/explore']" class="view-all">View All <span class="arrow">›</span></a>
     </div>
 
     <div class="city-grid">
@@ -13,7 +13,7 @@
         <a class="city-card"
            [routerLink]="['/explore']"
            [queryParams]="{ city: city.name }"
-           [attr.aria-label]="'Khám phá sự kiện tại ' + city.name">
+           [attr.aria-label]="'Explore events in ' + city.name">
           <div class="city-card__img-wrap">
             <img [src]="city.image" [alt]="city.name" class="city-card__img" loading="lazy" />
             <div class="city-card__overlay"></div>
