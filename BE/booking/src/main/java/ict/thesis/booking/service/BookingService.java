@@ -15,6 +15,9 @@ import java.io.IOException;
 import java.util.Map;
 import java.util.UUID;
 import java.util.List;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Iterator;
 import java.util.concurrent.ConcurrentHashMap;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
@@ -33,6 +36,8 @@ public class BookingService {
     private final ict.thesis.booking.repository.OrderRepository orderRepository;
     private final ict.thesis.booking.repository.OrderItemRepository orderItemRepository;
     private final RestTemplate restTemplate;
+    private final ict.thesis.booking.config.VNPayConfig vnPayConfig;
+    private final ict.thesis.booking.repository.OutboxEventRepository outboxEventRepository;
     
     @Value("${gateway.shared-secret}")
     private String gatewaySharedSecret;
@@ -83,13 +88,33 @@ public class BookingService {
         if (eventId == null || seatIds == null || seatIds.isEmpty()) {
             return;
         }
+        String json = "";
         try {
             SeatStatusUpdateEvent event = new SeatStatusUpdateEvent(eventId, seatIds, status);
-            String json = objectMapper.writeValueAsString(event);
+            json = objectMapper.writeValueAsString(event);
             log.info("Publishing seat status update event: {}", json);
             kafkaTemplate.send(SEAT_STATUS_TOPIC, eventId.toString(), json);
+            
+            // Save to Outbox DB as PROCESSED
+            outboxEventRepository.save(ict.thesis.booking.enties.OutboxEvent.builder()
+                .aggregateType("SeatStatus")
+                .aggregateId(eventId.toString())
+                .eventType("SEAT_STATUS_UPDATED")
+                .payload(json)
+                .createdAt(java.time.Instant.now())
+                .status("PROCESSED")
+                .build());
         } catch (Exception e) {
             log.error("Failed to publish seat status update to Kafka", e);
+            // Save to Outbox DB as FAILED
+            outboxEventRepository.save(ict.thesis.booking.enties.OutboxEvent.builder()
+                .aggregateType("SeatStatus")
+                .aggregateId(eventId.toString())
+                .eventType("SEAT_STATUS_UPDATED")
+                .payload(json.isEmpty() ? "Error serializing payload" : json)
+                .createdAt(java.time.Instant.now())
+                .status("FAILED")
+                .build());
         }
     }
 
@@ -125,6 +150,101 @@ public class BookingService {
         });
     }
 
+    public String createVNPayPaymentUrl(Long orderId, jakarta.servlet.http.HttpServletRequest request) {
+        Order order = orderRepository.findById(orderId)
+                .orElseThrow(() -> new org.springframework.web.server.ResponseStatusException(
+                        org.springframework.http.HttpStatus.NOT_FOUND, "Order not found"));
+
+        String vnp_Version = vnPayConfig.getVnpVersion();
+        String vnp_Command = vnPayConfig.getVnpCommand();
+        String vnp_TxnRef = order.getId().toString() + "_" + UUID.randomUUID().toString().substring(0, 8);
+        String vnp_IpAddr = vnPayConfig.getIpAddress(request);
+        String vnp_TmnCode = vnPayConfig.getVnpCode();
+
+        // Amount must be multiplied by 100 as per VNPay spec
+        long amount = order.getTotalAmount().multiply(new java.math.BigDecimal("100")).longValue();
+
+        Map<String, String> vnp_Params = new java.util.HashMap<>();
+        vnp_Params.put("vnp_Version", vnp_Version);
+        vnp_Params.put("vnp_Command", vnp_Command);
+        vnp_Params.put("vnp_TmnCode", vnp_TmnCode);
+        vnp_Params.put("vnp_Amount", String.valueOf(amount));
+        vnp_Params.put("vnp_CurrCode", "VND");
+        vnp_Params.put("vnp_TxnRef", vnp_TxnRef);
+        vnp_Params.put("vnp_OrderInfo", "Thanh toan don hang " + order.getOrderCode());
+        vnp_Params.put("vnp_OrderType", "other");
+        vnp_Params.put("vnp_Locale", "vn");
+        vnp_Params.put("vnp_ReturnUrl", vnPayConfig.getVnpReturnUrl());
+        vnp_Params.put("vnp_IpAddr", vnp_IpAddr);
+
+        java.util.Calendar cld = java.util.Calendar.getInstance(java.util.TimeZone.getTimeZone("Etc/GMT+7"));
+        java.text.SimpleDateFormat formatter = new java.text.SimpleDateFormat("yyyyMMddHHmmss");
+        String vnp_CreateDate = formatter.format(cld.getTime());
+        vnp_Params.put("vnp_CreateDate", vnp_CreateDate);
+
+        cld.add(java.util.Calendar.MINUTE, 15);
+        String vnp_ExpireDate = formatter.format(cld.getTime());
+        vnp_Params.put("vnp_ExpireDate", vnp_ExpireDate);
+
+        List fieldNames = new ArrayList(vnp_Params.keySet());
+        Collections.sort(fieldNames);
+        StringBuilder hashData = new StringBuilder();
+        StringBuilder query = new StringBuilder();
+        Iterator itr = fieldNames.iterator();
+        while (itr.hasNext()) {
+            String fieldName = (String) itr.next();
+            String fieldValue = (String) vnp_Params.get(fieldName);
+            if ((fieldValue != null) && (fieldValue.length() > 0)) {
+                // Build hash data
+                hashData.append(fieldName);
+                hashData.append('=');
+                try {
+                    hashData.append(java.net.URLEncoder.encode(fieldValue, java.nio.charset.StandardCharsets.US_ASCII.toString()));
+                    // Build query
+                    query.append(java.net.URLEncoder.encode(fieldName, java.nio.charset.StandardCharsets.US_ASCII.toString()));
+                    query.append('=');
+                    query.append(java.net.URLEncoder.encode(fieldValue, java.nio.charset.StandardCharsets.US_ASCII.toString()));
+                } catch (java.io.UnsupportedEncodingException e) {
+                    log.error("Encoding error", e);
+                }
+                if (itr.hasNext()) {
+                    query.append('&');
+                    hashData.append('&');
+                }
+            }
+        }
+
+        String queryUrl = query.toString();
+        String vnp_SecureHash = vnPayConfig.hashAllFields(vnp_Params);
+        queryUrl += "&vnp_SecureHash=" + vnp_SecureHash;
+        
+        return vnPayConfig.getVnpPayUrl() + "?" + queryUrl;
+    }
+
+    public boolean processVNPayCallback(Map<String, String> params) {
+        log.info("Processing VNPay Callback with params: {}", params);
+        
+        String vnp_ResponseCode = params.get("vnp_ResponseCode");
+        String vnp_TxnRef = params.get("vnp_TxnRef");
+        
+        if (vnp_TxnRef == null) {
+            return false;
+        }
+
+        // vnp_TxnRef is formatted as {orderId}_{randomString}
+        Long orderId = Long.parseLong(vnp_TxnRef.split("_")[0]);
+        
+        if ("00".equals(vnp_ResponseCode)) {
+            completeMockPayment(orderId);
+            log.info("VNPay Payment Successful for order ID: {}", orderId);
+            return true;
+        } else {
+            cancelMockPayment(orderId);
+            log.warn("VNPay Payment Failed for order ID: {}, response code: {}", orderId, vnp_ResponseCode);
+            return false;
+        }
+    }
+
 
     @Data
     @NoArgsConstructor
@@ -139,11 +259,31 @@ public class BookingService {
         log.info("Submitting booking request {} to Kafka", requestId);
         
         BookingMessage message = new BookingMessage(requestId, request);
+        String json = "";
         try {
-            String json = objectMapper.writeValueAsString(message);
+            json = objectMapper.writeValueAsString(message);
             kafkaTemplate.send(BOOKING_TOPIC, requestId, json);
+            
+            // Save to Outbox DB as PROCESSED
+            outboxEventRepository.save(ict.thesis.booking.enties.OutboxEvent.builder()
+                .aggregateType("BookingRequest")
+                .aggregateId(requestId)
+                .eventType("BOOKING_REQUEST_CREATED")
+                .payload(json)
+                .createdAt(java.time.Instant.now())
+                .status("PROCESSED")
+                .build());
         } catch (Exception e) {
             log.error("Failed to serialize BookingMessage for requestId: {}", requestId, e);
+            // Save to Outbox DB as FAILED
+            outboxEventRepository.save(ict.thesis.booking.enties.OutboxEvent.builder()
+                .aggregateType("BookingRequest")
+                .aggregateId(requestId)
+                .eventType("BOOKING_REQUEST_CREATED")
+                .payload(json.isEmpty() ? "Error serializing payload" : json)
+                .createdAt(java.time.Instant.now())
+                .status("FAILED")
+                .build());
             throw new RuntimeException("Failed to serialize booking request", e);
         }
         return requestId;

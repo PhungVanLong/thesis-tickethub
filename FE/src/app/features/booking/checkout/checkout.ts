@@ -126,23 +126,31 @@ export class CheckoutComponent implements OnInit, OnDestroy {
     this.paying.set(true);
     this.paymentError.set('');
 
-    const payload = {
-      orderId: this.orderId(),
-      gateway: this.paymentMethod,
-      returnUrl: `${window.location.origin}/payment-result`
-    };
-
-    this.http.post(`http://localhost:8080/api/bookings/${this.orderId()}/mock-pay`, {}).subscribe({
-      next: () => {
-        this.paymentCompleted = true;
-        this.paying.set(false);
-        this.showSuccessModal.set(true);
-      },
-      error: (err) => {
-        this.paying.set(false);
-        this.paymentError.set(err?.error?.message || 'Thanh toán thất bại.');
-      }
-    });
+    if (this.paymentMethod === 'VNPAY') {
+      this.http.get<{ paymentUrl: string }>(`http://localhost:8080/api/bookings/${this.orderId()}/vnpay-url`).subscribe({
+        next: (res) => {
+          this.paymentCompleted = true; // Set flag to avoid cancelling order on route leave
+          window.location.href = res.paymentUrl;
+        },
+        error: (err) => {
+          this.paying.set(false);
+          this.paymentError.set(err?.error?.message || 'Không thể khởi tạo thanh toán VNPay.');
+        }
+      });
+    } else {
+      // Mock Payment for other methods
+      this.http.post(`http://localhost:8080/api/bookings/${this.orderId()}/mock-pay`, {}).subscribe({
+        next: () => {
+          this.paymentCompleted = true;
+          this.paying.set(false);
+          this.showSuccessModal.set(true);
+        },
+        error: (err) => {
+          this.paying.set(false);
+          this.paymentError.set(err?.error?.message || 'Thanh toán thất bại.');
+        }
+      });
+    }
   }
 
   closeSuccessModal(): void {

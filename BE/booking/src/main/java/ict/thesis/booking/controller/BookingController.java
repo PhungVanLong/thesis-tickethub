@@ -44,4 +44,20 @@ public class BookingController {
         bookingService.cancelMockPayment(orderId);
         return ResponseEntity.ok(Map.of("message", "Cancellation simulated successfully"));
     }
+
+    @GetMapping("/{orderId}/vnpay-url")
+    public ResponseEntity<Map<String, String>> getVNPayUrl(@PathVariable Long orderId, jakarta.servlet.http.HttpServletRequest request) {
+        String paymentUrl = bookingService.createVNPayPaymentUrl(orderId, request);
+        return ResponseEntity.ok(Map.of("paymentUrl", paymentUrl));
+    }
+
+    @GetMapping("/vnpay-return")
+    public void vnpayReturn(@org.springframework.web.bind.annotation.RequestParam Map<String, String> allParams, jakarta.servlet.http.HttpServletResponse response) throws java.io.IOException {
+        boolean success = bookingService.processVNPayCallback(allParams);
+        String redirectUrl = "http://localhost:4200/my-account?tab=tickets"; // Redirect user back to FE account tickets
+        if (!success) {
+            redirectUrl = "http://localhost:4200/checkout/" + allParams.get("vnp_TxnRef").split("_")[0] + "?error=payment_failed";
+        }
+        response.sendRedirect(redirectUrl);
+    }
 }
