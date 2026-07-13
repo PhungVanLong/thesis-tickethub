@@ -1,7 +1,4 @@
-/* ═══════════════════════════════════
-   Checkout / Payment Page
-   Dark theme matching the design
-   ═══════════════════════════════════ */
+@use "sass:color";
 
 $bg:        #f8fafc;
 $card-bg:   #ffffff;
@@ -483,7 +480,7 @@ $radius:    12px;
   transition: all 0.2s;
 
   &:hover:not(:disabled) {
-    background: lighten($blue, 6%);
+    background: color.adjust($blue, $lightness: 6%);
     transform: translateY(-1px);
     box-shadow: 0 6px 20px rgba(37,99,235,0.35);
   }

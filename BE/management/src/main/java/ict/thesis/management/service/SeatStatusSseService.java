@@ -28,7 +28,7 @@ public class SeatStatusSseService {
             removeEmitter(eventId, emitter);
         });
         emitter.onError(e -> {
-            emitter.completeWithError(e);
+            log.debug("SSE Emitter error for event {}: {}", eventId, e.getMessage());
             removeEmitter(eventId, emitter);
         });
 
@@ -36,7 +36,6 @@ public class SeatStatusSseService {
         try {
             emitter.send(SseEmitter.event().name("INIT").data("Connected to event " + eventId + " seat map stream"));
         } catch (IOException e) {
-            emitter.completeWithError(e);
             removeEmitter(eventId, emitter);
         }
 
@@ -73,6 +72,35 @@ public class SeatStatusSseService {
             emitters.remove(emitter);
             if (emitters.isEmpty()) {
                 eventEmitters.remove(eventId);
+            }
+        }
+    }
+
+    /**
+     * Send periodic heartbeat (ping) to keep SSE connections alive 
+     * and clean up disconnected clients promptly.
+     */
+    @org.springframework.scheduling.annotation.Scheduled(fixedRate = 20000)
+    public void sendHeartbeat() {
+        if (eventEmitters.isEmpty()) {
+            return;
+        }
+
+        for (Map.Entry<Long, List<SseEmitter>> entry : eventEmitters.entrySet()) {
+            Long eventId = entry.getKey();
+            List<SseEmitter> emitters = entry.getValue();
+            List<SseEmitter> deadEmitters = new java.util.ArrayList<>();
+
+            for (SseEmitter emitter : emitters) {
+                try {
+                    emitter.send(SseEmitter.event().name("HEARTBEAT").data("ping"));
+                } catch (IOException | IllegalStateException e) {
+                    deadEmitters.add(emitter);
+                }
+            }
+
+            for (SseEmitter dead : deadEmitters) {
+                removeEmitter(eventId, dead);
             }
         }
     }

@@ -75,4 +75,9 @@ public class GlobalExceptionHandler {
         body.put("error", "Database conflict: duplicate entry.");
         return ResponseEntity.status(HttpStatus.CONFLICT).body(body);
     }
+
+    @ExceptionHandler(org.apache.catalina.connector.ClientAbortException.class)
+    public void handleClientAbortException(org.apache.catalina.connector.ClientAbortException ex) {
+        // Log at debug/info level if needed, or do nothing. Client disconnected (normal for SSE/WebSockets).
+    }
 }

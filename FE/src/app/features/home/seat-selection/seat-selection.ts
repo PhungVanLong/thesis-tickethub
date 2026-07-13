@@ -1,8 +1,6 @@
 import { Component, OnInit, OnDestroy, signal, computed, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterLink, ActivatedRoute, Router } from '@angular/router';
-import { Navigation } from '../../../core/navigation/navigation';
-import { Footer } from '../../../core/footer/footer';
 import { EventApiService } from '../../../core/services/event.service';
 import { BookingApiService } from '../../../core/services/booking.service';
 import { AuthService } from '../../auth/auth.service';
@@ -20,7 +18,7 @@ interface SelectedSeat {
 @Component({
   selector: 'app-seat-selection',
   standalone: true,
-  imports: [CommonModule, RouterLink, Navigation, Footer],
+  imports: [CommonModule, RouterLink],
   templateUrl: './seat-selection.html',
   styleUrl: './seat-selection.scss',
 })

@@ -1,4 +1,5 @@
 package ict.thesis.booking.service;
+
 import ict.thesis.booking.dto.BookingDtos.CreateBookingRequest;
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -40,16 +41,16 @@ public class BookingService {
     private final ict.thesis.booking.repository.OutboxEventRepository outboxEventRepository;
     private final TicketService ticketService;
     private final ict.thesis.booking.repository.TicketRepository ticketRepository;
-    
+
     @Value("${gateway.shared-secret}")
     private String gatewaySharedSecret;
 
     @Value("${management.service.url}")
     private String managementServiceUrl;
-    
+
     // Store SseEmitter for each request ID
     private final Map<String, SseEmitter> emitters = new ConcurrentHashMap<>();
-    
+
     // Cache for completed results if the client hasn't subscribed yet
     private final Map<String, Long> completedBookings = new ConcurrentHashMap<>();
     private final Map<String, String> failedBookings = new ConcurrentHashMap<>();
@@ -58,27 +59,34 @@ public class BookingService {
     private static final String SEAT_STATUS_TOPIC = "seat-status-updates";
     private final com.fasterxml.jackson.databind.ObjectMapper objectMapper = new com.fasterxml.jackson.databind.ObjectMapper();
 
-    public record SeatStatusUpdateEvent(Long eventId, java.util.List<Long> seatIds, String status) {}
+    public record SeatStatusUpdateEvent(Long eventId, java.util.List<Long> seatIds, String status) {
+    }
 
-    /** Build HttpHeaders with gateway token and forward user context headers if present */
+    /**
+     * Build HttpHeaders with gateway token and forward user context headers if
+     * present
+     */
     private HttpHeaders buildInternalHeaders() {
         HttpHeaders headers = new HttpHeaders();
         headers.set("X-Gateway-Token", gatewaySharedSecret);
 
         try {
-            org.springframework.web.context.request.RequestAttributes attributes = 
-                org.springframework.web.context.request.RequestContextHolder.getRequestAttributes();
+            org.springframework.web.context.request.RequestAttributes attributes = org.springframework.web.context.request.RequestContextHolder
+                    .getRequestAttributes();
             if (attributes instanceof org.springframework.web.context.request.ServletRequestAttributes) {
-                jakarta.servlet.http.HttpServletRequest request = 
-                    ((org.springframework.web.context.request.ServletRequestAttributes) attributes).getRequest();
-                
+                jakarta.servlet.http.HttpServletRequest request = ((org.springframework.web.context.request.ServletRequestAttributes) attributes)
+                        .getRequest();
+
                 String userId = request.getHeader("X-User-Id");
                 String userRole = request.getHeader("X-User-Role");
                 String userEmail = request.getHeader("X-User-Email");
 
-                if (userId != null) headers.set("X-User-Id", userId);
-                if (userRole != null) headers.set("X-User-Role", userRole);
-                if (userEmail != null) headers.set("X-User-Email", userEmail);
+                if (userId != null)
+                    headers.set("X-User-Id", userId);
+                if (userRole != null)
+                    headers.set("X-User-Role", userRole);
+                if (userEmail != null)
+                    headers.set("X-User-Email", userEmail);
             }
         } catch (Exception e) {
             log.warn("Could not extract user headers to forward", e);
@@ -96,27 +104,27 @@ public class BookingService {
             json = objectMapper.writeValueAsString(event);
             log.info("Publishing seat status update event: {}", json);
             kafkaTemplate.send(SEAT_STATUS_TOPIC, eventId.toString(), json);
-            
+
             // Save to Outbox DB as PROCESSED
             outboxEventRepository.save(ict.thesis.booking.enties.OutboxEvent.builder()
-                .aggregateType("SeatStatus")
-                .aggregateId(eventId.toString())
-                .eventType("SEAT_STATUS_UPDATED")
-                .payload(json)
-                .createdAt(java.time.Instant.now())
-                .status("PROCESSED")
-                .build());
+                    .aggregateType("SeatStatus")
+                    .aggregateId(eventId.toString())
+                    .eventType("SEAT_STATUS_UPDATED")
+                    .payload(json)
+                    .createdAt(java.time.Instant.now())
+                    .status("PROCESSED")
+                    .build());
         } catch (Exception e) {
             log.error("Failed to publish seat status update to Kafka", e);
             // Save to Outbox DB as FAILED
             outboxEventRepository.save(ict.thesis.booking.enties.OutboxEvent.builder()
-                .aggregateType("SeatStatus")
-                .aggregateId(eventId.toString())
-                .eventType("SEAT_STATUS_UPDATED")
-                .payload(json.isEmpty() ? "Error serializing payload" : json)
-                .createdAt(java.time.Instant.now())
-                .status("FAILED")
-                .build());
+                    .aggregateType("SeatStatus")
+                    .aggregateId(eventId.toString())
+                    .eventType("SEAT_STATUS_UPDATED")
+                    .payload(json.isEmpty() ? "Error serializing payload" : json)
+                    .createdAt(java.time.Instant.now())
+                    .status("FAILED")
+                    .build());
         }
     }
 
@@ -131,9 +139,9 @@ public class BookingService {
             ticketService.generateTicketsAndNotify(order);
 
             java.util.List<Long> seatIds = orderItemRepository.findByOrderId(orderId).stream()
-                .map(ict.thesis.booking.enties.OrderItem::getSeat)
-                .filter(java.util.Objects::nonNull)
-                .toList();
+                    .map(ict.thesis.booking.enties.OrderItem::getSeat)
+                    .filter(java.util.Objects::nonNull)
+                    .toList();
 
             publishSeatStatus(order.getEventId(), seatIds, "SOLD");
         });
@@ -147,9 +155,9 @@ public class BookingService {
             log.info("Mock payment cancelled for order ID: {}", orderId);
 
             java.util.List<Long> seatIds = orderItemRepository.findByOrderId(orderId).stream()
-                .map(ict.thesis.booking.enties.OrderItem::getSeat)
-                .filter(java.util.Objects::nonNull)
-                .toList();
+                    .map(ict.thesis.booking.enties.OrderItem::getSeat)
+                    .filter(java.util.Objects::nonNull)
+                    .toList();
 
             publishSeatStatus(order.getEventId(), seatIds, "AVAILABLE");
         });
@@ -204,11 +212,14 @@ public class BookingService {
                 hashData.append(fieldName);
                 hashData.append('=');
                 try {
-                    hashData.append(java.net.URLEncoder.encode(fieldValue, java.nio.charset.StandardCharsets.US_ASCII.toString()));
+                    hashData.append(java.net.URLEncoder.encode(fieldValue,
+                            java.nio.charset.StandardCharsets.US_ASCII.toString()));
                     // Build query
-                    query.append(java.net.URLEncoder.encode(fieldName, java.nio.charset.StandardCharsets.US_ASCII.toString()));
+                    query.append(java.net.URLEncoder.encode(fieldName,
+                            java.nio.charset.StandardCharsets.US_ASCII.toString()));
                     query.append('=');
-                    query.append(java.net.URLEncoder.encode(fieldValue, java.nio.charset.StandardCharsets.US_ASCII.toString()));
+                    query.append(java.net.URLEncoder.encode(fieldValue,
+                            java.nio.charset.StandardCharsets.US_ASCII.toString()));
                 } catch (java.io.UnsupportedEncodingException e) {
                     log.error("Encoding error", e);
                 }
@@ -222,23 +233,23 @@ public class BookingService {
         String queryUrl = query.toString();
         String vnp_SecureHash = vnPayConfig.hashAllFields(vnp_Params);
         queryUrl += "&vnp_SecureHash=" + vnp_SecureHash;
-        
+
         return vnPayConfig.getVnpPayUrl() + "?" + queryUrl;
     }
 
     public boolean processVNPayCallback(Map<String, String> params) {
         log.info("Processing VNPay Callback with params: {}", params);
-        
+
         String vnp_ResponseCode = params.get("vnp_ResponseCode");
         String vnp_TxnRef = params.get("vnp_TxnRef");
-        
+
         if (vnp_TxnRef == null) {
             return false;
         }
 
         // vnp_TxnRef is formatted as {orderId}_{randomString}
         Long orderId = Long.parseLong(vnp_TxnRef.split("_")[0]);
-        
+
         if ("00".equals(vnp_ResponseCode)) {
             completeMockPayment(orderId);
             log.info("VNPay Payment Successful for order ID: {}", orderId);
@@ -249,7 +260,6 @@ public class BookingService {
             return false;
         }
     }
-
 
     @Data
     @NoArgsConstructor
@@ -262,33 +272,33 @@ public class BookingService {
     public String submitBookingRequest(CreateBookingRequest request) {
         String requestId = UUID.randomUUID().toString();
         log.info("Submitting booking request {} to Kafka", requestId);
-        
+
         BookingMessage message = new BookingMessage(requestId, request);
         String json = "";
         try {
             json = objectMapper.writeValueAsString(message);
             kafkaTemplate.send(BOOKING_TOPIC, requestId, json);
-            
+
             // Save to Outbox DB as PROCESSED
             outboxEventRepository.save(ict.thesis.booking.enties.OutboxEvent.builder()
-                .aggregateType("BookingRequest")
-                .aggregateId(requestId)
-                .eventType("BOOKING_REQUEST_CREATED")
-                .payload(json)
-                .createdAt(java.time.Instant.now())
-                .status("PROCESSED")
-                .build());
+                    .aggregateType("BookingRequest")
+                    .aggregateId(requestId)
+                    .eventType("BOOKING_REQUEST_CREATED")
+                    .payload(json)
+                    .createdAt(java.time.Instant.now())
+                    .status("PROCESSED")
+                    .build());
         } catch (Exception e) {
             log.error("Failed to serialize BookingMessage for requestId: {}", requestId, e);
             // Save to Outbox DB as FAILED
             outboxEventRepository.save(ict.thesis.booking.enties.OutboxEvent.builder()
-                .aggregateType("BookingRequest")
-                .aggregateId(requestId)
-                .eventType("BOOKING_REQUEST_CREATED")
-                .payload(json.isEmpty() ? "Error serializing payload" : json)
-                .createdAt(java.time.Instant.now())
-                .status("FAILED")
-                .build());
+                    .aggregateType("BookingRequest")
+                    .aggregateId(requestId)
+                    .eventType("BOOKING_REQUEST_CREATED")
+                    .payload(json.isEmpty() ? "Error serializing payload" : json)
+                    .createdAt(java.time.Instant.now())
+                    .status("FAILED")
+                    .build());
             throw new RuntimeException("Failed to serialize booking request", e);
         }
         return requestId;
@@ -332,7 +342,7 @@ public class BookingService {
             emitter.completeWithError(e);
             emitters.remove(requestId);
         });
-        
+
         // Send a dummy event to establish connection immediately
         try {
             emitter.send(SseEmitter.event().name("INIT").data("Connected"));
@@ -360,7 +370,7 @@ public class BookingService {
             completedBookings.put(requestId, orderId);
         }
     }
-    
+
     public void notifyBookingFailed(String requestId, String reason) {
         SseEmitter emitter = emitters.get(requestId);
         if (emitter != null) {
@@ -382,8 +392,8 @@ public class BookingService {
     @org.springframework.transaction.annotation.Transactional(readOnly = true)
     public Map<String, Object> getOrderDetail(Long orderId) {
         Order order = orderRepository.findById(orderId)
-            .orElseThrow(() -> new org.springframework.web.server.ResponseStatusException(
-                org.springframework.http.HttpStatus.NOT_FOUND, "Order not found"));
+                .orElseThrow(() -> new org.springframework.web.server.ResponseStatusException(
+                        org.springframework.http.HttpStatus.NOT_FOUND, "Order not found"));
 
         Map<String, Object> response = new java.util.HashMap<>();
         response.put("orderId", order.getId());
@@ -428,7 +438,8 @@ public class BookingService {
         Map<Long, String> seatCodeMap = new java.util.HashMap<>();
         try {
             String seatMapsUrl = managementServiceUrl + "/api/events/" + order.getEventId() + "/seat-maps";
-            ResponseEntity<List> seatMapsResponse = restTemplate.exchange(seatMapsUrl, HttpMethod.GET, entity, List.class);
+            ResponseEntity<List> seatMapsResponse = restTemplate.exchange(seatMapsUrl, HttpMethod.GET, entity,
+                    List.class);
             List<Map<String, Object>> seatMaps = seatMapsResponse.getBody();
             if (seatMaps != null) {
                 for (Map<String, Object> map : seatMaps) {
@@ -458,7 +469,7 @@ public class BookingService {
             itemMap.put("price", item.getFinalPrice());
             itemMap.put("quantity", 1);
             itemMap.put("ticketTierColor", tierColorMap.getOrDefault(tierName, "#2563eb"));
-            
+
             String seatLabel = item.getSeatCode();
             if (seatLabel == null && item.getSeat() != null) {
                 seatLabel = seatCodeMap.get(item.getSeat());
@@ -478,11 +489,11 @@ public class BookingService {
     public java.util.List<java.util.Map<String, Object>> getCustomerOrders(Long customerId) {
         java.util.List<Order> orders = orderRepository.findByCustomerOrderByCreatedAtDesc(customerId);
         java.util.List<java.util.Map<String, Object>> result = new java.util.ArrayList<>();
-        
-        java.util.Map<Long, String> eventTitleCache = new java.util.HashMap<>();
+
+        java.util.Map<Long, java.util.Map<String, Object>> eventCache = new java.util.HashMap<>();
         HttpHeaders headers = buildInternalHeaders();
         HttpEntity<Void> entity = new HttpEntity<>(headers);
-        
+
         for (Order order : orders) {
             java.util.Map<String, Object> orderMap = new java.util.HashMap<>();
             orderMap.put("id", order.getId());
@@ -491,23 +502,35 @@ public class BookingService {
             orderMap.put("status", order.getStatus().toString());
             orderMap.put("createdAt", order.getCreatedAt());
             orderMap.put("eventId", order.getEventId());
-            
-            String eventTitle = eventTitleCache.get(order.getEventId());
-            if (eventTitle == null) {
+
+            java.util.Map<String, Object> eventData = eventCache.get(order.getEventId());
+            if (eventData == null) {
                 String eventUrl = managementServiceUrl + "/api/events/" + order.getEventId();
                 try {
-                    ResponseEntity<Map> eventResponse = restTemplate.exchange(eventUrl, HttpMethod.GET, entity, Map.class);
+                    ResponseEntity<Map> eventResponse = restTemplate.exchange(eventUrl, HttpMethod.GET, entity,
+                            Map.class);
                     Map<String, Object> event = eventResponse.getBody();
                     if (event != null) {
-                        eventTitle = (String) event.get("title");
-                        eventTitleCache.put(order.getEventId(), eventTitle);
+                        eventData = new java.util.HashMap<>();
+                        eventData.put("title", event.get("title"));
+                        eventData.put("bannerUrl", event.get("bannerUrl"));
+                        eventData.put("startTime", event.get("startTime"));
+                        eventCache.put(order.getEventId(), eventData);
                     }
                 } catch (Exception e) {
-                    log.error("Failed to fetch event title for order {}", order.getId(), e);
-                    eventTitle = "Sự kiện " + order.getEventId();
+                    log.error("Failed to fetch event details for order {}", order.getId(), e);
                 }
             }
-            orderMap.put("eventTitle", eventTitle);
+
+            if (eventData != null) {
+                orderMap.put("eventTitle", eventData.get("title"));
+                orderMap.put("bannerUrl", eventData.get("bannerUrl"));
+                orderMap.put("eventDate", eventData.get("startTime"));
+            } else {
+                orderMap.put("eventTitle", "Sự kiện " + order.getEventId());
+                orderMap.put("bannerUrl", null);
+                orderMap.put("eventDate", order.getCreatedAt());
+            }
             result.add(orderMap);
         }
         return result;
@@ -517,19 +540,24 @@ public class BookingService {
     public java.util.List<java.util.Map<String, Object>> getCustomerTickets(Long customerId) {
         java.util.List<Ticket> tickets = ticketRepository.findByCustomerId(customerId);
         java.util.List<java.util.Map<String, Object>> result = new java.util.ArrayList<>();
-        
+
         java.util.Map<Long, java.util.Map<String, Object>> eventCache = new java.util.HashMap<>();
         HttpHeaders headers = buildInternalHeaders();
         HttpEntity<Void> entity = new HttpEntity<>(headers);
-        
+
         for (Ticket ticket : tickets) {
             java.util.Map<String, Object> ticketMap = new java.util.HashMap<>();
             ticketMap.put("id", ticket.getId());
             ticketMap.put("ticketCode", ticket.getTicketCode());
-            ticketMap.put("status", ticket.getStatus().toString());
-            ticketMap.put("seatLabel", ticket.getSeatCode() != null ? ticket.getSeatCode() : ("Seat " + ticket.getSeat()));
-            ticketMap.put("qrCodeUrl", ticket.getQrCodeUrl());
-            
+            ticketMap.put("status", ticket.getStatus() != null ? ticket.getStatus().toString() : null);
+            ticketMap.put("seatLabel",
+                    ticket.getSeatCode() != null ? ticket.getSeatCode() : ("Seat " + ticket.getSeat()));
+            String qrCodeUrl = ticket.getQrCodeUrl();
+            if (qrCodeUrl == null || qrCodeUrl.trim().isEmpty()) {
+                qrCodeUrl = "https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=" + ticket.getTicketCode();
+            }
+            ticketMap.put("qrCodeUrl", qrCodeUrl);
+
             OrderItem item = ticket.getOrderItem();
             if (item != null && item.getOrder() != null) {
                 Long eventId = item.getOrder().getEventId();
@@ -537,28 +565,32 @@ public class BookingService {
                 if (eventData == null) {
                     String eventUrl = managementServiceUrl + "/api/events/" + eventId;
                     try {
-                        ResponseEntity<Map> eventResponse = restTemplate.exchange(eventUrl, HttpMethod.GET, entity, Map.class);
+                        ResponseEntity<Map> eventResponse = restTemplate.exchange(eventUrl, HttpMethod.GET, entity,
+                                Map.class);
                         Map<String, Object> event = eventResponse.getBody();
                         if (event != null) {
                             eventData = new java.util.HashMap<>();
                             eventData.put("eventTitle", event.get("title"));
                             eventData.put("eventDate", event.get("startTime"));
                             eventData.put("venue", event.get("venue"));
+                            eventData.put("bannerUrl", event.get("bannerUrl"));
                             eventCache.put(eventId, eventData);
                         }
                     } catch (Exception e) {
                         log.error("Failed to fetch event details for ticket {}", ticket.getId(), e);
                     }
                 }
-                
+
                 if (eventData != null) {
                     ticketMap.put("eventTitle", eventData.get("eventTitle"));
                     ticketMap.put("eventDate", eventData.get("eventDate"));
                     ticketMap.put("venue", eventData.get("venue"));
+                    ticketMap.put("bannerUrl", eventData.get("bannerUrl"));
                 } else {
                     ticketMap.put("eventTitle", "Sự kiện " + eventId);
                     ticketMap.put("eventDate", ticket.getExpiresAt());
                     ticketMap.put("venue", "Chưa xác định");
+                    ticketMap.put("bannerUrl", null);
                 }
             }
             result.add(ticketMap);

@@ -38,7 +38,7 @@ export class MyAccountComponent implements OnInit, OnDestroy {
   // Tickets & Orders Data
   readonly tickets = signal<any[]>([]);
   readonly orders  = signal<any[]>([]);
-  readonly ticketFilter = signal<'ALL' | 'SUCCESS' | 'PROCESSING' | 'CANCELLED'>('ALL');
+  readonly orderFilter = signal<'ALL' | 'PAID' | 'PENDING' | 'CANCELLED'>('ALL');
   readonly ticketTimeFilter = signal<'UPCOMING' | 'ENDED'>('UPCOMING');
 
   private routeSub?: Subscription;
@@ -53,12 +53,17 @@ export class MyAccountComponent implements OnInit, OnDestroy {
     return !!role && role.includes('ORGANIZER');
   }
 
+  readonly filteredOrders = computed(() => {
+    const all = this.orders();
+    const filter = this.orderFilter();
+    if (filter === 'ALL') return all;
+    return all.filter(o => o.status === filter);
+  });
+
   readonly filteredTickets = computed(() => {
     // Basic filter logic matching UI states
     const all = this.tickets();
     return all.filter(t => {
-      if (this.ticketFilter() !== 'ALL' && t.status !== this.ticketFilter()) return false;
-      
       const isEnded = new Date(t.eventDate) < new Date();
       if (this.ticketTimeFilter() === 'UPCOMING' && isEnded) return false;
       if (this.ticketTimeFilter() === 'ENDED' && !isEnded) return false;
@@ -70,7 +75,6 @@ export class MyAccountComponent implements OnInit, OnDestroy {
   ngOnInit(): void {
     window.scrollTo(0, 0);
     this.fetchProfile();
-    this.fetchTicketsAndOrders();
 
     // Listen to query params for tab switching
     this.routeSub = this.route.queryParams.subscribe(params => {
@@ -109,6 +113,7 @@ export class MyAccountComponent implements OnInit, OnDestroy {
         });
         this.avatarPreviewUrl.set(profile.avatarUrl || null);
         this.isLoading.set(false);
+        this.fetchTicketsAndOrders();
       },
       error: (err) => {
         console.error(err);
@@ -138,6 +143,13 @@ export class MyAccountComponent implements OnInit, OnDestroy {
   getInitials(name: string | null | undefined): string {
     if (!name) return 'U';
     return name.trim().charAt(0).toUpperCase();
+  }
+
+  normalizeImageUrl(url: string | null | undefined): string {
+    if (!url) return '';
+    const match = url.match(/drive\.google\.com\/file\/d\/([^\/]+)/);
+    if (match?.[1]) return `https://drive.google.com/thumbnail?id=${match[1]}&sz=w1000`;
+    return url;
   }
 
   onSubmit(): void {
