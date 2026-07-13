@@ -33,13 +33,6 @@
   <!-- ═══════ MAIN CONTENT ═══════ -->
   <div class="co-page">
 
-    <!-- Timer bar -->
-    <div class="co-timer-bar" [class.co-timer-danger]="timerDanger()">
-      <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
-      Thời gian còn lại:
-      <strong>{{ timerDisplay() }}</strong>
-    </div>
-
     <h2 class="co-section-heading">PAYMENT</h2>
 
     <div class="co-grid">
@@ -184,6 +177,41 @@
 
     </div>
   </div>
+
+
+  <!-- ════════════ MOCK MODAL DIALOGS ════════════ -->
+  <!-- 1. Leave Page Confirmation Modal -->
+  @if (showLeaveModal()) {
+    <div class="custom-modal-overlay">
+      <div class="custom-modal-card">
+        <div class="custom-modal-icon warning">⚠️</div>
+        <h3 class="custom-modal-title">Xác nhận rời khỏi trang?</h3>
+        <p class="custom-modal-desc">
+          Hóa đơn đặt vé tạm thời của bạn sẽ bị hủy và các vị trí ghế đã chọn sẽ được giải phóng cho người khác nếu bạn rời đi. Bạn có chắc muốn rời đi?
+        </p>
+        <div class="custom-modal-actions">
+          <button class="custom-btn custom-btn-cancel" (click)="confirmLeave(false)">Ở lại thanh toán</button>
+          <button class="custom-btn custom-btn-confirm" (click)="confirmLeave(true)">Xác nhận rời đi</button>
+        </div>
+      </div>
+    </div>
+  }
+
+  <!-- 2. Payment Success Modal -->
+  @if (showSuccessModal()) {
+    <div class="custom-modal-overlay">
+      <div class="custom-modal-card">
+        <div class="custom-modal-icon success">✓</div>
+        <h3 class="custom-modal-title">Thanh toán thành công!</h3>
+        <p class="custom-modal-desc">
+          Giao dịch giả lập đã được hoàn tất. Vé và thông tin ghế ngồi của bạn đã được ghi nhận trên hệ thống.
+        </p>
+        <div class="custom-modal-actions">
+          <button class="custom-btn custom-btn-success" (click)="closeSuccessModal()">Đi tới Vé của tôi</button>
+        </div>
+      </div>
+    </div>
+  }
 
 } @else {
   <div class="co-error-state">

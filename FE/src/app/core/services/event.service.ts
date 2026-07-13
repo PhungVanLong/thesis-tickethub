@@ -79,6 +79,11 @@ export class EventApiService {
     return this.http.get<any>(`${this.API}/${eventId}`);
   }
 
+  /** Trả về URL của luồng SSE để lắng nghe cập nhật sơ đồ ghế */
+  getSeatMapStreamUrl(eventId: number): string {
+    return `${this.API}/${eventId}/seat-maps/stream`;
+  }
+
   /** Organizer publish sự kiện (phải ở trạng thái APPROVED) */
   publishEvent(eventId: number): Observable<{ message: string }> {
     return this.http.post<{ message: string }>(`${this.API}/${eventId}/publish`, {});

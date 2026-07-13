@@ -13,12 +13,13 @@ import { AdminEventVerificationComponent } from './features/admin/event-verifica
 import { EventDetailsComponent } from './features/home/event-details/event-details';
 import { SeatSelectionComponent } from './features/home/seat-selection/seat-selection';
 import { CheckoutComponent } from './features/booking/checkout/checkout';
+import { canDeactivateGuard } from './core/guards/can-deactivate.guard';
 
 export const routes: Routes = [
   { path: '', component: HomeComponent },
   { path: 'event/:id', component: EventDetailsComponent },
   { path: 'event/:id/booking', component: SeatSelectionComponent },
-  { path: 'checkout/:orderId', component: CheckoutComponent },
+  { path: 'checkout/:orderId', component: CheckoutComponent, canDeactivate: [canDeactivateGuard] },
   { path: 'login', component: LoginComponent },
   { path: 'register', component: RegisterComponent },
   { path: 'forgot-password', component: ForgotPasswordComponent },

@@ -1,173 +1,187 @@
-<app-navigation />
-
 @if (loading()) {
-  <div class="ss-loading">
-    <div class="spinner"></div>
+  <div class="sp-loading-container" style="background: #111112; display: flex; align-items: center; justify-content: center; height: 100vh; color: #fff; flex-direction: column; gap: 1rem;">
+    <div class="sp-spinner" style="border: 3px solid rgba(255,255,255,0.1); border-top-color: #4ade80; border-radius: 50%; width: 40px; height: 40px; animation: spin 1s linear infinite;"></div>
     <span>Loading seat map...</span>
   </div>
 } @else if (eventDetail(); as event) {
-  <div class="seat-selection-page">
+  <div class="sp-overlay-page">
 
-    <!-- Top bar -->
-    <div class="ss-topbar">
-      <a class="btn-back" [routerLink]="['/event', event.id]">
+    <!-- Header bar -->
+    <div class="sp-header">
+      <a class="sp-back-btn" [routerLink]="['/event', event.id]">
         <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m15 18-6-6 6-6"/></svg>
-        Back to Event
+        Trở về
       </a>
-      <div class="ss-topbar-info">
-        <span class="ss-event-title">{{ event.title }}</span>
-        <span class="ss-event-date">{{ event.startTime | date:'mediumDate' }} · {{ event.venue }}</span>
+      <div class="sp-header-center">
+        <span class="sp-title">Chọn chỗ ngồi</span>
+        <span class="sp-subtitle">Bấm vào ghế để thêm vào giỏ</span>
       </div>
+      <span class="sp-logo">TICKETHUB</span>
     </div>
 
-    <div class="ss-layout">
+    <!-- Body: map + sidebar -->
+    <div class="sp-body">
 
-      <!-- ════ MAP AREA ════ -->
-      <div class="ss-map-area">
-        <div class="ss-map-header">
-          <h2>Select Your Seats</h2>
-          <p>Click on available seats to add them to your order.</p>
+      <!-- Map canvas -->
+      <div class="sp-map-wrap">
+
+        <!-- Zoom controls -->
+        <div class="sp-zoom-controls">
+          <button class="sp-zoom-btn" (click)="zoomIn()" title="Zoom in">
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          </button>
+          <button class="sp-zoom-btn" (click)="resetZoom()" title="Reset zoom">
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"/><path d="M8 16H3v5"/></svg>
+          </button>
+          <button class="sp-zoom-btn" (click)="zoomOut()" title="Zoom out">
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          </button>
         </div>
 
-        <!-- Tier Legend -->
-        @if (event.ticketTiers && event.ticketTiers.length > 0) {
-          <div class="tier-legend">
-            @for (tier of event.ticketTiers; track tier.id) {
-              <div class="legend-item">
-                <span class="legend-dot" [style.background]="tier.colorCode || '#2563eb'"></span>
-                <span>{{ tier.name }} – {{ tier.price | number }} ₫</span>
-              </div>
-            }
-            <div class="legend-item">
-              <span class="legend-dot selected-dot"></span>
-              <span>Selected</span>
-            </div>
-          </div>
-        }
-
+        <!-- The actual map -->
         @if (event.seatMaps && event.seatMaps.length > 0) {
-          @for (map of event.seatMaps; track map.id) {
-            <div class="map-wrapper">
-              <div class="map-name-bar">{{ map.name }}</div>
-              <div class="seat-canvas"
-                   (wheel)="onWheel($event, map.id)"
-                   (mousedown)="onMouseDown($event)"
-                   (mouseleave)="onMouseLeave($event)"
-                   (mouseup)="onMouseUp($event)"
-                   (mousemove)="onMouseMove($event)">
-                <div class="seat-canvas-inner" [style.transform]="'scale(' + (mapScales()[map.id] || 0.8) + ')'">
-                  @for (item of parseLayoutJson(map.layoutJson); track item.id) {
-                    <div style="position: absolute;" [style.left.px]="item.x" [style.top.px]="item.y">
-                      @if (item.type === 'stage') {
-                        <div class="stage-block" [style.transform]="'rotate(' + (item.rotation || 0) + 'deg)'">STAGE</div>
-                      } @else if (item.type === 'block') {
-                        <div class="seat-block"
-                             [style.border-color]="getTierColor(item.tierName)"
-                             [style.transform]="'rotate(' + (item.rotation || 0) + 'deg)'">
-                          <div class="seat-grid"
-                               [style.gridTemplateRows]="'repeat(' + (item.rows || 1) + ', 1fr)'"
-                               [style.gridTemplateColumns]="'repeat(' + (item.cols || 1) + ', 1fr)'">
-                            @for (r of getArray(item.rows); track $index) {
-                              @let row = $index;
-                              @for (c of getArray(item.cols); track $index) {
-                                @let col = $index;
-                                @let seatId = buildSeatId(map.id, item.tierName, row, col, item.startCol || 1, item.labelPrefix);
-                                @let seatLabel = getRowLabel(item.labelPrefix, row) + (col + (item.startCol || 1));
-                                <div class="seat-cell"
-                                     [class.seat-selected]="isSeatSelected(seatId)"
-                                     [style.background-color]="isSeatSelected(seatId) ? '#facc15' : getTierColor(item.tierName)"
-                                     [title]="seatLabel"
-                                     (click)="selectSeat(seatId, seatLabel, item.tierName, map.id)">
-                                  {{ seatLabel }}
-                                </div>
-                              }
-                            }
-                          </div>
-                        </div>
-                      }
+          @let seatMap = event.seatMaps[0];
+          <div class="sp-canvas"
+               [id]="'canvas-' + seatMap.id"
+               (wheel)="onWheel($event, seatMap.id)"
+               (mousedown)="onMouseDown($event)"
+               (mouseleave)="onMouseLeave($event)"
+               (mouseup)="onMouseUp($event)"
+               (mousemove)="onMouseMove($event)">
+            <div style="position: absolute; transform-origin: top left; width: 3000px; height: 3000px; padding: 32px;"
+                 [style.transform]="'scale(' + (mapScales()[seatMap.id] || 0.8) + ')'">
+              @for (item of parseLayoutJson(seatMap.layoutJson); track item.id) {
+                <div style="position: absolute;" [style.left.px]="item.x" [style.top.px]="item.y">
+                  @if (item.type === 'stage') {
+                    <div class="sp-stage" [style.transform]="'rotate(' + (item.rotation || 0) + 'deg)'">STAGE</div>
+                  } @else if (item.type === 'block') {
+                    <div class="sp-block"
+                         [style.border-color]="getTierColor(item.tierName)"
+                         [style.transform]="'rotate(' + (item.rotation || 0) + 'deg)'">
+                      <div class="sp-block-grid"
+                           [style.gridTemplateColumns]="'repeat(' + (item.cols || 1) + ', 1fr)'"
+                           [style.gridTemplateRows]="'repeat(' + (item.rows || 1) + ', 1fr)'">
+                        @for (r of getArray(item.rows); track $index) {
+                          @let rowIdx = $index;
+                          @for (c of getArray(item.cols); track $index) {
+                            @let colIdx = $index;
+                            @let seatId = buildSeatId(seatMap.id, item.tierName, rowIdx, colIdx, item.startCol || 1, item.labelPrefix);
+                            @let seatLbl = getRowLabel(item.labelPrefix, rowIdx) + (colIdx + (item.startCol || 1));
+                            @let dbSeat = getSeatFromMap(seatMap, seatLbl);
+                            @let isReserved = dbSeat?.status === 'RESERVED';
+                            @let isSold = dbSeat?.status === 'SOLD';
+                            @let isDisabled = dbSeat?.status === 'DISABLED';
+                            <div class="sp-seat-dot"
+                                 [class.sp-seat-selected]="isSeatSelected(seatId)"
+                                 [class.sp-seat-reserved]="isReserved"
+                                 [class.sp-seat-sold]="isSold"
+                                 [class.sp-seat-disabled]="isDisabled"
+                                 [style.background-color]="isSeatSelected(seatId) ? '#facc15' : (isReserved ? '#f97316' : (isSold ? '#ef4444' : (isDisabled ? '#94a3b8' : getTierColor(item.tierName))))"
+                                 [title]="seatLbl + (isReserved ? ' (Đang có người đặt)' : (isSold ? ' (Đã bán)' : ''))"
+                                 (click)="(!isSold && !isDisabled) && selectSeat(seatId, seatLbl, item.tierName, seatMap.id)">
+                              {{ seatLbl }}
+                            </div>
+                          }
+                        }
+                      </div>
                     </div>
                   }
                 </div>
-              </div>
-              <p class="map-hint">Scroll to zoom · Drag to pan</p>
+              }
             </div>
-          }
+          </div>
         } @else {
-          <div class="no-map">
-            <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18"/><path d="M9 21V9"/></svg>
-            <p>No seat map available for this event. Please select tickets below.</p>
-            <a class="btn-back" [routerLink]="['/event', event.id]">← Back to Event Details</a>
+          <div class="sp-no-map">
+            <p>Không có sơ đồ ghế cho sự kiện này.</p>
           </div>
         }
       </div>
 
-      <!-- ════ ORDER SUMMARY ════ -->
-      <aside class="ss-sidebar">
-        <div class="order-card">
-          <h3 class="order-title">Order Summary</h3>
-
-          @if (selectedSeats().length === 0) {
-            <div class="empty-order">
-              <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#cbd5e1" stroke-width="1.5"><path d="M2 9a3 3 0 0 1 0 6v2a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-2a3 3 0 0 1 0-6V7a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2Z"/></svg>
-              <p>No seats selected yet.<br/>Click on a seat to add it.</p>
+      <!-- Right sidebar -->
+      <div class="sp-sidebar">
+        <div class="sp-event-info">
+          <h2 class="sp-event-title">{{ event.title }}</h2>
+          <div class="sp-event-meta">
+            <div class="sp-meta-row">
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+              {{ event.startTime | date:'HH:mm' }} – {{ event.endTime | date:'HH:mm' }}, {{ event.startTime | date:'dd MMMM, yyyy' }}
             </div>
-          } @else {
-            <div class="selected-list">
+            <div class="sp-meta-row">
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+              {{ event.venue }}
+            </div>
+          </div>
+        </div>
+
+        <!-- Legend -->
+        <div class="sp-tier-section">
+          <p class="sp-tier-label">GIÁ VÉ</p>
+          <div class="sp-tier-list">
+            @for (tier of event.ticketTiers; track tier.id) {
+              <div class="sp-tier-row">
+                <span class="sp-tier-dot" [style.background]="tier.colorCode || '#2563eb'"></span>
+                <span class="sp-tier-name">{{ tier.name }}</span>
+                <span class="sp-tier-price">{{ tier.price | number }} đ</span>
+              </div>
+            }
+          </div>
+          <div class="sp-legend-hint">
+            <span class="sp-legend-dot-selected"></span>
+            <span>Đã chọn</span>
+          </div>
+        </div>
+
+        <div class="sp-divider"></div>
+
+        <!-- Selected seat list -->
+        @if (selectedSeats().length > 0) {
+          <div class="sp-selected-section">
+            <div class="sp-selected-header">
+              <p class="sp-tier-label">GHẾ ĐÃ CHỌN ({{ selectedSeats().length }})</p>
+              <button class="sp-clear-btn" (click)="clearSeats()">Xóa tất cả</button>
+            </div>
+            <div class="sp-selected-list">
               @for (seat of selectedSeats(); track seat.seatId) {
-                <div class="selected-item">
-                  <div class="seat-info">
-                    <span class="seat-color-dot" [style.background]="seat.tierColor"></span>
-                    <div>
-                      <span class="seat-label-text">Seat {{ seat.label }}</span>
-                      <span class="seat-tier-text">{{ seat.tierName }}</span>
-                    </div>
+                <div class="sp-selected-item">
+                  <span class="sp-tier-dot" [style.background]="seat.tierColor"></span>
+                  <div class="sp-selected-item-info">
+                    <span class="sp-selected-label">Ghế {{ seat.label }}</span>
+                    <span class="sp-selected-tier">{{ seat.tierName }}</span>
                   </div>
-                  <div class="seat-right">
-                    <span class="seat-price-text">{{ seat.price | number }} ₫</span>
-                    <button class="remove-btn" (click)="removeSeat(seat.seatId)" title="Remove">
-                      <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-                    </button>
+                  <div class="sp-selected-item-right">
+                    <span class="sp-selected-price">{{ seat.price | number }} ₫</span>
+                    <button class="sp-remove-btn" (click)="removeSeat(seat.seatId)" title="Xóa">×</button>
                   </div>
                 </div>
               }
             </div>
-
-            <div class="order-total">
-              <span>Total ({{ selectedSeats().length }} seats)</span>
+            <div class="sp-total-row">
+              <span>Tổng cộng</span>
               <strong>{{ subtotal() | number }} ₫</strong>
             </div>
-
-            @if (bookingStatus() === 'FAILED') {
-              <div class="booking-error">{{ errorMessage() }}</div>
-            }
-
-            <button class="btn-checkout"
-                    [disabled]="bookingStatus() === 'BOOKING'"
-                    (click)="proceedToCheckout()">
-              @if (bookingStatus() === 'BOOKING') {
-                <div class="spinner small"></div> Processing...
-              } @else {
-                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
-                Proceed to Checkout
-              }
-            </button>
-          }
-        </div>
-
-        <!-- Event mini card -->
-        <div class="event-mini-card">
-          @if (event.bannerUrl) {
-            <img [src]="normalizeImageUrl(event.bannerUrl)" alt="banner" class="event-mini-img" />
-          }
-          <div class="event-mini-info">
-            <p class="event-mini-title">{{ event.title }}</p>
-            <p class="event-mini-date">{{ event.startTime | date:'mediumDate' }}</p>
-            <p class="event-mini-venue">{{ event.venue }}</p>
           </div>
+        } @else {
+          <div class="sp-empty-seats">
+            <p>Chưa có ghế nào được chọn.<br/>Bấm vào ghế trên bản đồ để thêm.</p>
+          </div>
+        }
+
+        <div class="sp-sidebar-footer">
+          @if (bookingStatus() === 'FAILED') {
+            <div class="sp-error" style="background: rgba(239,68,68,0.1); border: 1px solid rgba(239,68,68,0.3); color: #f87171; font-size: 0.78rem; padding: 0.5rem 0.75rem; border-radius: 8px; margin-bottom: 0.75rem; text-align: center;">{{ errorMessage() }}</div>
+          }
+          <button class="sp-cta-btn"
+                  [disabled]="selectedSeats().length === 0 || bookingStatus() === 'BOOKING'"
+                  (click)="proceedToCheckout()">
+            @if (bookingStatus() === 'BOOKING') {
+              Đang xử lý...
+            } @else {
+              ĐẶT VÉ NGAY ({{ selectedSeats().length }}) »
+            }
+          </button>
         </div>
-      </aside>
+      </div>
+
     </div>
   </div>
 }
-
-<app-footer />

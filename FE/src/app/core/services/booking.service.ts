@@ -3,9 +3,10 @@ import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
 
 export interface BookingItemRequest {
-  seatId?: number;
+  seatId?: number | null;
   ticketTierId?: number;
   promotionId?: number;
+  seatLabel?: string;
 }
 
 export interface CreateBookingRequest {

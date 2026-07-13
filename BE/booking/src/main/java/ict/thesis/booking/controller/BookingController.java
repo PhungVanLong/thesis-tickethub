@@ -32,4 +32,16 @@ public class BookingController {
     public SseEmitter streamBookingResult(@PathVariable String requestId) {
         return bookingService.subscribeToBookingResult(requestId);
     }
+
+    @PostMapping("/{orderId}/mock-pay")
+    public ResponseEntity<Map<String, String>> mockPay(@PathVariable Long orderId) {
+        bookingService.completeMockPayment(orderId);
+        return ResponseEntity.ok(Map.of("message", "Payment simulated successfully"));
+    }
+
+    @PostMapping("/{orderId}/mock-cancel")
+    public ResponseEntity<Map<String, String>> mockCancel(@PathVariable Long orderId) {
+        bookingService.cancelMockPayment(orderId);
+        return ResponseEntity.ok(Map.of("message", "Cancellation simulated successfully"));
+    }
 }

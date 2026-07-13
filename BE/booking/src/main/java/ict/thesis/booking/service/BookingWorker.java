@@ -28,13 +28,17 @@ public class BookingWorker {
     private final OrderItemRepository orderItemRepository;
     private final TicketTierRefRepository ticketTierRefRepository;
     private final BookingService bookingService;
+    private final com.fasterxml.jackson.databind.ObjectMapper objectMapper = new com.fasterxml.jackson.databind.ObjectMapper();
 
     @KafkaListener(topics = "booking.requests", groupId = "booking-group")
     @Transactional
-    public void processBookingRequest(BookingMessage message) {
-        log.info("Received booking request from Kafka: {}", message.getRequestId());
+    public void processBookingRequest(String payload) {
+        log.info("Received booking request from Kafka payload: {}", payload);
         
+        BookingMessage message = null;
         try {
+            message = objectMapper.readValue(payload, BookingMessage.class);
+            log.info("Processing booking request: {}", message.getRequestId());
             CreateBookingRequest request = message.getPayload();
             
             // Generate order code
@@ -87,13 +91,23 @@ public class BookingWorker {
             orderRepository.save(savedOrder);
             
             log.info("Order created successfully: {}", savedOrder.getId());
+
+            // Publish RESERVED status for the seats
+            java.util.List<Long> seatIds = request.items().stream()
+                .map(itemReq -> itemReq.seatId())
+                .filter(java.util.Objects::nonNull)
+                .toList();
+            bookingService.publishSeatStatus(request.eventId(), seatIds, "RESERVED");
             
             // Notify Frontend via SSE
             bookingService.notifyBookingSuccess(message.getRequestId(), savedOrder.getId());
             
         } catch (Exception e) {
-            log.error("Failed to process booking request {}", message.getRequestId(), e);
-            bookingService.notifyBookingFailed(message.getRequestId(), "Failed to create order: " + e.getMessage());
+            String rId = (message != null) ? message.getRequestId() : "UNKNOWN";
+            log.error("Failed to process booking request {}", rId, e);
+            if (message != null) {
+                bookingService.notifyBookingFailed(message.getRequestId(), "Failed to create order: " + e.getMessage());
+            }
         }
     }
 }

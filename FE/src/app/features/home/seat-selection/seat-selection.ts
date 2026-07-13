@@ -1,4 +1,4 @@
-import { Component, OnInit, signal, computed, inject } from '@angular/core';
+import { Component, OnInit, OnDestroy, signal, computed, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterLink, ActivatedRoute, Router } from '@angular/router';
 import { Navigation } from '../../../core/navigation/navigation';
@@ -9,6 +9,7 @@ import { AuthService } from '../../auth/auth.service';
 
 interface SelectedSeat {
   seatId: string;
+  dbSeatId: number | null;
   label: string;
   tierName: string;
   tierColor: string;
@@ -23,7 +24,7 @@ interface SelectedSeat {
   templateUrl: './seat-selection.html',
   styleUrl: './seat-selection.scss',
 })
-export class SeatSelectionComponent implements OnInit {
+export class SeatSelectionComponent implements OnInit, OnDestroy {
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
   private readonly eventApi = inject(EventApiService);
@@ -46,6 +47,7 @@ export class SeatSelectionComponent implements OnInit {
   dragScrollTop = 0;
 
   private sse: EventSource | null = null;
+  private seatMapSse: EventSource | null = null;
 
   readonly subtotal = computed(() =>
     this.selectedSeats().reduce((sum, s) => sum + s.price, 0)
@@ -55,7 +57,75 @@ export class SeatSelectionComponent implements OnInit {
     const id = this.route.snapshot.paramMap.get('id');
     if (id) {
       this.loadEvent(Number(id));
+      this.subscribeToSeatMapUpdates(Number(id));
     }
+  }
+
+  getSeatFromMap(map: any, seatLabel: string): any {
+    if (!map || !map.seats) return null;
+    return map.seats.find((s: any) => s.seatCode === seatLabel) || null;
+  }
+
+  private subscribeToSeatMapUpdates(eventId: number) {
+    this.closeSeatMapSse();
+    this.seatMapSse = new EventSource(this.eventApi.getSeatMapStreamUrl(eventId));
+
+    this.seatMapSse.addEventListener('SEAT_UPDATE', (e: any) => {
+      try {
+        const data = JSON.parse(e.data);
+        if (data.seatIds && data.status) {
+          this.updateLocalSeatStatus(data.seatIds, data.status);
+        }
+      } catch (err) {
+        console.error('Failed to parse seat update event data', err);
+      }
+    });
+
+    this.seatMapSse.onerror = (err) => {
+      console.warn('Seat map SSE disconnected or encountered error', err);
+    };
+  }
+
+  private updateLocalSeatStatus(seatIds: number[], status: string): void {
+    const event = this.eventDetail();
+    if (!event || !event.seatMaps) return;
+
+    const updatedSeatMaps = event.seatMaps.map((map: any) => {
+      if (!map.seats) return map;
+      const updatedSeats = map.seats.map((seat: any) => {
+        if (seatIds.includes(seat.id)) {
+          return { ...seat, status: status };
+        }
+        return seat;
+      });
+      return { ...map, seats: updatedSeats };
+    });
+
+    this.eventDetail.set({ ...event, seatMaps: updatedSeatMaps });
+
+    // Remove from user selection if seat was sold
+    if (status === 'SOLD') {
+      const currentSelected = this.selectedSeats();
+      const stillAvailable = currentSelected.filter(selectedSeat => {
+        const matchingDbSeat = this.findDbSeatByLabel(event, selectedSeat.label);
+        if (matchingDbSeat && seatIds.includes(matchingDbSeat.id)) {
+          return false;
+        }
+        return true;
+      });
+      if (stillAvailable.length !== currentSelected.length) {
+        this.selectedSeats.set(stillAvailable);
+      }
+    }
+  }
+
+  private findDbSeatByLabel(event: any, label: string): any {
+    for (const map of event.seatMaps || []) {
+      if (!map.seats) continue;
+      const found = map.seats.find((s: any) => s.seatCode === label);
+      if (found) return found;
+    }
+    return null;
   }
 
   private loadEvent(id: number) {
@@ -64,10 +134,49 @@ export class SeatSelectionComponent implements OnInit {
       next: (res) => {
         this.eventDetail.set(res);
         this.loading.set(false);
+        setTimeout(() => this.centerAllMaps(), 100);
       },
       error: (err) => {
         console.error(err);
         this.loading.set(false);
+      }
+    });
+  }
+
+  centerAllMaps(): void {
+    const event = this.eventDetail();
+    if (!event || !event.seatMaps) return;
+
+    event.seatMaps.forEach((map: any) => {
+      const items = this.parseLayoutJson(map.layoutJson);
+      if (items.length === 0) return;
+
+      let minX = Infinity, maxX = -Infinity;
+      let minY = Infinity, maxY = -Infinity;
+
+      items.forEach((item: any) => {
+        if (item.x < minX) minX = item.x;
+        const width = item.type === 'stage' ? 300 : (item.cols || 10) * 30; 
+        const height = item.type === 'stage' ? 80 : (item.rows || 5) * 30;
+        
+        if (item.x + width > maxX) maxX = item.x + width;
+        if (item.y < minY) minY = item.y;
+        if (item.y + height > maxY) maxY = item.y + height;
+      });
+
+      if (minX === Infinity) return;
+
+      const centerX = (minX + maxX) / 2;
+      const centerY = (minY + maxY) / 2;
+      const scale = this.mapScales()[map.id] || 0.8;
+
+      const container = document.getElementById('canvas-' + map.id);
+      if (container) {
+        const viewportWidth = container.clientWidth;
+        const viewportHeight = container.clientHeight;
+        
+        container.scrollLeft = (centerX * scale) - (viewportWidth / 2);
+        container.scrollTop = (centerY * scale) - (viewportHeight / 2);
       }
     });
   }
@@ -128,8 +237,14 @@ export class SeatSelectionComponent implements OnInit {
     if (existing) {
       this.selectedSeats.update(seats => seats.filter(s => s.seatId !== seatId));
     } else {
+      const event = this.eventDetail();
+      const map = event?.seatMaps?.find((m: any) => m.id === mapId);
+      const dbSeat = this.getSeatFromMap(map, label);
+      const dbSeatId = dbSeat ? dbSeat.id : null;
+
       const newSeat: SelectedSeat = {
         seatId,
+        dbSeatId,
         label,
         tierName,
         tierColor: tier.colorCode || '#2563EB',
@@ -138,6 +253,36 @@ export class SeatSelectionComponent implements OnInit {
       };
       this.selectedSeats.update(seats => [...seats, newSeat]);
     }
+  }
+
+  clearSeats(): void {
+    this.selectedSeats.set([]);
+  }
+
+  zoomIn(): void {
+    const event = this.eventDetail();
+    if (!event || !event.seatMaps) return;
+    event.seatMaps.forEach((m: any) => {
+      const scale = this.mapScales()[m.id] || 0.8;
+      this.mapScales.update(s => ({ ...s, [m.id]: Math.min(5, scale + 0.1) }));
+    });
+  }
+
+  zoomOut(): void {
+    const event = this.eventDetail();
+    if (!event || !event.seatMaps) return;
+    event.seatMaps.forEach((m: any) => {
+      const scale = this.mapScales()[m.id] || 0.8;
+      this.mapScales.update(s => ({ ...s, [m.id]: Math.max(0.2, scale - 0.1) }));
+    });
+  }
+
+  resetZoom(): void {
+    const event = this.eventDetail();
+    if (!event || !event.seatMaps) return;
+    event.seatMaps.forEach((m: any) => {
+      this.mapScales.update(s => ({ ...s, [m.id]: 0.8 }));
+    });
   }
 
   removeSeat(seatId: string): void {
@@ -192,6 +337,7 @@ export class SeatSelectionComponent implements OnInit {
     }
 
     const items = this.selectedSeats().map(seat => ({
+      seatId: seat.dbSeatId,
       ticketTierId: seat.tierId,
       seatLabel: seat.label,
     }));
@@ -240,5 +386,15 @@ export class SeatSelectionComponent implements OnInit {
   private closeSse() {
     this.sse?.close();
     this.sse = null;
+  }
+
+  ngOnDestroy() {
+    this.closeSse();
+    this.closeSeatMapSse();
+  }
+
+  private closeSeatMapSse() {
+    this.seatMapSse?.close();
+    this.seatMapSse = null;
   }
 }
