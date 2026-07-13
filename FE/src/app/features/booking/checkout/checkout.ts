@@ -46,6 +46,13 @@ export class CheckoutComponent implements OnInit, OnDestroy {
     if (id) {
       this.orderId.set(id);
       this.fetchOrderDetails(id);
+      
+      // Check query params for payment error
+      this.route.queryParams.subscribe(params => {
+        if (params['error'] === 'payment_failed') {
+          this.paymentError.set('Thanh toán không thành công hoặc đã bị hủy từ VNPay.');
+        }
+      });
     } else {
       this.router.navigate(['/']);
     }
@@ -64,6 +71,12 @@ export class CheckoutComponent implements OnInit, OnDestroy {
     this.showLeaveModal.set(false);
     if (leave) {
       this.cancelPendingOrder();
+      const eventId = this.orderDetails()?.eventId;
+      if (eventId) {
+        this.router.navigate(['/event', eventId, 'booking']);
+      } else {
+        this.router.navigate(['/']);
+      }
     }
     this.leaveSubject.next(leave);
   }

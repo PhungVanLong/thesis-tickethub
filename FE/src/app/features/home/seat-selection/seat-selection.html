@@ -10,11 +10,11 @@
     <div class="sp-header">
       <a class="sp-back-btn" [routerLink]="['/event', event.id]">
         <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m15 18-6-6 6-6"/></svg>
-        Trở về
+        Back
       </a>
       <div class="sp-header-center">
-        <span class="sp-title">Chọn chỗ ngồi</span>
-        <span class="sp-subtitle">Bấm vào ghế để thêm vào giỏ</span>
+        <span class="sp-title">Select Seats</span>
+        <span class="sp-subtitle">Click on a seat to select it</span>
       </div>
       <span class="sp-logo">TICKETHUB</span>
     </div>
@@ -76,8 +76,8 @@
                                  [class.sp-seat-reserved]="isReserved"
                                  [class.sp-seat-sold]="isSold"
                                  [class.sp-seat-disabled]="isDisabled"
-                                 [style.background-color]="isSeatSelected(seatId) ? '#facc15' : (isReserved ? '#f97316' : (isSold ? '#ef4444' : (isDisabled ? '#94a3b8' : getTierColor(item.tierName))))"
-                                 [title]="seatLbl + (isReserved ? ' (Đang có người đặt)' : (isSold ? ' (Đã bán)' : ''))"
+                                 [style.background-color]="isSeatSelected(seatId) ? '#facc15' : (isReserved ? '#f97316' : (isSold ? '#6b7280' : (isDisabled ? '#94a3b8' : getTierColor(item.tierName))))"
+                                 [title]="seatLbl + (isReserved ? ' (Reserved)' : (isSold ? ' (Sold)' : ''))"
                                  (click)="(!isSold && !isDisabled) && selectSeat(seatId, seatLbl, item.tierName, seatMap.id)">
                               {{ seatLbl }}
                             </div>
@@ -92,7 +92,7 @@
           </div>
         } @else {
           <div class="sp-no-map">
-            <p>Không có sơ đồ ghế cho sự kiện này.</p>
+            <p>No seat map available for this event.</p>
           </div>
         }
       </div>
@@ -115,19 +115,25 @@
 
         <!-- Legend -->
         <div class="sp-tier-section">
-          <p class="sp-tier-label">GIÁ VÉ</p>
+          <p class="sp-tier-label">TICKET TIERS</p>
           <div class="sp-tier-list">
             @for (tier of event.ticketTiers; track tier.id) {
               <div class="sp-tier-row">
                 <span class="sp-tier-dot" [style.background]="tier.colorCode || '#2563eb'"></span>
                 <span class="sp-tier-name">{{ tier.name }}</span>
-                <span class="sp-tier-price">{{ tier.price | number }} đ</span>
+                <span class="sp-tier-price">{{ tier.price | number }} VND</span>
               </div>
             }
           </div>
-          <div class="sp-legend-hint">
-            <span class="sp-legend-dot-selected"></span>
-            <span>Đã chọn</span>
+          <div class="sp-legend-hint" style="display: flex; flex-direction: column; gap: 0.5rem; margin-top: 1rem; align-items: flex-start;">
+            <div style="display: flex; align-items: center; gap: 0.5rem;">
+              <span class="sp-legend-dot-selected" style="background: #facc15; border: 2px solid #ca8a04; border-radius: 4px; width: 14px; height: 14px; display: inline-block;"></span>
+              <span style="color: rgba(255,255,255,0.7); font-size: 0.8rem;">Selecting</span>
+            </div>
+            <div style="display: flex; align-items: center; gap: 0.5rem;">
+              <span style="background: #4b5563; border-radius: 4px; width: 14px; height: 14px; display: inline-block;"></span>
+              <span style="color: rgba(255,255,255,0.7); font-size: 0.8rem;">Sold</span>
+            </div>
           </div>
         </div>
 
@@ -137,32 +143,32 @@
         @if (selectedSeats().length > 0) {
           <div class="sp-selected-section">
             <div class="sp-selected-header">
-              <p class="sp-tier-label">GHẾ ĐÃ CHỌN ({{ selectedSeats().length }})</p>
-              <button class="sp-clear-btn" (click)="clearSeats()">Xóa tất cả</button>
+              <p class="sp-tier-label">SELECTED SEATS ({{ selectedSeats().length }})</p>
+              <button class="sp-clear-btn" (click)="clearSeats()">Clear All</button>
             </div>
             <div class="sp-selected-list">
               @for (seat of selectedSeats(); track seat.seatId) {
                 <div class="sp-selected-item">
                   <span class="sp-tier-dot" [style.background]="seat.tierColor"></span>
                   <div class="sp-selected-item-info">
-                    <span class="sp-selected-label">Ghế {{ seat.label }}</span>
+                    <span class="sp-selected-label">Seat {{ seat.label }}</span>
                     <span class="sp-selected-tier">{{ seat.tierName }}</span>
                   </div>
                   <div class="sp-selected-item-right">
-                    <span class="sp-selected-price">{{ seat.price | number }} ₫</span>
-                    <button class="sp-remove-btn" (click)="removeSeat(seat.seatId)" title="Xóa">×</button>
+                    <span class="sp-selected-price">{{ seat.price | number }} VND</span>
+                    <button class="sp-remove-btn" (click)="removeSeat(seat.seatId)" title="Remove">×</button>
                   </div>
                 </div>
               }
             </div>
             <div class="sp-total-row">
-              <span>Tổng cộng</span>
-              <strong>{{ subtotal() | number }} ₫</strong>
+              <span>Total</span>
+              <strong>{{ subtotal() | number }} VND</strong>
             </div>
           </div>
         } @else {
           <div class="sp-empty-seats">
-            <p>Chưa có ghế nào được chọn.<br/>Bấm vào ghế trên bản đồ để thêm.</p>
+            <p>No seats selected yet.<br/>Click on a seat on the map to select it.</p>
           </div>
         }
 
@@ -174,9 +180,9 @@
                   [disabled]="selectedSeats().length === 0 || bookingStatus() === 'BOOKING'"
                   (click)="proceedToCheckout()">
             @if (bookingStatus() === 'BOOKING') {
-              Đang xử lý...
+              Processing...
             } @else {
-              ĐẶT VÉ NGAY ({{ selectedSeats().length }}) »
+              BOOK NOW ({{ selectedSeats().length }}) »
             }
           </button>
         </div>
