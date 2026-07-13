@@ -12,7 +12,7 @@ public final class BookingDtos {
     private BookingDtos() {
     }
 
-    public record BookingItemRequest(Long seatId, Long ticketTierId, Long promotionId) {
+    public record BookingItemRequest(Long seatId, Long ticketTierId, Long promotionId, String seatLabel) {
     }
 
     public record CreateBookingRequest(

@@ -67,6 +67,7 @@ public class BookingWorker {
                 OrderItem item = new OrderItem();
                 item.setOrder(savedOrder);
                 item.setSeat(itemReq.seatId());
+                item.setSeatCode(itemReq.seatLabel());
                 
                 if (itemReq.ticketTierId() != null) {
                     ticketTierRefRepository.findById(itemReq.ticketTierId()).ifPresent(tier -> {
