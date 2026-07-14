@@ -22,12 +22,12 @@
           }
         }
       </div>
-      <div class="block-overlay-text">
-        <span class="block-label">{{ item.tierName || 'Unassigned Block' }}</span>
-        @if (!isPreview) {
+      @if (!isPreview) {
+        <div class="block-overlay-text">
+          <span class="block-label">{{ item.tierName || 'Unassigned Block' }}</span>
           <span class="block-rows-cols">{{ item.rows || 1 }} &times; {{ item.cols || 1 }}</span>
-        }
-      </div>
+        </div>
+      }
     </div>
   }
 </ng-template>
@@ -554,8 +554,27 @@
                         <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/><path d="m15 5 4 4"/></svg>
                       </div>
                     </div>
-                    <div class="static-canvas-container" style="position: relative; width: 100%; height: 500px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; overflow: hidden;">
-                      <div style="position: absolute; transform: scale(0.85); transform-origin: top left; width: 100%; height: 100%;">
+                    <div class="static-canvas-container" 
+                         (wheel)="reviewOnWheelZoom($event)"
+                         (mousedown)="reviewOnMouseDown($event)"
+                         (mouseleave)="reviewOnMouseLeave($event)"
+                         (mouseup)="reviewOnMouseUp($event)"
+                         (mousemove)="reviewOnMouseMove($event)"
+                         style="position: relative; width: 100%; height: 500px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; overflow: auto; cursor: grab;">
+                      
+                      <!-- Zoom Controls -->
+                      <div style="position: absolute; bottom: 16px; right: 16px; z-index: 10; display: flex; gap: 8px; background: white; padding: 4px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); border: 1px solid #e2e8f0; align-items: center;">
+                        <button type="button" (click)="reviewZoomOut()" style="background: #f1f5f9; border: none; cursor: pointer; width: 28px; height: 28px; border-radius: 4px; font-weight: bold; color: #475569;" title="Zoom Out">-</button>
+                        <span style="font-size: 0.8rem; font-weight: 600; min-width: 40px; text-align: center; color: #334155;">{{ reviewZoom() * 100 | number:'1.0-0' }}%</span>
+                        <button type="button" (click)="reviewZoomIn()" style="background: #f1f5f9; border: none; cursor: pointer; width: 28px; height: 28px; border-radius: 4px; font-weight: bold; color: #475569;" title="Zoom In">+</button>
+                        <button type="button" (click)="reviewResetZoom()" style="background: transparent; border: none; cursor: pointer; padding: 0 8px; font-size: 0.8rem; color: #3b82f6; font-weight: 500;" title="Reset Zoom">Reset</button>
+                      </div>
+
+                      <div [style.transform]="reviewMapStyle().transform"
+                           [style.transformOrigin]="reviewMapStyle().transformOrigin"
+                           [style.left]="reviewMapStyle().left"
+                           [style.top]="reviewMapStyle().top"
+                           style="position: absolute;">
                         @for (item of draggableItems(); track item.id) {
                           <div style="position: absolute;"
                                [style.left.px]="item.x" 

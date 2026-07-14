@@ -128,7 +128,7 @@
                   <img [src]="t.qrCodeUrl" alt="Ticket QR Code" class="qr-image" />
                 </div>
                 <span class="qr-code-text">{{ t.ticketCode }}</span>
-                <span class="ticket-status-tag" [class]="t.status">{{ t.status }}</span>
+                <span class="ticket-status-tag" [class]="t.status">{{ t.status === 'VALID' ? 'UNUSED' : t.status }}</span>
               </div>
 
               <div class="qr-footer-notice">

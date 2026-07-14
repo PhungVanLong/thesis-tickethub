@@ -10,10 +10,9 @@
           <span class="field-label">CITY</span>
           <select [ngModel]="searchCity()" (ngModelChange)="searchCity.set($event)" name="city">
             <option value="">All Cities</option>
-            <option value="Hà Nội">Hanoi</option>
-            <option value="Hồ Chí Minh">Ho Chi Minh City</option>
-            <option value="Đà Nẵng">Da Nang</option>
-            <option value="Sân vận động Mỹ Đình">My Dinh Stadium</option>
+            @for (city of cities(); track city) {
+              <option [value]="city">{{ city }}</option>
+            }
           </select>
         </div>
       </div>

@@ -7,7 +7,7 @@
     </div>
 
     <nav class="sidebar-nav" aria-label="Staff navigation">
-      <button type="button" class="nav-item active">
+      <button type="button" class="nav-item" [class.active]="activeTab() === 'scan'" (click)="activeTab.set('scan')">
         <span class="nav-icon">
           <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <rect width="5" height="5" x="3" y="3" rx="1"/>
@@ -27,30 +27,7 @@
         <span>Scan QR</span>
       </button>
       
-      <button type="button" class="nav-item">
-        <span class="nav-icon">
-          <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/>
-            <circle cx="9" cy="7" r="4"/>
-            <path d="M22 21v-2a4 4 0 0 0-3-3.87"/>
-            <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
-          </svg>
-        </span>
-        <span>Attendee List</span>
-      </button>
-      
-      <button type="button" class="nav-item">
-        <span class="nav-icon">
-          <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <line x1="18" y1="20" x2="18" y2="10"/>
-            <line x1="12" y1="20" x2="12" y2="4"/>
-            <line x1="6" y1="20" x2="6" y2="14"/>
-          </svg>
-        </span>
-        <span>Analytics</span>
-      </button>
-      
-      <button type="button" class="nav-item">
+      <button type="button" class="nav-item" [class.active]="activeTab() === 'history'" (click)="activeTab.set('history')">
         <span class="nav-icon">
           <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/>
@@ -63,215 +40,491 @@
       </button>
     </nav>
 
-    <!-- Emergency Support at bottom -->
-    <div class="sidebar-footer">
-      <button type="button" class="btn-emergency">
-        <svg class="emergency-icon" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-          <line x1="12" y1="2" x2="12" y2="22"/>
-          <line x1="2" y1="12" x2="22" y2="12"/>
-          <line x1="4.93" y1="4.93" x2="19.07" y2="19.07"/>
-          <line x1="4.93" y1="19.07" x2="19.07" y2="4.93"/>
-        </svg>
-        <span>Emergency Support</span>
-      </button>
-    </div>
   </aside>
 
-  <!-- Main Content Area -->
-  <main class="staff-main">
-    <header class="page-header">
-      <div class="header-title-section">
-        <h1>Staff Check-in</h1>
-        <div class="event-selector-row">
-          <span class="calendar-icon">
-            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <rect width="18" height="18" x="3" y="4" rx="2" ry="2"/>
-              <line x1="16" x2="16" y1="2" y2="6"/>
-              <line x1="8" x2="8" y1="2" y2="6"/>
-              <line x1="3" x2="21" y1="10" y2="10"/>
-            </svg>
-          </span>
-          <div class="select-wrapper">
-            <select class="event-select" [ngModel]="selectedEventId()" (ngModelChange)="onEventChange($event)">
-              @for (event of events(); track event.id) {
-                <option [ngValue]="event.id">{{ event.title }}</option>
-              }
-            </select>
-            <span class="select-caret">
-              <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <path d="m6 9 6 6 6-6"/>
-              </svg>
-            </span>
-          </div>
-        </div>
-      </div>
+  <!-- Main Wrapper -->
+  <div class="main-wrapper">
+    <!-- Topbar (header) copied completely from organizer, dropdown has only sign out -->
+    <header class="topbar">
+      <!-- Removed search bar as requested -->
+      <div style="flex: 1;"></div>
 
-      <div class="summary-cards">
-        <div class="summary-card">
-          <span class="summary-label">CHECKED-IN</span>
-          <strong class="text-blue">{{ checkedInCount() | number }}</strong>
+      <div class="topbar-actions">
+        <button class="bell-btn" title="Notifications"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg></button>
+        
+        <!-- Account Dropdown -->
+        <div class="dropdown-wrapper">
+          <button type="button" class="account-btn" (click)="toggleUserMenu($event)">
+            @if (userProfile()?.avatarUrl) {
+              <img class="avatar-img" [src]="userProfile().avatarUrl" alt="Avatar" />
+            } @else {
+              <div class="avatar-img-placeholder">
+                <span>{{ userInitial }}</span>
+              </div>
+            }
+            <span class="account-text">{{ userName }}</span>
+            <span class="caret-icon" [class.open]="showUserMenu()">▼</span>
+          </button>
+          
+          @if (showUserMenu()) {
+            <div class="dropdown-menu">
+              <button type="button" class="dropdown-item logout-btn" (click)="logout()">
+                <svg class="dropdown-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
+                  <polyline points="16 17 21 12 16 7" />
+                  <line x1="21" y1="12" x2="9" y2="12" />
+                </svg>
+                <span>Sign Out</span>
+              </button>
+            </div>
+          }
         </div>
-        <div class="summary-card">
-          <span class="summary-label">TOTAL</span>
-          <strong>{{ totalCapacity() | number }}</strong>
-        </div>
-        <div class="summary-card">
-          <span class="summary-label">CAPACITY</span>
-          <strong>{{ capacityPercent() }}%</strong>
+
+        <!-- Language Dropdown Switcher -->
+        <div class="lang-dropdown-wrapper">
+          <button type="button" class="lang-btn" (click)="toggleLangDropdown($event)">
+            @if (currentLang() === 'Vie') {
+              <svg class="flag-icon-svg" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                <circle cx="12" cy="12" r="10" fill="#da251d"/>
+                <polygon points="12,7.5 13.18,11.13 17,11.13 13.91,13.38 15.09,17.01 12,14.75 8.91,17.01 10.09,13.38 7,11.13 10.82,11.13" fill="#ffff00"/>
+              </svg>
+            } @else {
+              <svg class="flag-icon-svg" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                <mask id="circle-mask-trigger-portal">
+                  <circle cx="12" cy="12" r="10" fill="#ffffff" />
+                </mask>
+                <g mask="url(#circle-mask-trigger-portal)">
+                  <rect width="24" height="24" fill="#012169" />
+                  <path d="M0 0 L24 24 M24 0 L0 24" stroke="#ffffff" stroke-width="3" />
+                  <path d="M0 0 L24 24 M24 0 L0 24" stroke="#c8102e" stroke-width="1.5" />
+                  <path d="M12 0 V24 M0 12 H24" stroke="#ffffff" stroke-width="5" />
+                  <path d="M12 0 V24 M0 12 H24" stroke="#c8102e" stroke-width="3" />
+                </g>
+              </svg>
+            }
+            <span class="lang-label-text">{{ currentLang() }}</span>
+            <span class="caret-icon" [class.open]="showLangDropdown()">▼</span>
+          </button>
+
+          @if (showLangDropdown()) {
+            <div class="lang-dropdown-menu">
+              <button type="button" class="lang-dropdown-item" (click)="setLanguage('Vie')">
+                <svg class="flag-icon-svg-menu" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                  <circle cx="12" cy="12" r="10" fill="#da251d"/>
+                  <polygon points="12,7.5 13.18,11.13 17,11.13 13.91,13.38 15.09,17.01 12,14.75 8.91,17.01 10.09,13.38 7,11.13 10.82,11.13" fill="#ffff00"/>
+                </svg>
+                <span>Tiếng Việt</span>
+              </button>
+              <button type="button" class="lang-dropdown-item" (click)="setLanguage('Eng')">
+                <svg class="flag-icon-svg-menu" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                  <mask id="circle-mask-menu-portal">
+                    <circle cx="12" cy="12" r="10" fill="#ffffff" />
+                  </mask>
+                  <g mask="url(#circle-mask-menu-portal)">
+                    <rect width="24" height="24" fill="#012169" />
+                    <path d="M0 0 L24 24 M24 0 L0 24" stroke="#ffffff" stroke-width="3" />
+                    <path d="M0 0 L24 24 M24 0 L0 24" stroke="#c8102e" stroke-width="1.5" />
+                    <path d="M12 0 V24 M0 12 H24" stroke="#ffffff" stroke-width="5" />
+                    <path d="M12 0 V24 M0 12 H24" stroke="#c8102e" stroke-width="3" />
+                  </g>
+                </svg>
+                <span>English</span>
+              </button>
+            </div>
+          }
         </div>
       </div>
     </header>
 
-    <div class="content-grid">
-      <!-- Scanner Panel -->
-      <article class="scanner-card">
-        <div class="scanner-accent"></div>
-        <div class="scanner-hero">
-          <div class="scanner-icon-box">
-            <svg xmlns="http://www.w3.org/2000/svg" width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-              <rect width="5" height="5" x="3" y="3" rx="1"/>
-              <rect width="5" height="5" x="16" y="3" rx="1"/>
-              <rect width="5" height="5" x="3" y="16" rx="1"/>
-              <path d="M21 16h-3a2 2 0 0 0-2 2v3"/>
-              <path d="M21 21v.01"/>
-              <path d="M12 7v3a2 2 0 0 1-2 2H7"/>
-              <path d="M3 12h.01"/>
-              <path d="M12 3h.01"/>
-              <path d="M12 16v.01"/>
-              <path d="M16 12h1"/>
-              <path d="M21 12v.01"/>
-              <path d="M12 21v-1"/>
-            </svg>
+    <!-- Main Content Area -->
+    <main class="staff-main">
+      @if (activeTab() === 'scan') {
+        <header class="page-header">
+          <div class="header-title-section">
+            <h1>Staff Check-in</h1>
+            <div class="event-selector-row">
+              <span class="calendar-icon">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <rect width="18" height="18" x="3" y="4" rx="2" ry="2"/>
+                  <line x1="16" x2="16" y1="2" y2="6"/>
+                  <line x1="8" x2="8" y1="2" y2="6"/>
+                  <line x1="3" x2="21" y1="10" y2="10"/>
+                </svg>
+              </span>
+              <div class="select-wrapper">
+                <select class="event-select" [ngModel]="selectedEventId()" (ngModelChange)="onEventChange($event)">
+                  @for (event of events(); track event.id) {
+                    <option [ngValue]="event.id">{{ event.title }}</option>
+                  }
+                </select>
+                <span class="select-caret">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="m6 9 6 6 6-6"/>
+                  </svg>
+                </span>
+              </div>
+            </div>
           </div>
-          <h2>Ready to Scan</h2>
-          <p>Place the attendee's QR code within the camera frame or connect an external scanner.</p>
-          
-          <button type="button" class="primary-button" (click)="openScanner()">
-            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <circle cx="12" cy="12" r="10"/>
-              <path d="m22 12-4.5 4.5"/>
-              <path d="m17.5 16.5-6.5-6.5"/>
-              <path d="m11 10-6.5 6.5"/>
-              <path d="m4.5 16.5-1.5-4.5"/>
-              <path d="m3 12 4.5-4.5"/>
-              <path d="m7.5 7.5 6.5 6.5"/>
-              <path d="m14 14 6.5-6.5"/>
-              <path d="m20.5 7.5 1.5 4.5"/>
-            </svg>
-            <span>Open Scanner</span>
-          </button>
-          
-          <p class="connection-status">
-            <span class="status-dot"></span>
-            <span>External Scanner Connected (USB-HID)</span>
-          </p>
-        </div>
 
-        @if (scannerOpen()) {
-          <div class="scanner-note">
-            {{ scannerMessage() }}
+          <div class="summary-cards">
+            <div class="summary-card">
+              <span class="summary-label">CHECKED-IN</span>
+              <strong class="text-blue">{{ checkedInCount() | number }}</strong>
+            </div>
+            <div class="summary-card">
+              <span class="summary-label">TOTAL</span>
+              <strong>{{ totalCapacity() | number }}</strong>
+            </div>
+            <div class="summary-card">
+              <span class="summary-label">CAPACITY</span>
+              <strong>{{ capacityPercent() }}%</strong>
+            </div>
           </div>
-        }
-      </article>
+        </header>
 
-      <!-- Manual Search Panel -->
-      <aside class="search-card">
-        <div class="search-title-row">
-          <span class="search-icon">
-            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <circle cx="11" cy="11" r="8"/>
-              <path d="m21 21-4.3-4.3"/>
-            </svg>
-          </span>
-          <h2>Manual Search</h2>
-        </div>
+        <div class="content-grid">
+          <!-- Scanner Panel -->
+          <article class="scanner-card">
+            <div class="scanner-accent"></div>
+            @if (!scannerOpen()) {
+              <div class="scanner-hero">
+                <div class="scanner-icon-box">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                    <rect width="5" height="5" x="3" y="3" rx="1"/>
+                    <rect width="5" height="5" x="16" y="3" rx="1"/>
+                    <rect width="5" height="5" x="3" y="16" rx="1"/>
+                    <path d="M21 16h-3a2 2 0 0 0-2 2v3"/>
+                    <path d="M21 21v.01"/>
+                    <path d="M12 7v3a2 2 0 0 1-2 2H7"/>
+                    <path d="M3 12h.01"/>
+                    <path d="M12 3h.01"/>
+                    <path d="M12 16v.01"/>
+                    <path d="M16 12h1"/>
+                    <path d="M21 12v.01"/>
+                    <path d="M12 21v-1"/>
+                  </svg>
+                </div>
+                <h2>Ready to Scan</h2>
+                <p>Place the attendee's QR code within the camera frame or connect an external scanner.</p>
+                
+                <button type="button" class="primary-button" (click)="openScanner()">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <circle cx="12" cy="12" r="10"/>
+                    <path d="m22 12-4.5 4.5"/>
+                    <path d="m17.5 16.5-6.5-6.5"/>
+                    <path d="m11 10-6.5 6.5"/>
+                    <path d="m4.5 16.5-1.5-4.5"/>
+                    <path d="m3 12 4.5-4.5"/>
+                    <path d="m7.5 7.5 6.5 6.5"/>
+                    <path d="m14 14 6.5-6.5"/>
+                    <path d="m20.5 7.5 1.5 4.5"/>
+                  </svg>
+                  <span>Open Scanner</span>
+                </button>
 
-        <div class="form-group">
-          <label class="field-label" for="attendee-name">Attendee Name or Email</label>
-          <input id="attendee-name" type="text" placeholder="e.g. John Doe" [ngModel]="attendeeName()"
-                 (ngModelChange)="attendeeName.set($event)" name="attendeeName" />
-        </div>
+                <p class="connection-status">
+                  <span class="status-dot"></span>
+                  <span>External Scanner Connected (USB-HID)</span>
+                </p>
+              </div>
+          } @else {
+              <div class="scanner-video-feed" style="display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 16px; padding: 12px;">
+                <video id="scanner-video" style="width: 100%; max-width: 480px; height: auto; aspect-ratio: 4/3; border-radius: 8px; border: 2px solid #2563eb; background: #000; transform: scaleX(-1);"></video>
+                
+                <div class="scanner-note" style="width: 100%; text-align: center; margin: 0; padding: 8px; background: rgba(37, 99, 235, 0.08); border: 1px solid rgba(37, 99, 235, 0.2); border-radius: 6px; font-size: 13px; color: #1e40af;">
+                  {{ scannerMessage() }}
+                </div>
 
-        <div class="form-group">
-          <label class="field-label" for="order-id">Order ID</label>
-          <input id="order-id" type="text" placeholder="TH-8821-X" [ngModel]="orderId()"
-                 (ngModelChange)="orderId.set($event)" name="orderId" />
-        </div>
+                <!-- Camera Switcher -->
+                @if (cameras().length > 1) {
+                  <div class="camera-select-row" style="width: 100%; max-width: 320px; display: flex; flex-direction: column; gap: 4px;">
+                    <label style="font-size: 12px; font-weight: 600; color: #475569;">Select Camera Device:</label>
+                    <select [ngModel]="selectedCameraId()" (ngModelChange)="startCamera($event)" style="width: 100%; padding: 8px 12px; border-radius: 6px; border: 1px solid #cbd5e1; background: #ffffff; color: #0f172a; font-size: 14px; outline: none; cursor: pointer;">
+                      @for (cam of cameras(); track cam.deviceId) {
+                        <option [value]="cam.deviceId">{{ cam.label || 'Camera ' + ($index + 1) }}</option>
+                      }
+                    </select>
+                  </div>
+                }
 
-        <button type="button" class="secondary-button find-button" (click)="findAttendee()">
-          Find Attendee
-        </button>
-
-        @if (searchResultMessage()) {
-          <div class="search-message">{{ searchResultMessage() }}</div>
-        }
-
-        <div class="filters-divider"></div>
-        
-        <div class="quick-filters">
-          <div class="quick-filters-label">Quick Filters</div>
-          <div class="filter-chips">
-            @for (filter of filterOptions; track filter) {
-              <button type="button" class="filter-chip" [class.active]="selectedQuickFilter() === filter"
-                      (click)="setQuickFilter(filter)">
-                {{ getQuickFilterLabel(filter) }}
-              </button>
+                <button type="button" class="secondary-button" (click)="closeScanner()" style="padding: 10px 20px; font-size: 13.5px; font-weight: 600; border: 1px solid #cbd5e1; background: #ffffff; color: #475569; border-radius: 6px; cursor: pointer; transition: all 0.15s ease;">
+                  Close Scanner
+                </button>
+              </div>
             }
+          </article>
+
+          <!-- Manual Search Panel -->
+          <aside class="search-card">
+            <div class="search-title-row">
+              <span class="search-icon">
+                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <circle cx="11" cy="11" r="8"/>
+                  <path d="m21 21-4.3-4.3"/>
+                </svg>
+              </span>
+              <h2>Manual Entry</h2>
+            </div>
+
+            <div class="form-group">
+              <label class="field-label" for="ticket-code-input">Ticket Code</label>
+              <input id="ticket-code-input" type="text" placeholder="e.g. TH-8821-X" [ngModel]="ticketCodeInput()"
+                     (ngModelChange)="ticketCodeInput.set($event)" name="ticketCodeInput" />
+            </div>
+
+            <button type="button" class="primary-button" (click)="verifyTicket()" style="width: 100%; margin-top: 0.5rem;">
+              Verify & Check In
+            </button>
+
+            @if (successMessage()) {
+              <div class="success-alert" style="margin-top: 1rem; color: #34d399; font-weight: 500; font-size: 0.95rem; text-align: center; padding: 0.5rem; background: rgba(52, 211, 153, 0.1); border-radius: 6px;">
+                ✓ {{ successMessage() }}
+              </div>
+            }
+            @if (errorMessage()) {
+              <div class="error-alert" style="margin-top: 1rem; color: #f87171; font-weight: 500; font-size: 0.95rem; text-align: center; padding: 0.5rem; background: rgba(248, 113, 113, 0.1); border-radius: 6px;">
+                ✗ {{ errorMessage() }}
+              </div>
+            }
+
+          </aside>
+        </div>
+
+        <!-- Recent Logs Panel -->
+        <section class="recent-card" id="recent-checkins">
+          <div class="recent-header">
+            <div>
+              <h2>Recent Check-ins</h2>
+              <p>Last 10 successful entries</p>
+            </div>
+            <a href="javascript:void(0)" (click)="activeTab.set('history')" class="view-all-link">View All Logs</a>
           </div>
-          <button type="button" class="clear-search" (click)="resetSearch()">Reset Search</button>
-        </div>
-      </aside>
-    </div>
 
-    <!-- Recent Logs Panel -->
-    <section class="recent-card" id="recent-checkins">
-      <div class="recent-header">
-        <div>
-          <h2>Recent Check-ins</h2>
-          <p>Last 10 successful entries</p>
-        </div>
-        <a href="#recent-checkins" class="view-all-link">View All Logs</a>
-      </div>
+          @if (filteredRecentCheckIns().length === 0) {
+            <div class="empty-state">
+              <div class="empty-icon">○</div>
+              <h3>No matching attendees</h3>
+              <p>Try a different name, email, order ID, or clear the active filter.</p>
+            </div>
+          } @else {
+            <div class="table-wrap">
+              <table class="recent-table">
+                <thead>
+                  <tr>
+                    <th>Status</th>
+                    <th>Attendee Name</th>
+                    <th>Email</th>
+                    <th>Seat</th>
+                    <th>Method</th>
+                    <th>Timestamp</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  @for (record of filteredRecentCheckIns(); track trackById($index, record)) {
+                    <tr>
+                      <td>
+                        <span class="status-pill" [class.verified]="record.status === 'Verified'"
+                              [class.pending]="record.status === 'Pending'"
+                              [class.flagged]="record.status === 'Flagged'">
+                          <span class="dot"></span>
+                          {{ record.status }}
+                        </span>
+                      </td>
+                      <td class="attendee-name-col">{{ record.attendeeName }}</td>
+                      <td class="email-col">{{ record.email }}</td>
+                      <td class="seat-col">{{ record.seat }}</td>
+                      <td class="method-col">
+                        <span class="badge-method" style="padding: 4px 8px; border-radius: 4px; font-size: 11px; font-weight: 700; text-transform: uppercase;"
+                              [style.background]="record.method === 'QR_SCAN' ? 'rgba(37, 99, 235, 0.1)' : 'rgba(245, 158, 11, 0.1)'"
+                              [style.color]="record.method === 'QR_SCAN' ? '#2563eb' : '#d97706'">
+                          {{ record.method || 'QR_SCAN' }}
+                        </span>
+                      </td>
+                      <td class="timestamp-col">{{ record.timestamp }}</td>
+                    </tr>
+                  }
+                </tbody>
+              </table>
+            </div>
+          }
+        </section>
+      } @else if (activeTab() === 'history') {
+         <!-- Check-in History Header -->
+         <header class="page-header">
+           <div class="header-title-section">
+             <h1>Check-in History</h1>
+             <div class="event-selector-row" style="margin-top: 4px; color: #64748b; font-size: 14px; font-weight: 500; display: flex; align-items: center; gap: 6px;">
+               <span class="calendar-icon" style="color: #64748b;">
+                 <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                   <rect width="18" height="18" x="3" y="4" rx="2" ry="2"/>
+                   <line x1="16" x2="16" y1="2" y2="6"/>
+                   <line x1="8" x2="8" y1="2" y2="6"/>
+                   <line x1="3" x2="21" y1="10" y2="10"/>
+                 </svg>
+               </span>
+               <span>{{ selectedEvent().title }}@if (selectedEvent().startTime) { – {{ selectedEvent().startTime | date:'MMM d, yyyy' }} }</span>
+             </div>
+           </div>
 
-      @if (filteredRecentCheckIns().length === 0) {
-        <div class="empty-state">
-          <div class="empty-icon">○</div>
-          <h3>No matching attendees</h3>
-          <p>Try a different name, email, order ID, or clear the active filter.</p>
-        </div>
-      } @else {
-        <div class="table-wrap">
-          <table class="recent-table">
-            <thead>
-              <tr>
-                <th>Status</th>
-                <th>Attendee Name</th>
-                <th>Email</th>
-                <th>Seat</th>
-                <th>Timestamp</th>
-              </tr>
-            </thead>
-            <tbody>
-              @for (record of filteredRecentCheckIns(); track trackById($index, record)) {
-                <tr>
-                  <td>
-                    <span class="status-pill" [class.verified]="record.status === 'Verified'"
-                          [class.pending]="record.status === 'Pending'"
-                          [class.flagged]="record.status === 'Flagged'">
-                      <span class="dot"></span>
-                      {{ record.status }}
-                    </span>
-                  </td>
-                  <td class="attendee-name-col">{{ record.attendeeName }}</td>
-                  <td class="email-col">{{ record.email }}</td>
-                  <td class="seat-col">{{ record.seat }}</td>
-                  <td class="timestamp-col">{{ record.timestamp }}</td>
-                </tr>
-              }
-            </tbody>
-          </table>
-        </div>
+           <!-- 4 KPI cards -->
+           <div class="summary-cards" style="grid-template-columns: repeat(4, 1fr); max-width: 100%;">
+             <div class="summary-card">
+                <div style="display: flex; align-items: center; justify-content: space-between; width: 100%;">
+                  <span class="summary-label">TOTAL ENTRIES TODAY</span>
+                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#2563eb" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+                </div>
+                <strong class="text-blue" style="font-size: 24px; margin-top: 8px; display: block;">{{ totalEntriesToday() | number }}</strong>
+              </div>
+             
+             <div class="summary-card">
+               <div style="display: flex; align-items: center; justify-content: space-between; width: 100%;">
+                 <span class="summary-label">PEAK ENTRY TIME</span>
+                 <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#2563eb" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+               </div>
+               <strong style="font-size: 24px; margin-top: 8px; display: block;">{{ peakEntryTime() }}</strong>
+               <span style="color: #64748b; font-size: 11px; font-weight: 500; display: block; margin-top: 4px;">Estimated 240/hr</span>
+             </div>
+             
+             <div class="summary-card">
+               <div style="display: flex; align-items: center; justify-content: space-between; width: 100%;">
+                 <span class="summary-label">SUCCESSFUL SCANS</span>
+                 <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#2563eb" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+               </div>
+               <strong class="text-blue" style="font-size: 24px; margin-top: 8px; display: block;">{{ successfulScansPercent() }}%</strong>
+               <span style="color: #64748b; font-size: 11px; font-weight: 500; display: block; margin-top: 4px;">{{ failedScansCount() }} fail instances</span>
+             </div>
+
+             <div class="summary-card">
+               <div style="display: flex; align-items: center; justify-content: space-between; width: 100%;">
+                 <span class="summary-label">MANUAL ENTRY COUNT</span>
+                 <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#2563eb" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="17" y1="10" x2="3" y2="10"/><line x1="21" y1="6" x2="3" y2="6"/><line x1="21" y1="14" x2="3" y2="14"/><line x1="17" y1="18" x2="3" y2="18"/></svg>
+               </div>
+               <strong style="font-size: 24px; margin-top: 8px; display: block;">{{ manualEntryCount() | number }}</strong>
+               <span style="color: #ef4444; font-size: 11px; font-weight: 600; display: block; margin-top: 4px;">Require review</span>
+             </div>
+           </div>
+         </header>
+
+         <!-- Filter bar -->
+         <div class="history-filters-bar" style="background: #ffffff; border: 1px solid #e2e8f0; border-radius: 10px; padding: 16px; margin-bottom: 24px; display: flex; align-items: center; gap: 12px; flex-wrap: wrap;">
+           <!-- Search Attendee Name, Email, or Order ID -->
+           <div style="position: relative; flex: 1; min-width: 250px;">
+             <span style="position: absolute; left: 14px; top: 50%; transform: translateY(-50%); display: flex; align-items: center; color: #94a3b8;">
+               <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+             </span>
+             <input type="text" placeholder="Search Attendee Name, Email, or Ticket Code..." [ngModel]="historySearchQuery()" (ngModelChange)="historySearchQuery.set($event)"
+                    style="width: 100%; padding: 10px 14px 10px 38px; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 13.5px; outline: none; background: #ffffff; color: #0f172a;" />
+           </div>
+
+           <!-- Status dropdown -->
+           <select [ngModel]="historyStatusFilter()" (ngModelChange)="historyStatusFilter.set($event)"
+                   style="padding: 10px 14px; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 13.5px; background: #ffffff; color: #0f172a; outline: none; min-width: 150px; height: 38px; cursor: pointer;">
+             <option value="ALL">All Statuses</option>
+             <option value="SUCCESS">Success</option>
+             <option value="FAILED">Failed</option>
+             <option value="FLAGGED">Flagged</option>
+           </select>
+
+           <!-- Date dropdown -->
+           <div style="position: relative; display: flex; align-items: center; height: 38px;">
+             <select [ngModel]="historyDateFilter()" (ngModelChange)="historyDateFilter.set($event)"
+                     style="padding: 10px 32px 10px 14px; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 13.5px; background: #ffffff; color: #0f172a; outline: none; min-width: 180px; height: 38px; cursor: pointer; appearance: none;">
+               <option value="TODAY">Today: {{ currentDate | date:'MMM d, yyyy' }}</option>
+               <option value="ALL">All Dates</option>
+             </select>
+             <span style="position: absolute; right: 12px; color: #64748b; pointer-events: none;">
+               <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+             </span>
+           </div>
+
+           <button type="button" class="primary-button" style="height: 38px; padding: 0 20px; font-size: 13.5px; font-weight: 600; border-radius: 8px; cursor: pointer; border: none; background: #2563eb; color: #ffffff;">
+             Apply Filters
+           </button>
+         </div>
+
+         <!-- Check-in History Logs Table -->
+         <section class="recent-card" style="margin-top: 0; padding: 0; background: #ffffff; border: 1px solid #e2e8f0; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);">
+           @if (filteredHistoryCheckIns().length === 0) {
+             <div class="empty-state" style="padding: 48px 24px; text-align: center;">
+               <div class="empty-icon" style="font-size: 40px; color: #94a3b8; margin-bottom: 12px;">○</div>
+               <h3 style="font-size: 16px; font-weight: 700; color: #1e293b; margin: 0 0 8px 0;">No matching history logs</h3>
+               <p style="font-size: 13.5px; color: #64748b; margin: 0;">Try adjusting your search query or status filter.</p>
+             </div>
+           } @else {
+             <div class="table-wrap" style="margin: 0; border: none; border-radius: 0;">
+               <table class="recent-table">
+                 <thead>
+                   <tr>
+                     <th>Status</th>
+                     <th>Attendee</th>
+                     <th>Tier / Zone</th>
+                     <th>Staff / Method</th>
+                     <th>Timestamp</th>
+                     <th style="width: 50px;"></th>
+                   </tr>
+                 </thead>
+                 <tbody>
+                   @for (record of filteredHistoryCheckIns(); track trackById($index, record)) {
+                     <tr>
+                        <td>
+                          <span class="status-pill verified">
+                            <span class="dot"></span>
+                            Verified
+                          </span>
+                        </td>
+                        <td class="attendee-name-col">
+                          <div style="display: flex; align-items: center; gap: 12px;">
+                            <div style="width: 32px; height: 32px; border-radius: 50%; background: #2563eb; color: #ffffff; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 700;">
+                              {{ record.attendeeName.charAt(0).toUpperCase() }}
+                            </div>
+                            <div style="display: flex; flex-direction: column;">
+                              <span style="font-weight: 600; color: #0f172a; font-size: 13.5px;">{{ record.attendeeName }}</span>
+                              <span style="color: #64748b; font-size: 12px;">{{ record.email }}</span>
+                            </div>
+                          </div>
+                        </td>
+                        <td>
+                          <div style="display: flex; flex-direction: column;">
+                            <span style="font-weight: 600; color: #0f172a; font-size: 13.5px;">{{ record.tags[0] || 'Standard Entry' }}</span>
+                            <span style="color: #64748b; font-size: 12px;">Seat {{ record.seat }}</span>
+                          </div>
+                        </td>
+                        <td>
+                          <div style="display: flex; flex-direction: column;">
+                            <span style="font-weight: 600; color: #0f172a; font-size: 13.5px;">{{ record.staffName || 'System Auto' }}</span>
+                            <span style="color: #64748b; font-size: 12px; text-transform: uppercase;">{{ record.method || 'QR_SCAN' }}</span>
+                          </div>
+                        </td>
+                       <td class="timestamp-col" style="font-size: 13.5px; color: #334155;">{{ record.timestamp }}</td>
+                       <td>
+                         <button type="button" style="background: none; border: none; color: #94a3b8; cursor: pointer; padding: 4px; display: flex; align-items: center; justify-content: center;">
+                           <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="1"/><circle cx="12" cy="5" r="1"/><circle cx="12" cy="19" r="1"/></svg>
+                         </button>
+                       </td>
+                     </tr>
+                   }
+                 </tbody>
+               </table>
+             </div>
+             
+             <!-- Pagination component -->
+             <div style="display: flex; align-items: center; justify-content: space-between; padding: 16px 24px; border-top: 1px solid #e2e8f0; background: #ffffff;">
+               <span style="font-size: 13px; color: #64748b;">Showing 1-{{ filteredHistoryCheckIns().length }} of {{ filteredHistoryCheckIns().length }} entries</span>
+               <div style="display: flex; gap: 4px;">
+                 <button type="button" style="border: 1px solid #e2e8f0; background: #ffffff; color: #64748b; width: 32px; height: 32px; border-radius: 6px; display: flex; align-items: center; justify-content: center; cursor: not-allowed;" disabled>
+                   ‹
+                 </button>
+                 <button type="button" style="border: none; background: #2563eb; color: #ffffff; width: 32px; height: 32px; border-radius: 6px; font-weight: 700; font-size: 13px; cursor: pointer;">
+                   1
+                 </button>
+                 <button type="button" style="border: 1px solid #e2e8f0; background: #ffffff; color: #64748b; width: 32px; height: 32px; border-radius: 6px; display: flex; align-items: center; justify-content: center; cursor: not-allowed;" disabled>
+                   ›
+                 </button>
+               </div>
+             </div>
+           }
+         </section>
       }
-    </section>
-  </main>
+    </main>
+  </div>
 </div>

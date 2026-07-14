@@ -20,10 +20,19 @@ export class HeroSection implements OnInit, OnDestroy {
   readonly currentIndex = signal<number>(0);
   readonly searchCity = signal<string>('');
   readonly searchQuery = signal<string>('');
+  readonly cities = signal<string[]>([]);
 
   private slideInterval: any;
 
   ngOnInit(): void {
+    // Dynamically fetch unique cities from all discovery events
+    this.eventApi.getDiscoveryEvents({ limit: 100 }).subscribe(events => {
+      if (events) {
+        const uniqueCities = Array.from(new Set(events.map(e => e.city).filter(c => !!c)));
+        this.cities.set(uniqueCities);
+      }
+    });
+
     // Tải tối đa 5 sự kiện đặc biệt để chạy slide carousel
     this.eventApi.getDiscoveryEvents({ category: 'Special', limit: 5 }).subscribe(events => {
       if (events && events.length > 0) {

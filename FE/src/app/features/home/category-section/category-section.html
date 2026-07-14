@@ -9,7 +9,7 @@
     </div>
 
     <div class="city-grid">
-      @for (city of cities; track city.name) {
+      @for (city of cities(); track city.name) {
         <a class="city-card"
            [routerLink]="['/explore']"
            [queryParams]="{ city: city.name }"

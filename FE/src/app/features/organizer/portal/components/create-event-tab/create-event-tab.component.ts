@@ -85,6 +85,115 @@ export class CreateEventTabComponent implements OnInit {
   selectedItemId = signal<string | null>(null);
   workspaceZoom = signal<number>(1);
 
+  readonly reviewZoom = signal<number>(1);
+  reviewIsDraggingMap = false;
+  reviewDragStartX = 0;
+  reviewDragStartY = 0;
+  reviewDragScrollLeft = 0;
+  reviewDragScrollTop = 0;
+
+  readonly reviewMapStyle = computed(() => {
+    const items = this.draggableItems();
+    if (items.length === 0) {
+      return { transform: 'scale(1)', left: '0px', top: '0px', position: 'absolute' };
+    }
+
+    let minX = Infinity, maxX = -Infinity;
+    let minY = Infinity, maxY = -Infinity;
+
+    items.forEach((item: any) => {
+      const w = item.type === 'stage' ? 300 : (item.cols || 10) * 22 + 12;
+      const h = item.type === 'stage' ? 60 : (item.rows || 5) * 22 + 12;
+      if (item.x < minX) minX = item.x;
+      if (item.x + w > maxX) maxX = item.x + w;
+      if (item.y < minY) minY = item.y;
+      if (item.y + h > maxY) maxY = item.y + h;
+    });
+
+    if (minX === Infinity) {
+      return { transform: 'scale(1)', left: '0px', top: '0px', position: 'absolute' };
+    }
+
+    const mapW = maxX - minX;
+    const mapH = maxY - minY;
+
+    const viewportW = 900;
+    const viewportH = 500;
+
+    const scaleX = (viewportW - 60) / mapW;
+    const scaleY = (viewportH - 60) / mapH;
+    const baseScale = Math.min(scaleX, scaleY, 1.0);
+    const scale = baseScale * this.reviewZoom();
+
+    const offsetX = (viewportW - mapW * scale) / 2 - minX * scale;
+    const offsetY = (viewportH - mapH * scale) / 2 - minY * scale;
+
+    return {
+      transform: `scale(${scale})`,
+      transformOrigin: 'top left',
+      left: `${offsetX}px`,
+      top: `${offsetY}px`,
+      position: 'absolute'
+    };
+  });
+
+  reviewZoomIn(): void {
+    this.reviewZoom.update(z => Math.min(z + 0.1, 3));
+  }
+
+  reviewZoomOut(): void {
+    this.reviewZoom.update(z => Math.max(z - 0.1, 0.2));
+  }
+
+  reviewResetZoom(): void {
+    this.reviewZoom.set(1);
+  }
+
+  reviewOnWheelZoom(event: WheelEvent): void {
+    if (event.ctrlKey || event.metaKey) {
+      event.preventDefault();
+      if (event.deltaY < 0) {
+        this.reviewZoomIn();
+      } else {
+        this.reviewZoomOut();
+      }
+    }
+  }
+
+  reviewOnMouseDown(e: MouseEvent): void {
+    this.reviewIsDraggingMap = true;
+    const currentTarget = e.currentTarget as HTMLElement;
+    this.reviewDragStartX = e.pageX - currentTarget.offsetLeft;
+    this.reviewDragStartY = e.pageY - currentTarget.offsetTop;
+    this.reviewDragScrollLeft = currentTarget.scrollLeft;
+    this.reviewDragScrollTop = currentTarget.scrollTop;
+    currentTarget.style.cursor = 'grabbing';
+  }
+
+  reviewOnMouseLeave(e: MouseEvent): void {
+    this.reviewIsDraggingMap = false;
+    const currentTarget = e.currentTarget as HTMLElement;
+    currentTarget.style.cursor = 'grab';
+  }
+
+  reviewOnMouseUp(e: MouseEvent): void {
+    this.reviewIsDraggingMap = false;
+    const currentTarget = e.currentTarget as HTMLElement;
+    currentTarget.style.cursor = 'grab';
+  }
+
+  reviewOnMouseMove(e: MouseEvent): void {
+    if (!this.reviewIsDraggingMap) return;
+    e.preventDefault();
+    const currentTarget = e.currentTarget as HTMLElement;
+    const x = e.pageX - currentTarget.offsetLeft;
+    const y = e.pageY - currentTarget.offsetTop;
+    const walkX = (x - this.reviewDragStartX);
+    const walkY = (y - this.reviewDragStartY);
+    currentTarget.scrollLeft = this.reviewDragScrollLeft - walkX;
+    currentTarget.scrollTop = this.reviewDragScrollTop - walkY;
+  }
+
   zoomIn(): void {
     this.workspaceZoom.update(z => Math.min(z + 0.1, 2));
   }

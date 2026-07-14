@@ -33,11 +33,21 @@ export class SeatSelectionComponent implements OnInit, OnDestroy {
   readonly loading = signal(false);
   readonly bookingStatus = signal<'IDLE' | 'BOOKING' | 'SUCCESS' | 'FAILED'>('IDLE');
   readonly errorMessage = signal('');
-
   readonly selectedSeats = signal<SelectedSeat[]>([]);
+  readonly warningModalMessage = signal<string | null>(null);
+
+  showWarning(msg: string): void {
+    this.warningModalMessage.set(msg);
+  }
+
+  closeWarning(): void {
+    this.warningModalMessage.set(null);
+  }
 
   // Map zoom/pan state
   readonly mapScales = signal<Record<string, number>>({});
+  readonly mapWidths = signal<Record<string, number>>({});
+  readonly mapHeights = signal<Record<string, number>>({});
   isDraggingMap = false;
   dragStartX = 0;
   dragStartY = 0;
@@ -146,6 +156,11 @@ export class SeatSelectionComponent implements OnInit, OnDestroy {
     if (!event || !event.seatMaps) return;
 
     event.seatMaps.forEach((map: any) => {
+      // Ensure the scale is initialized
+      if (this.mapScales()[map.id] === undefined) {
+        this.mapScales.update(s => ({ ...s, [map.id]: 0.8 }));
+      }
+
       const items = this.parseLayoutJson(map.layoutJson);
       if (items.length === 0) return;
 
@@ -164,6 +179,12 @@ export class SeatSelectionComponent implements OnInit, OnDestroy {
 
       if (minX === Infinity) return;
 
+      // Compute dynamic width and height bounds based on element layout coordinates
+      const w = Math.max(maxX + 100, 1000);
+      const h = Math.max(maxY + 100, 800);
+      this.mapWidths.update(widths => ({ ...widths, [map.id]: w }));
+      this.mapHeights.update(heights => ({ ...heights, [map.id]: h }));
+
       const centerX = (minX + maxX) / 2;
       const centerY = (minY + maxY) / 2;
       const scale = this.mapScales()[map.id] || 0.8;
@@ -173,8 +194,17 @@ export class SeatSelectionComponent implements OnInit, OnDestroy {
         const viewportWidth = container.clientWidth;
         const viewportHeight = container.clientHeight;
         
+        if (viewportWidth === 0 || viewportHeight === 0) {
+          // If the container is not fully rendered yet, retry in 100ms
+          setTimeout(() => this.centerAllMaps(), 100);
+          return;
+        }
+
         container.scrollLeft = (centerX * scale) - (viewportWidth / 2);
         container.scrollTop = (centerY * scale) - (viewportHeight / 2);
+      } else {
+        // If the container is not found, retry in 100ms
+        setTimeout(() => this.centerAllMaps(), 100);
       }
     });
   }
@@ -235,6 +265,11 @@ export class SeatSelectionComponent implements OnInit, OnDestroy {
     if (existing) {
       this.selectedSeats.update(seats => seats.filter(s => s.seatId !== seatId));
     } else {
+      if (this.selectedSeats().length >= 2) {
+        this.showWarning('You can select a maximum of 2 seats per booking.');
+        return;
+      }
+
       const event = this.eventDetail();
       const map = event?.seatMaps?.find((m: any) => m.id === mapId);
       const dbSeat = this.getSeatFromMap(map, label);
@@ -324,9 +359,89 @@ export class SeatSelectionComponent implements OnInit, OnDestroy {
     t.scrollTop = this.dragScrollTop - (e.pageY - t.offsetTop - this.dragStartY);
   }
 
+  validateSeatGaps(): boolean {
+    const event = this.eventDetail();
+    if (!event || !event.seatMaps) return true;
+
+    for (const map of event.seatMaps) {
+      const items = this.parseLayoutJson(map.layoutJson);
+      for (const item of items) {
+        if (item.type !== 'block') continue;
+
+        const rows = item.rows || 1;
+        const cols = item.cols || 1;
+        const startCol = item.startCol || 1;
+
+        for (let r = 0; r < rows; r++) {
+          const rowStates: ('SELECTED' | 'OCCUPIED' | 'AVAILABLE')[] = [];
+
+          for (let c = 0; c < cols; c++) {
+            const seatId = this.buildSeatId(map.id, item.tierName, r, c, startCol, item.labelPrefix);
+            const seatLbl = this.getRowLabel(item.labelPrefix, r) + (c + startCol);
+            const dbSeat = this.getSeatFromMap(map, seatLbl);
+
+            if (this.isSeatSelected(seatId)) {
+              rowStates.push('SELECTED');
+            } else if (dbSeat && (dbSeat.status === 'SOLD' || dbSeat.status === 'RESERVED' || dbSeat.status === 'DISABLED')) {
+              rowStates.push('OCCUPIED');
+            } else {
+              rowStates.push('AVAILABLE');
+            }
+          }
+
+          // Validate rowStates array for single seat gaps
+          for (let c = 0; c < cols; c++) {
+            if (rowStates[c] !== 'AVAILABLE') continue;
+
+            const leftState = c > 0 ? rowStates[c - 1] : 'BOUNDARY';
+            const rightState = c < cols - 1 ? rowStates[c + 1] : 'BOUNDARY';
+
+            const leftIsSelected = (leftState === 'SELECTED');
+            const rightIsSelected = (rightState === 'SELECTED');
+
+            if (leftIsSelected || rightIsSelected) {
+              if (leftIsSelected) {
+                if (rightState === 'OCCUPIED' || rightState === 'BOUNDARY' || rightState === 'SELECTED') {
+                  const errorMsg = `Row ${this.getRowLabel(item.labelPrefix, r)}: Please do not leave a single empty seat gap.`;
+                  this.showWarning(errorMsg);
+                  this.errorMessage.set(errorMsg);
+                  this.bookingStatus.set('FAILED');
+                  return false;
+                }
+              }
+              if (rightIsSelected) {
+                if (leftState === 'OCCUPIED' || leftState === 'BOUNDARY' || leftState === 'SELECTED') {
+                  const errorMsg = `Row ${this.getRowLabel(item.labelPrefix, r)}: Please do not leave a single empty seat gap.`;
+                  this.showWarning(errorMsg);
+                  this.errorMessage.set(errorMsg);
+                  this.bookingStatus.set('FAILED');
+                  return false;
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+
+    return true;
+  }
+
   // --- Checkout ---
   proceedToCheckout(): void {
     if (this.selectedSeats().length === 0) return;
+
+    if (this.selectedSeats().length > 2) {
+      const errorMsg = 'You can select a maximum of 2 seats.';
+      this.showWarning(errorMsg);
+      this.errorMessage.set(errorMsg);
+      this.bookingStatus.set('FAILED');
+      return;
+    }
+
+    if (!this.validateSeatGaps()) {
+      return;
+    }
 
     const user = this.authService.currentUserProfile();
     if (!user) {

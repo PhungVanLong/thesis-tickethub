@@ -48,7 +48,9 @@
                (mouseleave)="onMouseLeave($event)"
                (mouseup)="onMouseUp($event)"
                (mousemove)="onMouseMove($event)">
-            <div style="position: absolute; transform-origin: top left; width: 3000px; height: 3000px; padding: 32px;"
+            <div [style.width.px]="mapWidths()[seatMap.id] || 3000"
+                 [style.height.px]="mapHeights()[seatMap.id] || 3000"
+                 style="position: absolute; transform-origin: top left; padding: 32px;"
                  [style.transform]="'scale(' + (mapScales()[seatMap.id] || 0.8) + ')'">
               @for (item of parseLayoutJson(seatMap.layoutJson); track item.id) {
                 <div style="position: absolute;" [style.left.px]="item.x" [style.top.px]="item.y">
@@ -190,4 +192,15 @@
 
     </div>
   </div>
+
+  @if (warningModalMessage()) {
+    <div class="sp-warning-modal-overlay">
+      <div class="sp-warning-modal">
+        <div class="sp-warning-icon">⚠️</div>
+        <h3>Attention</h3>
+        <p>{{ warningModalMessage() }}</p>
+        <button type="button" class="sp-warning-close-btn" (click)="closeWarning()">Got it</button>
+      </div>
+    </div>
+  }
 }
