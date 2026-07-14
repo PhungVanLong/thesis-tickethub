@@ -27,6 +27,8 @@ export class CheckoutComponent implements OnInit, OnDestroy {
   readonly loading      = signal(true);
   readonly paying       = signal(false);
   readonly paymentError = signal('');
+  readonly timeLeftStr  = signal<string>('10:00');
+  readonly isTimerDanger = signal<boolean>(false);
 
   paymentMethod = 'VNPAY';
   paymentCompleted = false;
@@ -36,6 +38,7 @@ export class CheckoutComponent implements OnInit, OnDestroy {
   readonly showProcessingModal = signal(false);
   private leaveSubject = new Subject<boolean>();
   private pollInterval: any;
+  private countdownInterval: any;
 
   readonly userEmail = computed(() => {
     const profile = this.auth.currentUserProfile();
@@ -95,6 +98,9 @@ export class CheckoutComponent implements OnInit, OnDestroy {
     if (this.pollInterval) {
       clearInterval(this.pollInterval);
     }
+    if (this.countdownInterval) {
+      clearInterval(this.countdownInterval);
+    }
     if (!this.paymentCompleted) {
       this.cancelPendingOrder();
     }
@@ -121,6 +127,10 @@ export class CheckoutComponent implements OnInit, OnDestroy {
         } else if (res.status === 'REFUNDED') {
           this.paymentCompleted = true;
           this.paymentError.set('Seat conflict detected! This seat was booked by another user first. You have been fully refunded.');
+        } else if (res.status === 'CANCELLED') {
+          this.handleTimeout(false);
+        } else {
+          this.startCountdown(res.createdAt);
         }
       },
       error: () => {
@@ -139,8 +149,59 @@ export class CheckoutComponent implements OnInit, OnDestroy {
           ]
         });
         this.loading.set(false);
+        this.startCountdown(null);
       }
     });
+  }
+
+  startCountdown(createdAtStr: string | null) {
+    if (this.countdownInterval) clearInterval(this.countdownInterval);
+
+    const createdAt = createdAtStr ? new Date(createdAtStr).getTime() : Date.now();
+    const expireTime = createdAt + 10 * 60 * 1000; // 10 minutes
+
+    const updateTimer = () => {
+      const now = Date.now();
+      const diff = expireTime - now;
+
+      if (diff <= 0) {
+        clearInterval(this.countdownInterval);
+        this.timeLeftStr.set('00:00');
+        this.isTimerDanger.set(true);
+        this.handleTimeout(true);
+      } else {
+        if (diff <= 120000) { // 2 minutes or less
+          this.isTimerDanger.set(true);
+        } else {
+          this.isTimerDanger.set(false);
+        }
+        const mins = Math.floor(diff / 60000);
+        const secs = Math.floor((diff % 60000) / 1000);
+        this.timeLeftStr.set(`${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`);
+      }
+    };
+
+    updateTimer();
+    this.countdownInterval = setInterval(updateTimer, 1000);
+  }
+
+  handleTimeout(showAlert = true) {
+    if (this.pollInterval) clearInterval(this.pollInterval);
+    if (this.countdownInterval) clearInterval(this.countdownInterval);
+
+    this.paymentCompleted = true; // prevent exit guard
+    this.allowLeave = true;
+
+    if (showAlert) {
+      alert('Your payment session has expired (over 10 minutes)! Your reserved seats have been released.');
+    }
+
+    const eventId = this.orderDetails()?.eventId;
+    if (eventId) {
+      this.router.navigate([`/event/${eventId}/booking`]);
+    } else {
+      this.router.navigate(['/']);
+    }
   }
 
   payOrder() {

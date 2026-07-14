@@ -666,3 +666,59 @@ $radius:    12px;
   to { transform: scale(1); opacity: 1; }
 }
 
+/* ── Timer Card Styling ── */
+.co-timer-card {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  background: linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%);
+  border: 1px solid #fde68a !important;
+  border-radius: 12px;
+  padding: 1rem !important;
+  margin-bottom: 1.5rem !important;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+
+  &.co-timer-danger {
+    background: linear-gradient(135deg, #fef2f2 0%, #fee2e2 100%) !important;
+    border-color: #fca5a5 !important;
+    
+    .co-timer-countdown {
+      color: #dc2626 !important;
+      animation: blink 1s infinite;
+    }
+    .co-timer-label {
+      color: #991b1b !important;
+    }
+  }
+}
+
+.co-timer-icon {
+  font-size: 1.5rem;
+  animation: pulse 1.5s infinite ease-in-out;
+}
+
+.co-timer-content {
+  display: flex;
+  flex-direction: column;
+}
+
+.co-timer-label {
+  font-size: 0.8rem;
+  color: #92400e;
+  font-weight: 600;
+  margin-bottom: 0.15rem;
+}
+
+.co-timer-countdown {
+  font-size: 1.4rem;
+  color: #d97706;
+  font-weight: 800;
+  font-family: 'Courier New', Courier, monospace;
+}
+
+@keyframes pulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.15); }
+}
+
+

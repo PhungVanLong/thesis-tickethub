@@ -88,6 +88,15 @@
       <!-- ══════ RIGHT COLUMN ══════ -->
       <div class="co-right">
 
+        <!-- Countdown Timer -->
+        <div class="co-card co-timer-card" [class.co-timer-danger]="isTimerDanger()">
+          <div class="co-timer-icon">⏳</div>
+          <div class="co-timer-content">
+            <span class="co-timer-label">Payment time remaining:</span>
+            <strong class="co-timer-countdown">{{ timeLeftStr() }}</strong>
+          </div>
+        </div>
+
         <!-- Booking Summary -->
         <div class="co-card co-summary-card">
           <div class="co-card-header-row">
