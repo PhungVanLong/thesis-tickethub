@@ -14,6 +14,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
 
+import ict.thesis.booking.service.CheckinSseService;
 import java.time.Instant;
 import java.util.HashMap;
 import java.util.List;
@@ -30,6 +31,7 @@ public class TicketController {
     private final TicketRepository ticketRepository;
     private final CheckinRepository checkinRepository;
     private final RestTemplate restTemplate;
+    private final CheckinSseService checkinSseService;
 
     @org.springframework.beans.factory.annotation.Value("${gateway.shared-secret}")
     private String gatewaySharedSecret;
@@ -133,6 +135,11 @@ public class TicketController {
         // Include tier info if available
         if (ticket.getOrderItem() != null && ticket.getOrderItem().getTicketTier() != null) {
             response.put("tierName", ticket.getOrderItem().getTicketTier().getName());
+        }
+
+        Long eventId = checkin.getEventId();
+        if (eventId != null) {
+            checkinSseService.broadcast(eventId, response);
         }
 
         return ResponseEntity.ok(response);
@@ -248,6 +255,10 @@ public class TicketController {
             response.put("tierName", ticket.getOrderItem().getTicketTier().getName());
         }
 
+        if (eventId != null) {
+            checkinSseService.broadcast(eventId, response);
+        }
+
         return ResponseEntity.ok(response);
     }
 
@@ -305,6 +316,12 @@ public class TicketController {
         });
 
         return ResponseEntity.ok(responsePage);
+    }
+
+    @GetMapping(value = "/staff/checkins/stream", produces = org.springframework.http.MediaType.TEXT_EVENT_STREAM_VALUE)
+    public org.springframework.web.servlet.mvc.method.annotation.SseEmitter streamCheckins(
+            @RequestParam Long eventId) {
+        return checkinSseService.subscribe(eventId);
     }
 }
 
