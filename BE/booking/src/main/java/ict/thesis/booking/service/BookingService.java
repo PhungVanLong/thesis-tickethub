@@ -42,6 +42,7 @@ public class BookingService {
     private final TicketService ticketService;
     private final ict.thesis.booking.repository.TicketRepository ticketRepository;
     private final ict.thesis.booking.repository.CheckinRepository checkinRepository;
+    private final PayPalService payPalService;
 
     @Value("${gateway.shared-secret}")
     private String gatewaySharedSecret;
@@ -262,6 +263,28 @@ public class BookingService {
         }
     }
 
+    public String createPayPalPaymentUrl(Long orderId) {
+        Order order = orderRepository.findById(orderId)
+                .orElseThrow(() -> new org.springframework.web.server.ResponseStatusException(
+                        org.springframework.http.HttpStatus.NOT_FOUND, "Order not found"));
+        return payPalService.createPayPalOrder(order);
+    }
+
+    public boolean processPayPalCallback(Long orderId, String token) {
+        log.info("Processing PayPal Callback for order ID: {}, token: {}", orderId, token);
+        boolean success = payPalService.capturePayPalOrder(token);
+        if (success) {
+            completeMockPayment(orderId);
+            log.info("PayPal Payment Successful for order ID: {}", orderId);
+            return true;
+        } else {
+            cancelMockPayment(orderId);
+            log.warn("PayPal Payment Failed for order ID: {}", orderId);
+            return false;
+        }
+    }
+
+
     @Data
     @NoArgsConstructor
     @AllArgsConstructor
@@ -416,6 +439,7 @@ public class BookingService {
             if (event != null) {
                 response.put("eventTitle", event.get("title"));
                 response.put("eventDate", event.get("startTime"));
+                response.put("eventEndDate", event.get("endTime"));
                 response.put("eventVenue", event.get("venue"));
                 response.put("bannerUrl", event.get("bannerUrl"));
 
@@ -487,15 +511,15 @@ public class BookingService {
     }
 
     @org.springframework.transaction.annotation.Transactional(readOnly = true)
-    public java.util.List<java.util.Map<String, Object>> getCustomerOrders(Long customerId) {
-        java.util.List<Order> orders = orderRepository.findByCustomerOrderByCreatedAtDesc(customerId);
+    public org.springframework.data.domain.Page<java.util.Map<String, Object>> getCustomerOrders(Long customerId, org.springframework.data.domain.Pageable pageable) {
+        org.springframework.data.domain.Page<Order> ordersPage = orderRepository.findByCustomerOrderByCreatedAtDesc(customerId, pageable);
         java.util.List<java.util.Map<String, Object>> result = new java.util.ArrayList<>();
 
         java.util.Map<Long, java.util.Map<String, Object>> eventCache = new java.util.HashMap<>();
         HttpHeaders headers = buildInternalHeaders();
         HttpEntity<Void> entity = new HttpEntity<>(headers);
 
-        for (Order order : orders) {
+        for (Order order : ordersPage.getContent()) {
             java.util.Map<String, Object> orderMap = new java.util.HashMap<>();
             orderMap.put("id", order.getId());
             orderMap.put("orderCode", order.getOrderCode());
@@ -534,19 +558,19 @@ public class BookingService {
             }
             result.add(orderMap);
         }
-        return result;
+        return new org.springframework.data.domain.PageImpl<>(result, pageable, ordersPage.getTotalElements());
     }
 
     @org.springframework.transaction.annotation.Transactional(readOnly = true)
-    public java.util.List<java.util.Map<String, Object>> getCustomerTickets(Long customerId) {
-        java.util.List<Ticket> tickets = ticketRepository.findByCustomerId(customerId);
+    public org.springframework.data.domain.Page<java.util.Map<String, Object>> getCustomerTickets(Long customerId, org.springframework.data.domain.Pageable pageable) {
+        org.springframework.data.domain.Page<Ticket> ticketsPage = ticketRepository.findByCustomerId(customerId, pageable);
         java.util.List<java.util.Map<String, Object>> result = new java.util.ArrayList<>();
 
         java.util.Map<Long, java.util.Map<String, Object>> eventCache = new java.util.HashMap<>();
         HttpHeaders headers = buildInternalHeaders();
         HttpEntity<Void> entity = new HttpEntity<>(headers);
 
-        for (Ticket ticket : tickets) {
+        for (Ticket ticket : ticketsPage.getContent()) {
             java.util.Map<String, Object> ticketMap = new java.util.HashMap<>();
             ticketMap.put("id", ticket.getId());
             ticketMap.put("ticketCode", ticket.getTicketCode());
@@ -596,10 +620,29 @@ public class BookingService {
             }
             result.add(ticketMap);
         }
-        return result;
+        return new org.springframework.data.domain.PageImpl<>(result, pageable, ticketsPage.getTotalElements());
     }
 
-    @org.springframework.transaction.annotation.Transactional(readOnly = true)
+    private String fetchCustomerEmailFromIdentityService(Long customerId) {
+        if (customerId == null) {
+            return null;
+        }
+        try {
+            String url = "http://identity/api/users/" + customerId;
+            HttpHeaders headers = buildInternalHeaders();
+            HttpEntity<Void> entity = new HttpEntity<>(headers);
+            ResponseEntity<Map> response = restTemplate.exchange(url, HttpMethod.GET, entity, Map.class);
+            Map<String, Object> body = response.getBody();
+            if (body != null && body.get("email") != null) {
+                return body.get("email").toString();
+            }
+        } catch (Exception e) {
+            log.error("Failed to fetch customer email from Identity service for customerId: {}", customerId, e);
+        }
+        return null;
+    }
+
+    @org.springframework.transaction.annotation.Transactional
     public java.util.Map<String, Object> getTicketDetailByCode(String ticketCode) {
         Ticket ticket = ticketRepository.findByTicketCode(ticketCode)
                 .orElseThrow(() -> new org.springframework.web.server.ResponseStatusException(
@@ -641,7 +684,16 @@ public class BookingService {
                 response.put("orderId", order.getId());
                 response.put("orderCode", order.getOrderCode());
                 response.put("customerId", order.getCustomer());
-                response.put("customerEmail", order.getCustomerEmail());
+                
+                String customerEmail = order.getCustomerEmail();
+                if (customerEmail == null || customerEmail.trim().isEmpty()) {
+                    customerEmail = fetchCustomerEmailFromIdentityService(order.getCustomer());
+                    if (customerEmail != null) {
+                        order.setCustomerEmail(customerEmail);
+                        orderRepository.save(order);
+                    }
+                }
+                response.put("customerEmail", customerEmail);
                 response.put("orderStatus", order.getStatus() != null ? order.getStatus().toString() : null);
                 response.put("orderCreatedAt", order.getCreatedAt());
 

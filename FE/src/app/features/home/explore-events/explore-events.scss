@@ -3,22 +3,31 @@
    ============================================================ */
 
 .explore-wrapper {
-  background: #0b0f19; /* Deep Dark Background matching screenshot */
+  background: #f8fafc; /* Light grey/white background */
   min-height: 100vh;
   padding: 3rem 1.5rem;
-  color: #ffffff;
+  color: #0f172a; /* Dark text */
   font-family: 'Inter', system-ui, -apple-system, sans-serif;
 }
 
-/* ── Filters container ── */
+/* ── Filter Outer Section (White BG, between topbar and body) ── */
+.filter-section-outer {
+  background: #ffffff;
+  border-bottom: 1px solid #e2e8f0;
+  width: 100%;
+  position: sticky;
+  top: 114px; /* Sticky below header + category bar */
+  z-index: 99;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+}
+
 .filters-container {
-  width: min(1200px, 100%);
-  margin: 0 auto 2.5rem;
-  background: #1e293b;
-  border-radius: 8px;
-  padding: 12px 20px;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
-  border: 1px solid #334155;
+  width: min(1200px, calc(100% - 48px));
+  margin: 0 auto;
+  background: #ffffff;
+  padding: 16px 0;
+  box-shadow: none;
+  border: none;
 }
 
 .filters-panel {
@@ -37,9 +46,9 @@
 
   select {
     width: 100%;
-    background: #0f172a;
-    color: #cbd5e1;
-    border: 1px solid #334155;
+    background: #f8fafc;
+    color: #1e293b;
+    border: 1px solid #cbd5e1;
     padding: 10px 14px;
     border-radius: 6px;
     outline: none;
@@ -47,10 +56,11 @@
     font-weight: 500;
     cursor: pointer;
     appearance: none;
-    transition: border-color 0.2s;
+    transition: border-color 0.2s, background-color 0.2s;
 
     &:focus {
       border-color: #2563eb;
+      background: #ffffff;
     }
   }
 
@@ -58,7 +68,7 @@
   &::after {
     content: "▾";
     font-size: 11px;
-    color: #94a3b8;
+    color: #64748b;
     position: absolute;
     right: 14px;
     pointer-events: none;
@@ -73,8 +83,8 @@
 .filter-field.search-box {
   flex: 2;
   min-width: 240px;
-  background: #0f172a;
-  border: 1px solid #334155;
+  background: #f8fafc;
+  border: 1px solid #cbd5e1;
   border-radius: 6px;
   padding: 0 14px;
   gap: 10px;
@@ -86,7 +96,7 @@
   .icon {
     width: 16px;
     height: 16px;
-    color: #94a3b8;
+    color: #64748b;
     flex-shrink: 0;
   }
 
@@ -96,11 +106,11 @@
     border: none;
     outline: none;
     padding: 10px 0;
-    color: #fff;
+    color: #1e293b;
     font-size: 13px;
 
     &::placeholder {
-      color: #64748b;
+      color: #94a3b8;
     }
   }
 }
@@ -108,14 +118,14 @@
 .divider {
   width: 1px;
   height: 24px;
-  background: #334155;
+  background: #e2e8f0;
   align-self: center;
 }
 
 .btn-clear {
   background: transparent;
-  border: 1px dashed #475569;
-  color: #94a3b8;
+  border: 1px dashed #cbd5e1;
+  color: #64748b;
   padding: 9px 16px;
   border-radius: 6px;
   font-size: 13px;
@@ -124,8 +134,8 @@
   transition: all 0.2s;
 
   &:hover {
-    background: rgba(255, 255, 255, 0.05);
-    color: #fff;
+    background: #f1f5f9;
+    color: #1e293b;
     border-color: #94a3b8;
   }
 }
@@ -142,19 +152,19 @@
   align-items: center;
   margin-bottom: 2rem;
   padding-bottom: 12px;
-  border-bottom: 1px solid #1e293b;
+  border-bottom: 1px solid #e2e8f0; /* Light border */
 }
 
 .results-title {
   font-size: 1.25rem;
   font-weight: 700;
-  color: #fff;
+  color: #0f172a; /* Dark title */
   margin: 0;
 }
 
 .results-count {
   font-size: 13px;
-  color: #94a3b8;
+  color: #64748b;
 }
 
 /* ── States ── */
@@ -177,9 +187,9 @@
 .empty-state {
   text-align: center;
   padding: 6rem 2rem;
-  background: #1e293b;
+  background: #ffffff; /* White background */
   border-radius: 8px;
-  border: 1px solid #334155;
+  border: 1px solid #e2e8f0; /* Light border */
 
   .empty-icon {
     font-size: 3rem;
@@ -188,13 +198,13 @@
 
   h3 {
     font-size: 1.25rem;
-    color: #fff;
+    color: #0f172a;
     margin-bottom: 8px;
   }
 
   p {
     font-size: 14px;
-    color: #94a3b8;
+    color: #64748b;
     margin-bottom: 1.5rem;
   }
 
@@ -222,11 +232,11 @@
 }
 
 .event-card {
-  background: #1e293b;
+  background: #ffffff; /* White card */
   border-radius: 12px;
   overflow: hidden;
-  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
-  border: 1px solid #334155;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05); /* Soft shadow */
+  border: 1px solid #e2e8f0; /* Light border */
   cursor: pointer;
   transition: transform 0.2s, box-shadow 0.2s;
   display: flex;
@@ -279,7 +289,7 @@
 .event-title {
   font-size: 15px;
   font-weight: 700;
-  color: #ffffff;
+  color: #1e293b; /* Dark text */
   line-height: 1.4;
   margin: 0 0 10px 0;
   display: -webkit-box;
@@ -301,7 +311,7 @@
   flex-direction: column;
   gap: 8px;
   margin-top: auto;
-  border-top: 1px solid #334155;
+  border-top: 1px solid #e2e8f0; /* Light border */
   padding-top: 12px;
 }
 

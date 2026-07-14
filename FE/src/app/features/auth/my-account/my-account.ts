@@ -41,6 +41,26 @@ export class MyAccountComponent implements OnInit, OnDestroy {
   readonly orderFilter = signal<'ALL' | 'PAID' | 'PENDING' | 'CANCELLED'>('ALL');
   readonly ticketTimeFilter = signal<'UPCOMING' | 'ENDED'>('UPCOMING');
 
+  readonly ticketPage = signal<number>(0);
+  readonly ticketSize = signal<number>(5);
+  readonly totalTickets = signal<number>(0);
+  readonly totalPages = computed(() => Math.ceil(this.totalTickets() / this.ticketSize()));
+
+  readonly orderPage = signal<number>(0);
+  readonly orderSize = signal<number>(5);
+  readonly totalOrders = signal<number>(0);
+  readonly totalOrderPages = computed(() => Math.ceil(this.totalOrders() / this.orderSize()));
+
+  readonly ticketPageNumbers = computed(() => {
+    const total = this.totalPages();
+    return Array.from({ length: total }, (_, i) => i);
+  });
+
+  readonly orderPageNumbers = computed(() => {
+    const total = this.totalOrderPages();
+    return Array.from({ length: total }, (_, i) => i);
+  });
+
   private routeSub?: Subscription;
 
   readonly accountForm = this.fb.nonNullable.group({
@@ -128,16 +148,48 @@ export class MyAccountComponent implements OnInit, OnDestroy {
     if (!user) return;
 
     // Fetch orders
-    this.http.get(`http://localhost:8080/api/orders/customer/${user.id}`).subscribe({
-      next: (res: any) => this.orders.set(res || []),
-      error: () => this.orders.set([]) // fallback
+    this.http.get(`http://localhost:8080/api/orders/customer/${user.id}?page=${this.orderPage()}&size=${this.orderSize()}`).subscribe({
+      next: (res: any) => {
+        this.orders.set(res?.content || []);
+        this.totalOrders.set(res?.totalElements || 0);
+      },
+      error: () => {
+        this.orders.set([]);
+        this.totalOrders.set(0);
+      }
     });
 
     // Fetch tickets (usually derived from successful bookings/orders)
-    this.http.get(`http://localhost:8080/api/tickets/customer/${user.id}`).subscribe({
-      next: (res: any) => this.tickets.set(res || []),
-      error: () => this.tickets.set([]) // fallback
+    this.http.get(`http://localhost:8080/api/tickets/customer/${user.id}?page=${this.ticketPage()}&size=${this.ticketSize()}`).subscribe({
+      next: (res: any) => {
+        this.tickets.set(res?.content || []);
+        this.totalTickets.set(res?.totalElements || 0);
+      },
+      error: () => {
+        this.tickets.set([]);
+        this.totalTickets.set(0);
+      }
     });
+  }
+
+  changePage(page: number): void {
+    if (page >= 0 && page < this.totalPages()) {
+      this.ticketPage.set(page);
+      this.fetchTicketsAndOrders();
+    }
+  }
+
+  changeOrderPage(page: number): void {
+    if (page >= 0 && page < this.totalOrderPages()) {
+      this.orderPage.set(page);
+      this.fetchTicketsAndOrders();
+    }
+  }
+
+  setTicketTimeFilter(filter: 'UPCOMING' | 'ENDED'): void {
+    this.ticketTimeFilter.set(filter);
+    this.ticketPage.set(0);
+    this.fetchTicketsAndOrders();
   }
 
   getInitials(name: string | null | undefined): string {
@@ -151,6 +203,9 @@ export class MyAccountComponent implements OnInit, OnDestroy {
     if (match?.[1]) return `https://drive.google.com/thumbnail?id=${match[1]}&sz=w1000`;
     return url;
   }
+
+
+
 
   onSubmit(): void {
     if (this.accountForm.invalid) {

@@ -343,6 +343,7 @@ export class SeatSelectionComponent implements OnInit, OnDestroy {
     const payload = {
       eventId: this.eventDetail().id,
       customerId: user.id,
+      customerEmail: user.email,
       idempotencyKey: crypto.randomUUID(),
       items,
     };

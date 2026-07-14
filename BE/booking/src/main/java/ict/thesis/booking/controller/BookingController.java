@@ -54,10 +54,31 @@ public class BookingController {
     @GetMapping("/vnpay-return")
     public void vnpayReturn(@org.springframework.web.bind.annotation.RequestParam Map<String, String> allParams, jakarta.servlet.http.HttpServletResponse response) throws java.io.IOException {
         boolean success = bookingService.processVNPayCallback(allParams);
-        String redirectUrl = "http://localhost:4200/my-account?tab=tickets"; // Redirect user back to FE account tickets
+        String txnRef = allParams.get("vnp_TxnRef");
+        String orderIdStr = (txnRef != null && txnRef.contains("_")) ? txnRef.split("_")[0] : txnRef;
+        String redirectUrl = "http://localhost:4200/checkout/" + orderIdStr;
         if (!success) {
-            redirectUrl = "http://localhost:4200/checkout/" + allParams.get("vnp_TxnRef").split("_")[0] + "?error=payment_failed";
+            redirectUrl = "http://localhost:4200/checkout/" + orderIdStr + "?error=payment_failed";
+        }
+        response.sendRedirect(redirectUrl);
+    }
+
+    @GetMapping("/{orderId}/paypal-url")
+    public ResponseEntity<Map<String, String>> getPayPalUrl(@PathVariable Long orderId) {
+        String paymentUrl = bookingService.createPayPalPaymentUrl(orderId);
+        return ResponseEntity.ok(Map.of("paymentUrl", paymentUrl != null ? paymentUrl : ""));
+    }
+
+    @GetMapping("/paypal-return")
+    public void paypalReturn(@org.springframework.web.bind.annotation.RequestParam("orderId") Long orderId,
+                             @org.springframework.web.bind.annotation.RequestParam("token") String token,
+                             jakarta.servlet.http.HttpServletResponse response) throws java.io.IOException {
+        boolean success = bookingService.processPayPalCallback(orderId, token);
+        String redirectUrl = "http://localhost:4200/checkout/" + orderId;
+        if (!success) {
+            redirectUrl = "http://localhost:4200/checkout/" + orderId + "?error=payment_failed";
         }
         response.sendRedirect(redirectUrl);
     }
 }
+

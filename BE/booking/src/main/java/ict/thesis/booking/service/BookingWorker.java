@@ -96,6 +96,7 @@ public class BookingWorker {
             order.setOrderCode(orderCode);
             order.setEventId(request.eventId());
             order.setCustomer(request.customerId());
+            order.setCustomerEmail(request.customerEmail());
             order.setIdempotencyKey(request.idempotencyKey() != null ? request.idempotencyKey() : UUID.randomUUID().toString());
             order.setStatus(OrderStatus.PENDING);
             order.setCreatedAt(Instant.now());

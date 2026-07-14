@@ -24,8 +24,12 @@ public class OrderController {
     }
 
     @GetMapping("/customer/{customerId}")
-    public ResponseEntity<java.util.List<Map<String, Object>>> getCustomerOrders(@PathVariable Long customerId) {
-        java.util.List<Map<String, Object>> orders = bookingService.getCustomerOrders(customerId);
+    public ResponseEntity<org.springframework.data.domain.Page<Map<String, Object>>> getCustomerOrders(
+            @PathVariable Long customerId,
+            @org.springframework.web.bind.annotation.RequestParam(defaultValue = "0") int page,
+            @org.springframework.web.bind.annotation.RequestParam(defaultValue = "10") int size) {
+        org.springframework.data.domain.Pageable pageable = org.springframework.data.domain.PageRequest.of(page, size);
+        org.springframework.data.domain.Page<Map<String, Object>> orders = bookingService.getCustomerOrders(customerId, pageable);
         return ResponseEntity.ok(orders);
     }
 }

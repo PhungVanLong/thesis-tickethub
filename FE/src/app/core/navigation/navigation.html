@@ -11,11 +11,11 @@
       </div>
     } @else {
       <nav class="primary-nav" aria-label="Primary categories">
-        <a href="#">{{ 'nav.concerts' | translate }}</a>
-        <a href="#">{{ 'nav.sports' | translate }}</a>
-        <a href="#">{{ 'nav.arts' | translate }}</a>
-        <a href="#">{{ 'nav.family' | translate }}</a>
-        <a href="#">{{ 'nav.cities' | translate }}</a>
+        <a routerLink="/explore" [queryParams]="{ category: 'Concerts' }">{{ 'nav.concerts' | translate }}</a>
+        <a routerLink="/explore" [queryParams]="{ category: 'Sports' }">{{ 'nav.sports' | translate }}</a>
+        <a routerLink="/explore" [queryParams]="{ category: 'Arts & Theater' }">{{ 'nav.arts' | translate }}</a>
+        <a routerLink="/explore" [queryParams]="{ category: 'Family' }">{{ 'nav.family' | translate }}</a>
+        <a routerLink="/explore">{{ 'nav.cities' | translate }}</a>
       </nav>
     }
 
@@ -157,11 +157,11 @@
   @if (navMode === 'search') {
     <div class="category-sub-bar">
       <div class="category-sub-container">
-        <a href="#">Concerts</a>
-        <a href="#">Sports</a>
-        <a href="#">Arts, Theater & Comedy</a>
-        <a href="#">Family</a>
-        <a href="#">Cities</a>
+        <a routerLink="/explore" [queryParams]="{ category: 'Concerts' }">Concerts</a>
+        <a routerLink="/explore" [queryParams]="{ category: 'Sports' }">Sports</a>
+        <a routerLink="/explore" [queryParams]="{ category: 'Arts & Theater' }">Arts, Theater & Comedy</a>
+        <a routerLink="/explore" [queryParams]="{ category: 'Family' }">Family</a>
+        <a routerLink="/explore">Cities</a>
       </div>
     </div>
   }

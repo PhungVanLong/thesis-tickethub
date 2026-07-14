@@ -73,16 +73,17 @@ a:focus-visible {
 
 .header-container {
   display: flex;
-  height: 64px;
+  height: 72px; /* Increased from 64px */
   align-items: center;
   justify-content: space-between;
-  gap: 24px;
-  width: min(1200px, calc(100% - 48px));
-  margin: 0 auto;
+  gap: 28px;
+  width: 100%;
+  padding: 0 32px; /* Increased padding */
+  box-sizing: border-box;
 }
 
 .brand {
-  font-size: 24px;
+  font-size: 28px; /* Increased from 24px */
   font-weight: 700;
   color: #ffffff;
   letter-spacing: -0.02em;
@@ -91,8 +92,8 @@ a:focus-visible {
 .primary-nav {
   display: flex;
   align-items: center;
-  gap: 24px;
-  font-size: 14px;
+  gap: 28px;
+  font-size: 16px; /* Increased from 14px */
   font-weight: 500;
 }
 
@@ -118,9 +119,9 @@ a:focus-visible {
   align-items: center;
   gap: 8px;
   color: #d1d1d6;
-  font-size: 14px;
+  font-size: 15px; /* Increased from 14px */
   font-weight: 500;
-  padding: 8px 12px;
+  padding: 8px 14px;
   border-radius: 4px;
   white-space: nowrap;
   transition: background-color 0.2s ease, color 0.2s ease;
@@ -153,10 +154,10 @@ a:focus-visible {
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  font-size: 14px;
+  font-size: 15px; /* Increased from 14px */
   font-weight: 500;
   color: #ffffff;
-  padding: 8px 16px;
+  padding: 8px 18px;
   border-radius: 4px;
   transition: background 0.2s ease;
 }
@@ -218,7 +219,7 @@ a:focus-visible {
 }
 
 .account-text {
-  font-size: 13.5px;
+  font-size: 15px; /* Increased from 13.5px */
   font-weight: 600;
 }
 
@@ -431,9 +432,11 @@ a:focus-visible {
 .category-sub-container {
   display: flex;
   align-items: center;
+  justify-content: center; /* Center the categories horizontally */
   gap: 2rem;
-  width: min(1200px, calc(100% - 48px));
-  margin: 0 auto;
+  width: 100%;
+  padding: 0 24px;
+  box-sizing: border-box;
 
   a {
     color: #ffffff;

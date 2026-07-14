@@ -14,5 +14,5 @@ public interface TicketRepository extends JpaRepository<Ticket, Long> {
     Optional<Ticket> findByTicketCode(String ticketCode);
 
     @Query("SELECT t FROM Ticket t JOIN t.orderItem oi JOIN oi.order o WHERE o.customer = :customerId ORDER BY t.issuedAt DESC")
-    List<Ticket> findByCustomerId(@Param("customerId") Long customerId);
+    org.springframework.data.domain.Page<Ticket> findByCustomerId(@Param("customerId") Long customerId, org.springframework.data.domain.Pageable pageable);
 }

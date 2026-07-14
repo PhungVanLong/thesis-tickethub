@@ -29,8 +29,12 @@ public class TicketController {
     private final CheckinRepository checkinRepository;
 
     @GetMapping("/customer/{customerId}")
-    public ResponseEntity<List<Map<String, Object>>> getCustomerTickets(@PathVariable Long customerId) {
-        List<Map<String, Object>> tickets = bookingService.getCustomerTickets(customerId);
+    public ResponseEntity<org.springframework.data.domain.Page<Map<String, Object>>> getCustomerTickets(
+            @PathVariable Long customerId,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size) {
+        org.springframework.data.domain.Pageable pageable = org.springframework.data.domain.PageRequest.of(page, size);
+        org.springframework.data.domain.Page<Map<String, Object>> tickets = bookingService.getCustomerTickets(customerId, pageable);
         return ResponseEntity.ok(tickets);
     }
 

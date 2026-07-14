@@ -1063,3 +1063,49 @@ $radius:    12px;
   letter-spacing: 0.02em;
   margin-bottom: 0.25rem;
 }
+
+/* ── PAGINATION CONTROLS ── */
+.pagination-row {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 1.5rem;
+  margin-top: 2rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid $border;
+}
+
+.btn-page {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 1rem;
+  background: #ffffff;
+  color: $text-dark;
+  border: 1px solid $border;
+  border-radius: 8px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+
+  &:hover:not(:disabled) {
+    background: #f8fafc;
+    border-color: #94a3b8;
+  }
+
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+
+  svg {
+    stroke: currentColor;
+  }
+}
+
+.page-info {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: $text-muted;
+}

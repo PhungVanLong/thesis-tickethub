@@ -32,6 +32,8 @@ export const TRANSLATIONS: Record<Language, Record<string, string>> = {
     'hero.datesMonth': 'Tháng này',
     'hero.searchLabel': 'TÌM KIẾM',
     'hero.searchPlaceholder': 'Nghệ sĩ, sự kiện hoặc địa điểm',
+    'hero.bookTickets': 'Đặt vé ngay',
+    'hero.viewDetails': 'Xem chi tiết',
 
     // Deal Banners
     'deal.conference': 'HỘI NGHỊ',
@@ -166,7 +168,19 @@ export const TRANSLATIONS: Record<Language, Record<string, string>> = {
     'organizer.section4': '4. Địa chỉ trụ sở chính',
     'organizer.section5': '5. Giới thiệu năng lực',
     'organizer.hotlineError': 'Số điện thoại từ 9 đến 15 chữ số',
-    'organizer.descriptionPlaceholder': 'Giới thiệu ngắn về năng lực tổ chức sự kiện, các dự án lớn đã làm...'
+    'organizer.descriptionPlaceholder': 'Giới thiệu ngắn về năng lực tổ chức sự kiện, các dự án lớn đã làm...',
+    
+    // Event Detail Page
+    'detail.ticketsPricing': 'Bảng giá vé',
+    'detail.ticketsLeft': 'vé còn lại',
+    'detail.buyTickets': 'Mua vé ngay',
+    'detail.noTickets': 'Hiện tại chưa có vé mở bán.',
+    'detail.venueInfo': 'Thông tin địa điểm',
+    'detail.mapNotAvailable': 'Bản đồ không khả dụng',
+    'detail.youMightLike': 'Có thể bạn cũng thích',
+    'detail.tasteSubtitle': 'Các sự kiện được gợi ý dựa trên sở thích của bạn.',
+    'detail.priceFrom': 'Giá từ',
+    'detail.buyNow': 'Mua vé ngay'
   },
   Eng: {
     // Navigation Header
@@ -214,6 +228,8 @@ export const TRANSLATIONS: Record<Language, Record<string, string>> = {
     'hero.datesMonth': 'This Month',
     'hero.searchLabel': 'SEARCH',
     'hero.searchPlaceholder': 'Artist, Event or Venue',
+    'hero.bookTickets': 'Book Tickets Here',
+    'hero.viewDetails': 'View Details',
 
     // Deal Banners
     'deal.conference': 'CONFERENCE',
@@ -334,6 +350,18 @@ export const TRANSLATIONS: Record<Language, Record<string, string>> = {
     'organizer.section4': '4. Headquarter Address',
     'organizer.section5': '5. Competency Introduction',
     'organizer.hotlineError': 'Phone number must be between 9 and 15 digits',
-    'organizer.descriptionPlaceholder': 'Short introduction about event organization capacity, major projects completed...'
+    'organizer.descriptionPlaceholder': 'Short introduction about event organization capacity, major projects completed...',
+
+    // Event Detail Page
+    'detail.ticketsPricing': 'Tickets Pricing',
+    'detail.ticketsLeft': 'tickets left',
+    'detail.buyTickets': 'Buy Tickets',
+    'detail.noTickets': 'No tickets currently available.',
+    'detail.venueInfo': 'Venue Info',
+    'detail.mapNotAvailable': 'Map not available',
+    'detail.youMightLike': 'You Might Also Like',
+    'detail.tasteSubtitle': 'Hand-picked events based on your taste.',
+    'detail.priceFrom': 'Price from',
+    'detail.buyNow': 'Buy tickets now'
   }
 };

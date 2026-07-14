@@ -23,9 +23,12 @@ $yellow:      #f59e0b;
   margin: 0 auto;
 }
 
-/* ── BACK BUTTON ── */
+/* ── BACK BUTTON & ACTIONS ── */
 .back-nav-row {
   margin-bottom: 2rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
 
   .back-link-btn {
     display: inline-flex;
@@ -39,6 +42,33 @@ $yellow:      #f59e0b;
 
     &:hover {
       color: $text;
+    }
+  }
+
+  .download-pdf-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.6rem 1.2rem;
+    background: $blue;
+    color: #fff;
+    border: none;
+    border-radius: 8px;
+    font-size: 0.9rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.2s, transform 0.1s;
+
+    &:hover {
+      background: color.adjust($blue, $lightness: 6%);
+    }
+
+    &:active {
+      transform: scale(0.98);
+    }
+
+    svg {
+      stroke: currentColor;
     }
   }
 }
@@ -122,6 +152,16 @@ $yellow:      #f59e0b;
 
 .ticket-card-wrapper {
   filter: drop-shadow(0 20px 40px rgba(0, 0, 0, 0.5));
+
+  &.is-exporting {
+    width: 900px;
+    margin: 0 auto;
+    filter: none;
+
+    .no-pdf {
+      display: none !important;
+    }
+  }
 }
 
 .ticket-main-card {
@@ -144,18 +184,18 @@ $yellow:      #f59e0b;
 
 .ticket-banner-wrap {
   position: relative;
-  height: 220px;
+  height: auto;
   overflow: hidden;
 
   .ticket-banner-img {
     width: 100%;
-    height: 100%;
-    object-fit: cover;
+    height: auto;
+    display: block;
   }
 
   .ticket-banner-placeholder {
     width: 100%;
-    height: 100%;
+    height: 220px;
     background: linear-gradient(135deg, #1e3a8a, #0d9488);
     display: flex;
     align-items: center;
@@ -168,8 +208,11 @@ $yellow:      #f59e0b;
 
   .ticket-banner-overlay {
     position: absolute;
-    inset: 0;
-    background: linear-gradient(to bottom, rgba(17, 24, 39, 0) 20%, $card-bg 100%);
+    left: 0;
+    right: 0;
+    bottom: 0;
+    height: 60px;
+    background: linear-gradient(to bottom, rgba(17, 24, 39, 0), $card-bg);
   }
 }
 
@@ -178,7 +221,7 @@ $yellow:      #f59e0b;
   display: flex;
   flex-direction: column;
   gap: 1.5rem;
-  margin-top: -60px;
+  margin-top: 0;
   position: relative;
   z-index: 10;
 }
@@ -195,10 +238,10 @@ $yellow:      #f59e0b;
 }
 
 .ticket-event-title {
-  font-size: 2.2rem;
+  font-size: 1.45rem;
   font-weight: 800;
-  line-height: 1.2;
-  letter-spacing: -0.5px;
+  line-height: 1.3;
+  letter-spacing: -0.3px;
   color: #fff;
   margin: 0;
 }
@@ -251,7 +294,7 @@ $yellow:      #f59e0b;
 
 .ticket-purchase-row {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(4, 1fr);
   gap: 1rem;
 
   .purchase-item {
@@ -305,7 +348,7 @@ $yellow:      #f59e0b;
   .dashed-line {
     height: calc(100% - 32px);
     width: 1px;
-    border-left: 2px dashed $border;
+    border-left: 2px dashed rgba(255, 255, 255, 0.25);
     margin-top: 16px;
   }
 }
@@ -363,6 +406,8 @@ $yellow:      #f59e0b;
   flex-direction: column;
   align-items: center;
   gap: 1rem;
+  margin-top: auto;
+  margin-bottom: auto;
 }
 
 .qr-container-box {
@@ -514,7 +559,7 @@ $yellow:      #f59e0b;
     .dashed-line {
       width: calc(100% - 32px);
       height: 1px;
-      border-top: 2px dashed $border;
+      border-top: 2px dashed rgba(255, 255, 255, 0.25);
       border-left: none;
       margin-top: 0;
       margin-left: 16px;

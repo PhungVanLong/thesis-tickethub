@@ -57,4 +57,48 @@ export class TicketDetailComponent implements OnInit {
     if (match?.[1]) return `https://drive.google.com/thumbnail?id=${match[1]}&sz=w1000`;
     return url;
   }
+
+  downloadTicketImage() {
+    const element = document.querySelector('.ticket-card-wrapper') as HTMLElement;
+    if (!element) return;
+
+    element.classList.add('is-exporting');
+
+    const t = this.ticket();
+    const cleanTitle = t.eventTitle ? t.eventTitle.trim().replace(/\s+/g, '_').replace(/[^a-zA-Z0-9_-]/g, '') : 'ticket';
+
+    const saveAsImage = (canvas: HTMLCanvasElement) => {
+      try {
+        const dataUrl = canvas.toDataURL('image/png');
+        const link = document.createElement('a');
+        link.download = `${cleanTitle}_${t.ticketCode}.png`;
+        link.href = dataUrl;
+        link.click();
+      } catch (err) {
+        console.error('Failed to save image', err);
+      } finally {
+        element.classList.remove('is-exporting');
+      }
+    };
+
+    const runHtml2Canvas = () => {
+      (window as any).html2canvas(element, { useCORS: true, scale: 2 }).then((canvas: HTMLCanvasElement) => {
+        saveAsImage(canvas);
+      }).catch((err: any) => {
+        console.error(err);
+        element.classList.remove('is-exporting');
+      });
+    };
+
+    if ((window as any).html2canvas) {
+      runHtml2Canvas();
+    } else {
+      const script = document.createElement('script');
+      script.src = 'https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js';
+      script.onload = () => {
+        runHtml2Canvas();
+      };
+      document.body.appendChild(script);
+    }
+  }
 }

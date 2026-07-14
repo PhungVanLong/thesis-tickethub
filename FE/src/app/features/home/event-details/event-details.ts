@@ -7,6 +7,7 @@ import { Footer } from '../../../core/footer/footer';
 import { EventApiService } from '../../../core/services/event.service';
 import { BookingApiService } from '../../../core/services/booking.service';
 import { AuthService } from '../../auth/auth.service';
+import { TranslatePipe } from '../../../shared/pipes/translate.pipe';
 
 interface RecommendedEvent {
   id: number;
@@ -28,7 +29,7 @@ interface SelectedSeat {
 @Component({
   selector: 'app-event-details',
   standalone: true,
-  imports: [CommonModule, RouterLink, Navigation, Footer],
+  imports: [CommonModule, RouterLink, Navigation, Footer, TranslatePipe],
   templateUrl: './event-details.html',
   styleUrl: './event-details.scss',
 })
@@ -188,6 +189,7 @@ export class EventDetailsComponent implements OnInit, OnDestroy {
     const payload = {
       eventId:        this.eventDetail().id,
       customerId:     user.id,
+      customerEmail:  user.email,
       idempotencyKey: crypto.randomUUID(),
       items: seats.map(s => ({ ticketTierId: s.tierId, seatLabel: s.label })),
     };
@@ -229,12 +231,7 @@ export class EventDetailsComponent implements OnInit, OnDestroy {
   private closeSse() { this.sse?.close(); this.sse = null; }
 
   // ── Recommended events ──
-  readonly recommendedEvents: RecommendedEvent[] = [
-    { id: 101, title: 'Neon Pulse: Underground',   date: 'Oct 5, 2024',  price: 'From 8,000 ₫',  imageGradient: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)' },
-    { id: 102, title: 'Synapse Open Air Festival',  date: 'Oct 12, 2024', price: 'From 10,000 ₫', imageGradient: 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)' },
-    { id: 103, title: 'Node Tech: Live Sessions',   date: 'Nov 1, 2024',  price: 'From 6,500 ₫',  imageGradient: 'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)' },
-    { id: 104, title: 'Classic Encore Strings',     date: 'Nov 8, 2024',  price: 'From 12,000 ₫', imageGradient: 'linear-gradient(135deg, #43e97b 0%, #38f9d7 100%)' },
-  ];
+  readonly recommendedEvents = signal<any[]>([]);
 
   readonly venueFeatures = [
     { icon: 'parking',    text: 'P1 & P2 Parking available onsite' },
@@ -257,10 +254,16 @@ export class EventDetailsComponent implements OnInit, OnDestroy {
   isDraggingMap = false;
   dragStartX = 0; dragStartY = 0; dragScrollLeft = 0; dragScrollTop = 0;
 
-  ngOnInit()  {
-    window.scrollTo(0, 0);
-    const id = this.route.snapshot.paramMap.get('id');
-    if (id) this.loadEvent(Number(id));
+  ngOnInit() {
+    this.route.paramMap.subscribe(params => {
+      window.scrollTo(0, 0);
+      const id = params.get('id');
+      if (id) {
+        const numericId = Number(id);
+        this.loadEvent(numericId);
+        this.loadRecommendedEvents(numericId);
+      }
+    });
   }
   ngOnDestroy() { this.closeSse(); document.body.style.overflow = ''; }
 
@@ -270,6 +273,60 @@ export class EventDetailsComponent implements OnInit, OnDestroy {
       next:  (res) => { this.eventDetail.set(res); this.loading.set(false); },
       error: (err) => { console.error(err); this.loading.set(false); }
     });
+  }
+
+  loadRecommendedEvents(currentId: number) {
+    this.eventApi.getDiscoveryEvents({}).subscribe({
+      next: (events) => {
+        // Filter out current event
+        let list = events.filter((e: any) => e.id !== currentId);
+        
+        // Randomize list
+        list = this.shuffleArray(list);
+
+        // Take top 4 and map
+        const mapped = list.slice(0, 4).map((e: any) => {
+          let priceStr = 'Từ 200.000đ';
+          if (e.ticketTiers && e.ticketTiers.length > 0) {
+            const minPrice = Math.min(...e.ticketTiers.map((t: any) => t.price));
+            priceStr = `Từ ${minPrice.toLocaleString('vi-VN')} ₫`;
+          }
+          return {
+            id: e.id,
+            title: e.title,
+            date: e.startTime ? new Date(e.startTime).toLocaleDateString('vi-VN', { weekday: 'short', day: 'numeric', month: 'numeric', year: 'numeric' }) : 'TBA',
+            price: priceStr,
+            bannerUrl: e.bannerUrl,
+            imageGradient: this.getRandomGradient(e.id)
+          };
+        });
+        this.recommendedEvents.set(mapped);
+      },
+      error: (err) => {
+        console.error('Error loading recommendations', err);
+      }
+    });
+  }
+
+  private shuffleArray(array: any[]): any[] {
+    const arr = [...array];
+    for (let i = arr.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [arr[i], arr[j]] = [arr[j], arr[i]];
+    }
+    return arr;
+  }
+
+  private getRandomGradient(id: number): string {
+    const gradients = [
+      'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+      'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)',
+      'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)',
+      'linear-gradient(135deg, #43e97b 0%, #38f9d7 100%)',
+      'linear-gradient(135deg, #fa709a 0%, #fee140 100%)',
+      'linear-gradient(135deg, #30cfd0 0%, #330867 100%)'
+    ];
+    return gradients[id % gradients.length];
   }
 
   normalizeImageUrl(url: string | null | undefined): string {

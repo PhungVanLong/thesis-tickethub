@@ -2,7 +2,7 @@ import { Component, inject, OnInit, OnDestroy, signal, computed, HostListener } 
 import { Observable, Subject } from 'rxjs';
 import { take } from 'rxjs/operators';
 import { CommonModule } from '@angular/common';
-import { ActivatedRoute, Router, RouterLink } from '@angular/router';
+import { ActivatedRoute, Router, RouterLink, RouterStateSnapshot } from '@angular/router';
 import { HttpClient } from '@angular/common/http';
 import { FormsModule } from '@angular/forms';
 import { Navigation } from '../../../core/navigation/navigation';
@@ -33,7 +33,9 @@ export class CheckoutComponent implements OnInit, OnDestroy {
 
   readonly showLeaveModal = signal(false);
   readonly showSuccessModal = signal(false);
+  readonly showProcessingModal = signal(false);
   private leaveSubject = new Subject<boolean>();
+  private pollInterval: any;
 
   readonly userEmail = computed(() => {
     const profile = this.auth.currentUserProfile();
@@ -58,9 +60,11 @@ export class CheckoutComponent implements OnInit, OnDestroy {
     }
   }
 
+  private allowLeave = false;
+
   // Intercept route changes within Angular
-  canDeactivate(): Observable<boolean> | boolean {
-    if (this.paymentCompleted) {
+  canDeactivate(currentRoute: any, currentState: any, nextState?: RouterStateSnapshot): Observable<boolean> | boolean {
+    if (this.paymentCompleted || this.allowLeave) {
       return true;
     }
     this.showLeaveModal.set(true);
@@ -70,15 +74,12 @@ export class CheckoutComponent implements OnInit, OnDestroy {
   confirmLeave(leave: boolean): void {
     this.showLeaveModal.set(false);
     if (leave) {
+      this.allowLeave = true; // Prevent modal from showing again during redirect
       this.cancelPendingOrder();
-      const eventId = this.orderDetails()?.eventId;
-      if (eventId) {
-        this.router.navigate(['/event', eventId, 'booking']);
-      } else {
-        this.router.navigate(['/']);
-      }
+      this.leaveSubject.next(true);
+    } else {
+      this.leaveSubject.next(false);
     }
-    this.leaveSubject.next(leave);
   }
 
   // Intercept window close / tab refresh
@@ -91,6 +92,9 @@ export class CheckoutComponent implements OnInit, OnDestroy {
   }
 
   ngOnDestroy() {
+    if (this.pollInterval) {
+      clearInterval(this.pollInterval);
+    }
     if (!this.paymentCompleted) {
       this.cancelPendingOrder();
     }
@@ -111,6 +115,10 @@ export class CheckoutComponent implements OnInit, OnDestroy {
       next: (res: any) => {
         this.orderDetails.set(res);
         this.loading.set(false);
+        if (res.status === 'PAID') {
+          this.paymentCompleted = true;
+          this.showSuccessModal.set(true);
+        }
       },
       error: () => {
         // Fallback dev data
@@ -142,12 +150,31 @@ export class CheckoutComponent implements OnInit, OnDestroy {
     if (this.paymentMethod === 'VNPAY') {
       this.http.get<{ paymentUrl: string }>(`http://localhost:8080/api/bookings/${this.orderId()}/vnpay-url`).subscribe({
         next: (res) => {
-          this.paymentCompleted = true; // Set flag to avoid cancelling order on route leave
-          window.location.href = res.paymentUrl;
+          this.paying.set(false);
+          this.showProcessingModal.set(true);
+          window.open(res.paymentUrl, '_blank');
+          this.startPaymentPolling();
         },
         error: (err) => {
           this.paying.set(false);
           this.paymentError.set(err?.error?.message || 'Failed to initiate VNPay payment.');
+        }
+      });
+    } else if (this.paymentMethod === 'PAYPAL') {
+      this.http.get<{ paymentUrl: string }>(`http://localhost:8080/api/bookings/${this.orderId()}/paypal-url`).subscribe({
+        next: (res) => {
+          this.paying.set(false);
+          if (res.paymentUrl) {
+            this.showProcessingModal.set(true);
+            window.open(res.paymentUrl, '_blank');
+            this.startPaymentPolling();
+          } else {
+            this.paymentError.set('Failed to initiate PayPal payment: Empty approval URL.');
+          }
+        },
+        error: (err) => {
+          this.paying.set(false);
+          this.paymentError.set(err?.error?.message || 'Failed to initiate PayPal payment.');
         }
       });
     } else {
@@ -176,5 +203,60 @@ export class CheckoutComponent implements OnInit, OnDestroy {
     const match = url.match(/drive\.google\.com\/file\/d\/([^\/]+)/);
     if (match?.[1]) return `https://drive.google.com/thumbnail?id=${match[1]}&sz=w1200`;
     return url;
+  }
+
+  formatEventDateTime(startStr: string, endStr: string | null | undefined): string {
+    if (!startStr) return '';
+    const start = new Date(startStr);
+    
+    const pad = (n: number) => n.toString().padStart(2, '0');
+    const formatTime = (d: Date) => `${pad(d.getHours())}:${pad(d.getMinutes())}`;
+    const formatDate = (d: Date) => `${d.getDate()}/${d.getMonth() + 1}/${d.getFullYear()}`;
+    
+    if (!endStr) {
+      return `${formatTime(start)}, ${formatDate(start)}`;
+    }
+    
+    const end = new Date(endStr);
+    const isSameDay = start.getFullYear() === end.getFullYear() &&
+                      start.getMonth() === end.getMonth() &&
+                      start.getDate() === end.getDate();
+                      
+    if (isSameDay) {
+      return `${formatTime(start)} – ${formatTime(end)}, ${formatDate(start)}`;
+    } else {
+      return `${formatTime(start)}, ${formatDate(start)} – ${formatTime(end)}, ${formatDate(end)}`;
+    }
+  }
+
+  startPaymentPolling() {
+    if (this.pollInterval) clearInterval(this.pollInterval);
+    
+    this.pollInterval = setInterval(() => {
+      const orderId = this.orderId();
+      if (!orderId) return;
+      
+      this.http.get(`http://localhost:8080/api/orders/${orderId}`).subscribe({
+        next: (res: any) => {
+          if (res.status === 'PAID') {
+            clearInterval(this.pollInterval);
+            this.showProcessingModal.set(false);
+            this.paymentCompleted = true;
+            this.showSuccessModal.set(true);
+          } else if (res.status === 'CANCELLED') {
+            clearInterval(this.pollInterval);
+            this.showProcessingModal.set(false);
+            this.paymentError.set('Payment was cancelled or failed.');
+          }
+        }
+      });
+    }, 3000);
+  }
+
+  cancelProcessing() {
+    if (this.pollInterval) clearInterval(this.pollInterval);
+    this.showProcessingModal.set(false);
+    this.cancelPendingOrder();
+    this.paying.set(false);
   }
 }

@@ -1,5 +1,5 @@
 import { Component, OnInit, OnDestroy, signal, inject } from '@angular/core';
-import { Router, RouterLink } from '@angular/router';
+import { Router } from '@angular/router';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { TranslatePipe } from '../../../shared/pipes/translate.pipe';
@@ -8,7 +8,7 @@ import { EventApiService } from '../../../core/services/event.service';
 @Component({
   selector: 'app-hero-section',
   standalone: true,
-  imports: [TranslatePipe, RouterLink, CommonModule, FormsModule],
+  imports: [TranslatePipe, CommonModule, FormsModule],
   templateUrl: './hero-section.html',
   styleUrl: './hero-section.scss',
 })

@@ -137,6 +137,32 @@
                   </div>
                 }
               </div>
+              <!-- Pagination Controls for Orders -->
+              @if (totalOrderPages() > 1) {
+                <div class="pagination-row">
+                  <button type="button" class="btn-page" [disabled]="orderPage() === 0" (click)="changeOrderPage(orderPage() - 1)">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7"/></svg>
+                    Previous
+                  </button>
+                  
+                  <div class="page-numbers-list" style="display: flex; gap: 6px; align-items: center;">
+                    @for (p of orderPageNumbers(); track p) {
+                      <button type="button" class="btn-page-number" 
+                              [style.background]="orderPage() === p ? '#2563eb' : '#111827'" 
+                              [style.border-color]="orderPage() === p ? '#2563eb' : '#1f2937'"
+                              (click)="changeOrderPage(p)" 
+                              style="padding: 6px 12px; border: 1px solid; border-radius: 6px; color: #fff; cursor: pointer; font-size: 0.9rem; font-weight: 600; transition: all 0.2s;">
+                        {{ p + 1 }}
+                      </button>
+                    }
+                  </div>
+
+                  <button type="button" class="btn-page" [disabled]="orderPage() >= totalOrderPages() - 1" (click)="changeOrderPage(orderPage() + 1)">
+                    Next
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/></svg>
+                  </button>
+                </div>
+              }
             }
           </div>
         }
@@ -148,8 +174,8 @@
 
             <!-- Time filter row -->
             <div class="time-tab-row">
-              <button class="time-tab" [class.active]="ticketTimeFilter() === 'UPCOMING'" (click)="ticketTimeFilter.set('UPCOMING')">Upcoming</button>
-              <button class="time-tab" [class.active]="ticketTimeFilter() === 'ENDED'" (click)="ticketTimeFilter.set('ENDED')">Ended</button>
+              <button class="time-tab" [class.active]="ticketTimeFilter() === 'UPCOMING'" (click)="setTicketTimeFilter('UPCOMING')">Upcoming</button>
+              <button class="time-tab" [class.active]="ticketTimeFilter() === 'ENDED'" (click)="setTicketTimeFilter('ENDED')">Ended</button>
             </div>
 
             @if (filteredTickets().length === 0) {
@@ -213,8 +239,7 @@
 
                         <!-- Row 4: Action buttons -->
                         <div class="ticket-item-actions">
-                          <button type="button" class="btn-download-ticket">Download Ticket</button>
-                          <a [routerLink]="['/tickets', ticket.ticketCode]" class="btn-details-ticket" style="text-decoration: none; display: inline-flex; align-items: center; justify-content: center;">Details</a>
+                          <a [routerLink]="['/tickets', ticket.ticketCode]" class="btn-details-ticket" style="text-decoration: none; display: inline-flex; align-items: center; justify-content: center; width: 100%;">Details</a>
                         </div>
                       </div>
 
@@ -234,6 +259,33 @@
                   </div>
                 }
               </div>
+
+              <!-- Pagination Controls -->
+              @if (totalPages() > 1) {
+                <div class="pagination-row">
+                  <button type="button" class="btn-page" [disabled]="ticketPage() === 0" (click)="changePage(ticketPage() - 1)">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7"/></svg>
+                    Previous
+                  </button>
+                  
+                  <div class="page-numbers-list" style="display: flex; gap: 6px; align-items: center;">
+                    @for (p of ticketPageNumbers(); track p) {
+                      <button type="button" class="btn-page-number" 
+                              [style.background]="ticketPage() === p ? '#2563eb' : '#111827'" 
+                              [style.border-color]="ticketPage() === p ? '#2563eb' : '#1f2937'"
+                              (click)="changePage(p)" 
+                              style="padding: 6px 12px; border: 1px solid; border-radius: 6px; color: #fff; cursor: pointer; font-size: 0.9rem; font-weight: 600; transition: all 0.2s;">
+                        {{ p + 1 }}
+                      </button>
+                    }
+                  </div>
+
+                  <button type="button" class="btn-page" [disabled]="ticketPage() >= totalPages() - 1" (click)="changePage(ticketPage() + 1)">
+                    Next
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/></svg>
+                  </button>
+                </div>
+              }
             }
           </div>
         }
