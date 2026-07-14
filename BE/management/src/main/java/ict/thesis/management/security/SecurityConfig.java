@@ -21,27 +21,31 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         return http
-            .csrf(AbstractHttpConfigurer::disable)
-            .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-            .addFilterBefore(userContextFilter, UsernamePasswordAuthenticationFilter.class)
-            .authorizeHttpRequests(auth -> auth
-                // Allow public paths (Swagger, API Docs, Actuator, Error)
-                .requestMatchers("/swagger-ui.html", "/swagger-ui/**", "/v3/api-docs/**", "/api-docs/**", "/actuator/**", "/error").permitAll()
-                
-                // Organizations
-                .requestMatchers(HttpMethod.POST, "/api/organizations").hasAuthority("CUSTOMER")
-                .requestMatchers(HttpMethod.POST, "/api/organizations/*/verify").hasAuthority("ADMIN")
-                .requestMatchers(HttpMethod.GET, "/api/organizations").hasAuthority("ADMIN")
-                
-                // Events
-                .requestMatchers(HttpMethod.GET, "/api/events/organizer/**").hasAuthority("ORGANIZER")
-                .requestMatchers(HttpMethod.POST, "/api/events/create").hasAnyAuthority("ORGANIZER", "STAFF")
-                .requestMatchers(HttpMethod.POST, "/api/events/*/publish", "/api/events/*/cancel").hasAnyAuthority("ORGANIZER", "STAFF")
-                .requestMatchers(HttpMethod.POST, "/api/events/*/approve").hasAuthority("ADMIN")
-                .requestMatchers(HttpMethod.GET, "/api/events/**").permitAll()
-                
-                .anyRequest().authenticated()
-            )
-            .build();
+                .csrf(AbstractHttpConfigurer::disable)
+                .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+                .addFilterBefore(userContextFilter, UsernamePasswordAuthenticationFilter.class)
+                .authorizeHttpRequests(auth -> auth
+                        // Allow public paths (Swagger, API Docs, Actuator, Error)
+                        .requestMatchers("/swagger-ui.html", "/swagger-ui/**", "/v3/api-docs/**", "/api-docs/**",
+                                "/actuator/**", "/error")
+                        .permitAll()
+
+                        // Organizations
+                        .requestMatchers(HttpMethod.POST, "/api/organizations").hasAuthority("CUSTOMER")
+                        .requestMatchers(HttpMethod.POST, "/api/organizations/*/staff-accounts")
+                        .hasAuthority("ORGANIZER")
+                        .requestMatchers(HttpMethod.POST, "/api/organizations/*/verify").hasAuthority("ADMIN")
+                        .requestMatchers(HttpMethod.GET, "/api/organizations").hasAuthority("ADMIN")
+
+                        // Events
+                        .requestMatchers(HttpMethod.GET, "/api/events/organizer/**").hasAuthority("ORGANIZER")
+                        .requestMatchers(HttpMethod.POST, "/api/events/create").hasAnyAuthority("ORGANIZER", "STAFF")
+                        .requestMatchers(HttpMethod.POST, "/api/events/*/publish", "/api/events/*/cancel")
+                        .hasAnyAuthority("ORGANIZER", "STAFF")
+                        .requestMatchers(HttpMethod.POST, "/api/events/*/approve").hasAuthority("ADMIN")
+                        .requestMatchers(HttpMethod.GET, "/api/events/**").permitAll()
+
+                        .anyRequest().authenticated())
+                .build();
     }
 }

@@ -43,4 +43,15 @@ public interface EventsRepository extends JpaRepository<Events, Long> {
             @Param("city") String city,
             @Param("startTime") Instant startTime,
             @Param("endTime") Instant endTime);
+
+    @Query("SELECT e FROM Events e " +
+           "WHERE e.status = :status AND e.id <> :currentId " +
+           "ORDER BY CASE WHEN (e.category IS NOT NULL AND :category IS NOT NULL AND LOWER(e.category) = LOWER(:category)) THEN 0 ELSE 1 END, " +
+           "CASE WHEN (e.city IS NOT NULL AND :city IS NOT NULL AND LOWER(e.city) = LOWER(:city)) THEN 0 ELSE 1 END, " +
+           "e.startTime ASC")
+    List<Events> findRelatedEvents(
+            @Param("status") EventStatus status,
+            @Param("category") String category,
+            @Param("city") String city,
+            @Param("currentId") Long currentId);
 }

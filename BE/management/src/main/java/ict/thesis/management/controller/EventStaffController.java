@@ -13,9 +13,11 @@ import org.springframework.web.server.ResponseStatusException;
 
 import ict.thesis.management.entity.EventStaff;
 import ict.thesis.management.entity.Events;
+import ict.thesis.management.entity.OrganizationMember;
 import ict.thesis.management.entity.enums.RoleEventStaff;
 import ict.thesis.management.repository.EventStaffRepository;
 import ict.thesis.management.repository.EventsRepository;
+import ict.thesis.management.repository.OrganizationMemberRepository;
 import ict.thesis.management.dto.response.IdentityUserResponse;
 import lombok.Data;
 import lombok.RequiredArgsConstructor;
@@ -27,6 +29,7 @@ public class EventStaffController {
 
     private final EventStaffRepository eventStaffRepository;
     private final EventsRepository eventsRepository;
+    private final OrganizationMemberRepository organizationMemberRepository;
     private final RestTemplate restTemplate;
 
     @Value("${identity.service.url}")
@@ -48,6 +51,14 @@ public class EventStaffController {
         private Instant assignedAt;
     }
 
+    @GetMapping("/check")
+    public ResponseEntity<Boolean> checkStaffAssignment(
+            @PathVariable Long eventId,
+            @RequestParam Long staffId) {
+        boolean isAssigned = eventStaffRepository.existsByEventIdAndStaff(eventId, staffId);
+        return ResponseEntity.ok(isAssigned);
+    }
+
     @GetMapping
     public ResponseEntity<List<StaffResponse>> getEventStaff(@PathVariable Long eventId) {
         List<EventStaff> staffList = eventStaffRepository.findByEventId(eventId);
@@ -57,13 +68,12 @@ public class EventStaffController {
             r.setStaffId(s.getStaff());
             r.setRoleInEvent(s.getRoleInEvent().name());
             r.setAssignedAt(s.getAssignedAt());
-            
+
             // Query user details from identity service
             try {
                 IdentityUserResponse user = restTemplate.getForObject(
-                    identityServiceUrl + "/api/users/" + s.getStaff(),
-                    IdentityUserResponse.class
-                );
+                        identityServiceUrl + "/api/users/" + s.getStaff(),
+                        IdentityUserResponse.class);
                 if (user != null) {
                     r.setEmail(user.getEmail());
                     r.setFullName(user.getFullName());
@@ -82,7 +92,7 @@ public class EventStaffController {
     public ResponseEntity<StaffResponse> assignStaff(
             @PathVariable Long eventId,
             @RequestBody StaffAssignmentRequest request) {
-        
+
         Events event = eventsRepository.findById(eventId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Event not found"));
 
@@ -90,9 +100,8 @@ public class EventStaffController {
         IdentityUserResponse user;
         try {
             user = restTemplate.getForObject(
-                identityServiceUrl + "/api/users/by-email?email=" + request.getEmail(),
-                IdentityUserResponse.class
-            );
+                    identityServiceUrl + "/api/users/by-email?email=" + request.getEmail(),
+                    IdentityUserResponse.class);
         } catch (Exception e) {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "User with this email not found in system");
         }
@@ -100,6 +109,15 @@ public class EventStaffController {
         if (user == null) {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found");
         }
+
+        if (user.getRole() == null || !user.getRole().toUpperCase().contains("STAFF")) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "User is not a staff account");
+        }
+
+        OrganizationMember organizationMember = organizationMemberRepository.findByOrganizationIdAndUserId(
+                event.getOrganization().getId(), user.getId())
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.FORBIDDEN,
+                        "Staff does not belong to this organization"));
 
         // 2. Check if already assigned
         if (eventStaffRepository.existsByEventIdAndStaff(eventId, user.getId())) {
@@ -110,7 +128,7 @@ public class EventStaffController {
         EventStaff staff = new EventStaff();
         staff.setEvent(event);
         staff.setStaff(user.getId());
-        
+
         RoleEventStaff roleEnum;
         try {
             roleEnum = RoleEventStaff.valueOf(request.getRole().toUpperCase());

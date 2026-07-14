@@ -15,14 +15,19 @@ Thư mục này chứa toàn bộ tài liệu hướng dẫn kỹ thuật, đặ
    - Hướng dẫn bắt và xử lý mã lỗi chuẩn hóa (`400`, `409`, `401`, `403`).
    - Lưu ý về UX khi đồng bộ quyền bất đồng bộ.
 
-3. **[Đánh giá mã nguồn (code_review.md)](file:///d:/thesis/BE/management/docs/code_review.md)**:
+3. **[Luồng tạo Staff cho FE (staff_account_kafka_flow_fe.md)](file:///d:/thesis/BE/management/docs/staff_account_kafka_flow_fe.md)**:
+   - Đặc tả riêng luồng Organizer tạo Staff account cho tổ chức.
+   - Mô tả trạng thái `QUEUED` khi xử lý bất đồng bộ qua Kafka/outbox.
+   - Chỉ rõ API tạo Staff và API refresh danh sách staff của event để FE đồng bộ dữ liệu.
+
+4. **[Đánh giá mã nguồn (code_review.md)](file:///d:/thesis/BE/management/docs/code_review.md)**:
    - Đánh giá chất lượng thiết kế mã nguồn của các lớp Controller, Service, Repository, Scheduler và Consumer.
    - Các điểm mạnh kỹ thuật (phòng rò rỉ bộ nhớ, truy vấn tối ưu).
    - Đề xuất cải tiến kỹ thuật (Email bất đồng bộ, quản lý Retry Outbox).
 
-4. **[Hướng dẫn phát triển cho AI (developer_guidelines.md)](file:///d:/thesis/BE/management/docs/developer_guidelines.md)**:
+5. **[Hướng dẫn phát triển cho AI (developer_guidelines.md)](file:///d:/thesis/BE/management/docs/developer_guidelines.md)**:
    - Các quy tắc bảo vệ cấu hình an ninh, nghiệp vụ, và bắt lỗi của luồng hiện tại.
    - Hướng dẫn các mô hình AI khác cách phát triển các luồng mới sử dụng Outbox, Saga, và quy tắc ngôn ngữ code mà không làm ảnh hưởng/phá vỡ luồng cũ.
 
-5. **[Đầu việc phát triển (tasks.md)](file:///d:/thesis/BE/management/docs/tasks.md)**:
+6. **[Đầu việc phát triển (tasks.md)](file:///d:/thesis/BE/management/docs/tasks.md)**:
    - Danh sách theo dõi tiến độ phát triển các cấu phần của dịch vụ quản lý.

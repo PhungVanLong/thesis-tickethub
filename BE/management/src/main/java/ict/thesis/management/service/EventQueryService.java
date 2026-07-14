@@ -246,6 +246,26 @@ public class EventQueryService {
         );
     }
 
+    @Transactional(readOnly = true)
+    public List<EventResponse> getRelatedEvents(Long eventId, Integer limit) {
+        Events currentEvent = eventsRepository.findById(eventId)
+            .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Event not found"));
+
+        List<Events> related = eventsRepository.findRelatedEvents(
+            EventStatus.PUBLISHED, 
+            currentEvent.getCategory(), 
+            currentEvent.getCity(), 
+            eventId
+        );
+
+        int limitVal = (limit != null && limit > 0) ? limit : 4;
+
+        return related.stream()
+                      .limit(limitVal)
+                      .map(this::toEventResponse)
+                      .toList();
+    }
+
     public EventResponse toEventResponse(Events event) {
         return new EventResponse(
             event.getId(),

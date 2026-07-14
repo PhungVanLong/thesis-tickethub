@@ -70,6 +70,14 @@ public class EventController {
         return ResponseEntity.ok(eventQueryService.getEventDetail(eventId));
     }
 
+    @GetMapping("/{eventId}/related")
+    public ResponseEntity<List<EventResponse>> getRelatedEvents(
+        @PathVariable Long eventId,
+        @RequestParam(required = false) Integer limit
+    ) {
+        return ResponseEntity.ok(eventQueryService.getRelatedEvents(eventId, limit));
+    }
+
     @PostMapping("/create")
     public ResponseEntity<CreateEventResponse> createEvent(
         @Valid @RequestBody CreateEventRequest request

@@ -1,5 +1,7 @@
 package ict.thesis.management.dto.response;
 
+import java.time.Instant;
+
 import lombok.Getter;
 import lombok.Setter;
 
@@ -12,5 +14,7 @@ public class IdentityUserResponse {
     private String role;
     private boolean verified;
     private boolean active;
+    private Instant createdAt;
+    private Instant updatedAt;
 
 }

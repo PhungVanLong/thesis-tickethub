@@ -37,14 +37,16 @@ public class OutboxPublisherScheduler {
             try {
                 String topic = getTopicForEvent(event.getEventType());
                 if (topic == null) {
-                    log.error("Unknown event type: {}, marking as FAILED. EventId: {}", event.getEventType(), event.getId());
+                    log.error("Unknown event type: {}, marking as FAILED. EventId: {}", event.getEventType(),
+                            event.getId());
                     event.setStatus(OutboxStatus.FAILED);
                     outboxEventRepository.save(event);
                     continue;
                 }
 
                 String payload = event.getPayload();
-                log.info("Publishing outbox event to Kafka. Topic: {}, Payload: {}, EventId: {}", topic, payload, event.getId());
+                log.info("Publishing outbox event to Kafka. Topic: {}, Payload: {}, EventId: {}", topic, payload,
+                        event.getId());
 
                 // Gửi đồng bộ để đảm bảo Kafka đã ghi nhận thành công trước khi cập nhật DB
                 kafkaTemplate.send(topic, payload).get();
@@ -55,7 +57,8 @@ public class OutboxPublisherScheduler {
                 outboxEventRepository.save(event);
 
             } catch (Exception e) {
-                log.error("Error publishing outbox event to Kafka. EventId: {}, Current Retry: {}", event.getId(), event.getRetryCount(), e);
+                log.error("Error publishing outbox event to Kafka. EventId: {}, Current Retry: {}", event.getId(),
+                        event.getRetryCount(), e);
                 event.setRetryCount(event.getRetryCount() + 1);
                 if (event.getRetryCount() >= 5) {
                     event.setStatus(OutboxStatus.FAILED);
@@ -71,6 +74,8 @@ public class OutboxPublisherScheduler {
             return "user-role-promote-topic";
         } else if ("USER_ROLE_DEMOTE".equals(eventType)) {
             return "user-role-demote-topic";
+        } else if ("USER_STAFF_CREATE".equals(eventType)) {
+            return "user-staff-create-topic";
         } else if ("EVENT_PUBLISHED".equals(eventType)) {
             return "event-published-topic";
         } else if ("EVENT_PENDING".equals(eventType)) {
