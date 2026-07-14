@@ -11,4 +11,5 @@ public interface CheckinRepository extends JpaRepository<Checkin, UUID> {
     java.util.List<Checkin> findByTicketId(Long ticketId);
     org.springframework.data.domain.Page<Checkin> findByStaff(Long staff, org.springframework.data.domain.Pageable pageable);
     org.springframework.data.domain.Page<Checkin> findByStaffAndEventId(Long staff, Long eventId, org.springframework.data.domain.Pageable pageable);
+    org.springframework.data.domain.Page<Checkin> findByEventId(Long eventId, org.springframework.data.domain.Pageable pageable);
 }

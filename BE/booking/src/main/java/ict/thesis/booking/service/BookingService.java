@@ -740,4 +740,44 @@ public class BookingService {
 
         return response;
     }
+
+    public Map<String, Object> getOrganizerDashboardStats(List<Long> eventIds) {
+        if (eventIds == null || eventIds.isEmpty()) {
+            return Map.of(
+                "totalRevenue", java.math.BigDecimal.ZERO,
+                "totalTicketsSold", 0L,
+                "totalCheckins", 0L
+            );
+        }
+
+        java.math.BigDecimal totalRevenue = orderRepository.sumTotalAmountByEventIdsAndStatus(eventIds, ict.thesis.booking.enties.enums.OrderStatus.PAID);
+        long totalTicketsSold = ticketRepository.countTicketsByEventIds(eventIds);
+        long totalCheckins = ticketRepository.countTicketsByEventIdsAndStatus(eventIds, ict.thesis.booking.enties.enums.TicketStatus.USED);
+
+        return Map.of(
+            "totalRevenue", totalRevenue,
+            "totalTicketsSold", totalTicketsSold,
+            "totalCheckins", totalCheckins
+        );
+    }
+
+    public List<Map<String, Object>> getOrganizerDashboardRecentOrders(List<Long> eventIds) {
+        if (eventIds == null || eventIds.isEmpty()) {
+            return List.of();
+        }
+
+        org.springframework.data.domain.Pageable limitFive = org.springframework.data.domain.PageRequest.of(0, 5);
+        List<Order> recentOrders = orderRepository.findRecentByEventIds(eventIds, limitFive);
+
+        return recentOrders.stream().map(o -> {
+            Map<String, Object> map = new java.util.HashMap<>();
+            map.put("orderId", o.getId());
+            map.put("orderCode", o.getOrderCode());
+            map.put("customerEmail", o.getCustomerEmail());
+            map.put("totalAmount", o.getTotalAmount());
+            map.put("status", o.getStatus().name());
+            map.put("createdAt", o.getCreatedAt().toString());
+            return map;
+        }).toList();
+    }
 }

@@ -32,4 +32,14 @@ public class OrderController {
         org.springframework.data.domain.Page<Map<String, Object>> orders = bookingService.getCustomerOrders(customerId, pageable);
         return ResponseEntity.ok(orders);
     }
+
+    @org.springframework.web.bind.annotation.PostMapping("/analytics/stats")
+    public ResponseEntity<Map<String, Object>> getOrganizerDashboardStats(@org.springframework.web.bind.annotation.RequestBody java.util.List<Long> eventIds) {
+        return ResponseEntity.ok(bookingService.getOrganizerDashboardStats(eventIds));
+    }
+
+    @org.springframework.web.bind.annotation.PostMapping("/analytics/recent")
+    public ResponseEntity<java.util.List<Map<String, Object>>> getOrganizerDashboardRecentOrders(@org.springframework.web.bind.annotation.RequestBody java.util.List<Long> eventIds) {
+        return ResponseEntity.ok(bookingService.getOrganizerDashboardRecentOrders(eventIds));
+    }
 }
