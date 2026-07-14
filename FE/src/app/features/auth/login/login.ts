@@ -47,6 +47,8 @@ export class LoginComponent {
           next: (profile) => {
             if (profile?.role === 'ADMIN') {
               this.router.navigate(['/admin']);
+            } else if (profile?.role?.includes('STAFF')) {
+              this.router.navigate(['/staff/check-in']);
             } else {
               this.router.navigate(['/']);
             }

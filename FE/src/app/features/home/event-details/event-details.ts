@@ -276,16 +276,9 @@ export class EventDetailsComponent implements OnInit, OnDestroy {
   }
 
   loadRecommendedEvents(currentId: number) {
-    this.eventApi.getDiscoveryEvents({}).subscribe({
+    this.eventApi.getRelatedEvents(currentId, 4).subscribe({
       next: (events) => {
-        // Filter out current event
-        let list = events.filter((e: any) => e.id !== currentId);
-        
-        // Randomize list
-        list = this.shuffleArray(list);
-
-        // Take top 4 and map
-        const mapped = list.slice(0, 4).map((e: any) => {
+        const mapped = events.map((e: any) => {
           let priceStr = 'Từ 200.000đ';
           if (e.ticketTiers && e.ticketTiers.length > 0) {
             const minPrice = Math.min(...e.ticketTiers.map((t: any) => t.price));

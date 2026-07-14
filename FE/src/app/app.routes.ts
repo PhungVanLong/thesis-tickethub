@@ -15,6 +15,7 @@ import { ExploreEventsComponent } from './features/home/explore-events/explore-e
 import { SeatSelectionComponent } from './features/home/seat-selection/seat-selection';
 import { CheckoutComponent } from './features/booking/checkout/checkout';
 import { TicketDetailComponent } from './features/booking/ticket-detail/ticket-detail';
+import { StaffCheckInComponent } from './features/staff/check-in/staff-check-in';
 import { canDeactivateGuard } from './core/guards/can-deactivate.guard';
 
 export const routes: Routes = [
@@ -30,6 +31,8 @@ export const routes: Routes = [
   { path: 'my-account', component: MyAccountComponent },
   { path: 'organization-dashboard', component: OrganizationDashboardComponent },
   { path: 'organizer/dashboard', component: OrganizerPortalComponent },
+  { path: 'staff', redirectTo: 'staff/check-in', pathMatch: 'full' },
+  { path: 'staff/check-in', component: StaffCheckInComponent },
   {
     path: 'admin',
     component: AdminShellComponent,

@@ -109,4 +109,11 @@ export class EventApiService {
   approveEvent(eventId: number, decision: ApprovalDecision, reason: string): Observable<any> {
     return this.http.post(`${this.API}/${eventId}/approve`, { decision, reason });
   }
+
+  /** Lấy danh sách sự kiện liên quan (You Might Also Like) */
+  getRelatedEvents(eventId: number, limit?: number): Observable<any[]> {
+    const params: any = {};
+    if (limit) params['limit'] = limit;
+    return this.http.get<any[]>(`${this.API}/${eventId}/related`, { params });
+  }
 }

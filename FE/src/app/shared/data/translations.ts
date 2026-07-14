@@ -15,7 +15,7 @@ export const TRANSLATIONS: Record<Language, Record<string, string>> = {
     'nav.cities': 'Thành phố',
     'nav.myTicketsDropdown': 'Vé của tôi',
     'nav.membershipCard': 'Thẻ thành viên',
-    'nav.myEvents': 'Sự kiện của tôi',
+    'nav.myEvents': 'Đơn hàng',
     'nav.myAccount': 'Tài khoản của tôi',
     'nav.signOut': 'Đăng xuất',
 
@@ -196,7 +196,7 @@ export const TRANSLATIONS: Record<Language, Record<string, string>> = {
     'nav.cities': 'Cities',
     'nav.myTicketsDropdown': 'My Tickets',
     'nav.membershipCard': 'Membership Card',
-    'nav.myEvents': 'My Events',
+    'nav.myEvents': 'Orders',
     'nav.myAccount': 'My Account',
     'nav.signOut': 'Sign Out',
 
