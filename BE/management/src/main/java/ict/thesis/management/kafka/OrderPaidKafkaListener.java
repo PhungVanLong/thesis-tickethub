@@ -21,6 +21,8 @@ import java.util.stream.Collectors;
 public class OrderPaidKafkaListener {
 
     private final TicketTierRepository ticketTierRepository;
+    private final ict.thesis.management.repository.SeatRepository seatRepository;
+    private final org.springframework.kafka.core.KafkaTemplate<String, String> kafkaTemplate;
     private final EmailService emailService;
     private final ObjectMapper objectMapper = new ObjectMapper();
 
@@ -46,6 +48,40 @@ public class OrderPaidKafkaListener {
             if (tickets == null || tickets.isEmpty()) {
                 log.warn("No tickets found in event for order ID: {}", orderId);
                 return;
+            }
+
+            // Extract seat IDs from tickets
+            List<Long> seatIds = tickets.stream()
+                    .map(t -> t.get("seatId"))
+                    .filter(java.util.Objects::nonNull)
+                    .map(id -> ((Number) id).longValue())
+                    .toList();
+
+            if (!seatIds.isEmpty()) {
+                // PESSIMISTIC LOCK: Claim seats
+                log.info("Attempting to claim seats with pessimistic lock: {}", seatIds);
+                List<ict.thesis.management.entity.Seat> seats = seatRepository.findAllByIdWithLock(seatIds);
+                
+                // Check if any seat is already SOLD
+                boolean alreadySold = seats.stream().anyMatch(seat -> ict.thesis.management.entity.enums.SeatStatus.SOLD.equals(seat.getStatus()));
+                if (alreadySold) {
+                    log.warn("Seat conflict detected for order ID: {}. Some seats are already SOLD.", orderId);
+                    
+                    // Publish claim failure / refund event
+                    Map<String, Object> refundEvent = new java.util.HashMap<>();
+                    refundEvent.put("orderId", orderId);
+                    refundEvent.put("reason", "Seat already sold (overbooking conflict)");
+                    String refundMsg = objectMapper.writeValueAsString(refundEvent);
+                    log.info("Publishing refund event to order-refund-topic: {}", refundMsg);
+                    kafkaTemplate.send("order-refund-topic", orderId.toString(), refundMsg);
+                    return; // Abort ticket processing and email sending
+                }
+
+                // Mark seats as SOLD in database
+                for (ict.thesis.management.entity.Seat seat : seats) {
+                    seat.setStatus(ict.thesis.management.entity.enums.SeatStatus.SOLD);
+                    seatRepository.save(seat);
+                }
             }
 
             // Group tickets by ticketTierId to count quantity per tier

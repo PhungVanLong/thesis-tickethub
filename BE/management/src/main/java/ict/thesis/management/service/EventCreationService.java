@@ -49,6 +49,7 @@ public class EventCreationService {
     private final SeatRepository seatRepository;
     private final OutboxEventRepository outboxEventRepository;
     private final ObjectMapper objectMapper;
+    private final NotificationService notificationService;
 
     @Transactional
     public CreateEventResponse createEvent(Long userId, CreateEventRequest request) {
@@ -119,6 +120,19 @@ public class EventCreationService {
         event.setUpdatedAt(now);
 
         Events savedEvent = eventsRepository.save(event);
+
+        // Notify Admins
+        try {
+            notificationService.createNotification(
+                null, 
+                "ADMIN", 
+                "Sự kiện mới đăng ký", 
+                "Sự kiện '" + savedEvent.getTitle() + "' đã được đăng ký bởi ban tổ chức '" + organization.getName() + "' và đang chờ duyệt.", 
+                savedEvent.getId()
+            );
+        } catch (Exception e) {
+            log.error("Failed to create admin notification for event creation", e);
+        }
 
         // Map to store saved TicketTier entities for Seat assignment
         Map<String, TicketTier> savedTiersMap = new HashMap<>();
