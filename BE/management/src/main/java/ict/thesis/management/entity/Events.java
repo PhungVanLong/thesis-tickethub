@@ -67,5 +67,6 @@ public class Events {
     @Column(name = "updated_at")
     private Instant updatedAt;
 
-
+    @Column(name = "category", length = 100)
+    private String category;
 }

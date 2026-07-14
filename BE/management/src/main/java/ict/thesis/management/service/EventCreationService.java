@@ -109,6 +109,7 @@ public class EventCreationService {
         event.setStartTime(request.getStartTime());
         event.setEndTime(request.getEndTime());
         event.setBannerUrl(request.getBannerUrl());
+        event.setCategory(request.getCategory());
         
         // Set initial status to PENDING
         event.setStatus(EventStatus.PENDING);

@@ -4,9 +4,13 @@
 
 :host {
   display: block;
-  position: relative;
+  position: sticky;
+  top: 72px; /* Sticky below main topbar header */
+  z-index: 100;
   background: #0052cc; /* TicketHub Blue */
   color: #ffffff;
+  width: 100%;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.15);
 }
 
 /* ... */
@@ -28,7 +32,6 @@
 .search-container {
   width: 100%;
   position: relative;
-  z-index: 10;
   background: #0052cc; /* Blue background matching host */
   padding: 10px 0;
 }

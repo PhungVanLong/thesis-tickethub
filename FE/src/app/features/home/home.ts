@@ -13,5 +13,5 @@ import { Footer } from '../../core/footer/footer';
   templateUrl: './home.html',
   styleUrl: './home.scss',
 })
-export class HomeComponent {}
+export class HomeComponent { }
 

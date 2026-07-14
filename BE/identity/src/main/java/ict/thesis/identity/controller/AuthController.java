@@ -10,6 +10,8 @@ import org.springframework.web.bind.annotation.RestController;
 import ict.thesis.identity.dto.AuthResponse;
 import ict.thesis.identity.dto.LoginRequest;
 import ict.thesis.identity.dto.RegisterRequest;
+import ict.thesis.identity.dto.StaffRegisterRequest;
+import ict.thesis.identity.dto.UserResponse;
 import ict.thesis.identity.service.AuthService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -26,6 +28,12 @@ public class AuthController {
         return ResponseEntity.ok(authService.register(request));
     }
 
+    @PostMapping("/staff-register")
+    public ResponseEntity<UserResponse> createStaffAccount(@Valid @RequestBody StaffRegisterRequest request) {
+        return ResponseEntity.status(org.springframework.http.HttpStatus.CREATED)
+                .body(authService.createStaffAccount(request));
+    }
+
     @PostMapping("/login")
     public ResponseEntity<AuthResponse> login(@Valid @RequestBody LoginRequest request) {
         return ResponseEntity.ok(authService.login(request));
@@ -33,14 +41,16 @@ public class AuthController {
 
     // TODO: Sẽ phát triển chức năng quên mật khẩu sau
     @PostMapping("/forgot-password")
-    public ResponseEntity<String> forgotPassword(@Valid @RequestBody ict.thesis.identity.dto.ForgotPasswordRequest request) {
+    public ResponseEntity<String> forgotPassword(
+            @Valid @RequestBody ict.thesis.identity.dto.ForgotPasswordRequest request) {
         authService.forgotPassword(request);
         return ResponseEntity.ok("Email reset password will be sent (TODO).");
     }
 
     // TODO: Sẽ phát triển chức năng đặt lại mật khẩu sau
     @PostMapping("/reset-password")
-    public ResponseEntity<String> resetPassword(@Valid @RequestBody ict.thesis.identity.dto.ResetPasswordRequest request) {
+    public ResponseEntity<String> resetPassword(
+            @Valid @RequestBody ict.thesis.identity.dto.ResetPasswordRequest request) {
         authService.resetPassword(request);
         return ResponseEntity.ok("Password reset successfully (TODO).");
     }

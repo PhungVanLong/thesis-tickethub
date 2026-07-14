@@ -36,6 +36,9 @@ public class CreateEventRequest {
 
     private String bannerUrl;
 
+    @NotBlank(message = "category is required")
+    private String category;
+
     @Valid
     private List<TicketTierRequest> ticketTiers;
 

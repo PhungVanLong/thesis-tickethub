@@ -1,6 +1,5 @@
 package ict.thesis.identity.service;
 
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -14,6 +13,7 @@ import org.springframework.transaction.annotation.Transactional;
 import ict.thesis.identity.dto.AuthResponse;
 import ict.thesis.identity.dto.LoginRequest;
 import ict.thesis.identity.dto.RegisterRequest;
+import ict.thesis.identity.dto.StaffRegisterRequest;
 import ict.thesis.identity.dto.UpdateUserRequest;
 import ict.thesis.identity.dto.UserResponse;
 import ict.thesis.identity.entity.User;
@@ -45,14 +45,14 @@ public class AuthService {
 
         // 2. Tạo đối tượng User mới với các thông tin mặc định
         User user = User.builder()
-                        .email(request.email())
-                        .passwordHash(passwordEncoder.encode(request.password())) // Băm Bcrypt để bảo mật mật khẩu
-                        .fullName(request.fullName())
-                        .phone(request.phone())
-                        .role(UserRole.CUSTOMER.name()) // Mặc định tài khoản đăng ký mới là Khách hàng
-                        .verified(false)
-                        .active(true)
-                        .build();
+                .email(request.email())
+                .passwordHash(passwordEncoder.encode(request.password())) // Băm Bcrypt để bảo mật mật khẩu
+                .fullName(request.fullName())
+                .phone(request.phone())
+                .role(UserRole.CUSTOMER.name()) // Mặc định tài khoản đăng ký mới là Khách hàng
+                .verified(false)
+                .active(true)
+                .build();
 
         // 3. Lưu vào DB để sinh ID tự tăng tự động
         User savedUser = userRepository.save(user);
@@ -60,17 +60,37 @@ public class AuthService {
 
         // CHỈNH SỬA CỐT LÕI: Thêm email vào Token
         String token = jwtService.generateToken(
-            savedUser.getId().toString(), 
-            savedUser.getRole(),
-            savedUser.getEmail()
-        );
+                savedUser.getId().toString(),
+                savedUser.getRole(),
+                savedUser.getEmail());
         return new AuthResponse(token, "Bearer", jwtService.getExpirationSeconds());
+    }
+
+    @Transactional
+    public UserResponse createStaffAccount(StaffRegisterRequest request) {
+        if (userRepository.existsByEmail(request.email())) {
+            throw new ConflictException("Email already exists");
+        }
+
+        User user = User.builder()
+                .email(request.email())
+                .passwordHash(passwordEncoder.encode(request.password()))
+                .fullName(request.fullName())
+                .phone(request.phone())
+                .verified(true)
+                .active(true)
+                .build();
+        user.setRoles(java.util.EnumSet.of(UserRole.STAFF));
+
+        User savedUser = userRepository.save(user);
+        logger.info("Created staff account successfully with email: {}", savedUser.getEmail());
+        return toUserResponse(savedUser);
     }
 
     @Transactional
     public UserResponse updateUser(Long id, UpdateUserRequest request) {
         User user = userRepository.findById(id)
-            .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found"));
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found"));
 
         if (request.email() != null && !request.email().isBlank() && !request.email().equals(user.getEmail())) {
             if (userRepository.existsByEmail(request.email())) {
@@ -111,8 +131,7 @@ public class AuthService {
         try {
             // 1. Sử dụng Spring Security để xác thực email và password
             Authentication authentication = authenticationManager.authenticate(
-                    new UsernamePasswordAuthenticationToken(request.email(), request.password())
-            );
+                    new UsernamePasswordAuthenticationToken(request.email(), request.password()));
 
             if (!authentication.isAuthenticated()) {
                 throw new UnauthorizedException("Invalid credentials");
@@ -120,15 +139,15 @@ public class AuthService {
 
             // 2. Lấy thông tin chi tiết của User từ Database
             User user = userRepository.findByEmail(request.email())
-                                      .orElseThrow(() -> new UnauthorizedException("Invalid credentials"));
+                    .orElseThrow(() -> new UnauthorizedException("Invalid credentials"));
 
             // 3. Sinh token JWT trả về cho client (Chỉ chứa ID, Role, Email)
-            // Token này sẽ được client đính vào Header để gọi các API khác thông qua Gateway
+            // Token này sẽ được client đính vào Header để gọi các API khác thông qua
+            // Gateway
             String token = jwtService.generateToken(
-                user.getId().toString(), 
-                user.getRole(),
-                user.getEmail()
-            );
+                    user.getId().toString(),
+                    user.getRole(),
+                    user.getEmail());
             return new AuthResponse(token, "Bearer", jwtService.getExpirationSeconds());
         } catch (UnauthorizedException ex) {
             throw ex;
@@ -141,7 +160,8 @@ public class AuthService {
     public void forgotPassword(ict.thesis.identity.dto.ForgotPasswordRequest request) {
         // 1. Kiểm tra email có tồn tại không
         User user = userRepository.findByEmail(request.email())
-            .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Email không tồn tại trong hệ thống"));
+                .orElseThrow(
+                        () -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Email không tồn tại trong hệ thống"));
 
         // 2. Sinh mã OTP (6 chữ số) và lưu vào DB, có hạn trong 15 phút
         String otp = String.format("%06d", new java.util.Random().nextInt(999999));
@@ -174,6 +194,5 @@ public class AuthService {
         response.setUpdatedAt(user.getUpdatedAt());
         return response;
     }
-
 
 }

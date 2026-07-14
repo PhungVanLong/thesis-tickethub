@@ -67,13 +67,14 @@
                   <label class="form-lbl" for="eventCategory">Category <span class="required-star">*</span></label>
                   <select id="eventCategory" class="form-select" formControlName="category">
                     <option value="" disabled>Select a category</option>
-                    <option value="Concerts">🎵 Concerts</option>
-                    <option value="Sports">⚽ Sports</option>
-                    <option value="Arts">🎭 Arts &amp; Theater</option>
-                    <option value="Family">👨‍👩‍👧 Family</option>
-                    <option value="Conference">💼 Conference</option>
-                    <option value="Festival">🎉 Festival</option>
-                    <option value="Exhibition">🖼️ Exhibition</option>
+                    <option value="Concerts">Concerts</option>
+                    <option value="Sports">Sports</option>
+                    <option value="Arts & Theater">Arts &amp; Theater</option>
+                    <option value="Family">Family</option>
+                    <option value="Conference">Conference</option>
+                    <option value="Festival">Festival</option>
+                    <option value="Exhibition">Exhibition</option>
+                    <option value="Special">Special</option>
                   </select>
                 </div>
 
@@ -364,13 +365,28 @@
                     </div>
 
                     <!-- Right Panel: Canvas -->
-                    <div class="grid-canvas-container">
-                      <div class="canvas-boundary">
+                    <div class="grid-canvas-container" 
+                         (wheel)="onWheelZoom($event)"
+                         (mousedown)="onMouseDown($event)"
+                         (mouseleave)="onMouseLeave($event)"
+                         (mouseup)="onMouseUp($event)"
+                         (mousemove)="onMouseMove($event)">
+                      
+                      <!-- Zoom Controls -->
+                      <div style="position: absolute; bottom: 16px; right: 16px; z-index: 10; display: flex; gap: 8px; background: white; padding: 4px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); border: 1px solid #e2e8f0; align-items: center;">
+                        <button type="button" (click)="zoomOut()" style="background: #f1f5f9; border: none; cursor: pointer; width: 28px; height: 28px; border-radius: 4px; font-weight: bold; color: #475569;" title="Zoom Out">-</button>
+                        <span style="font-size: 0.8rem; font-weight: 600; min-width: 40px; text-align: center; color: #334155;">{{ workspaceZoom() * 100 | number:'1.0-0' }}%</span>
+                        <button type="button" (click)="zoomIn()" style="background: #f1f5f9; border: none; cursor: pointer; width: 28px; height: 28px; border-radius: 4px; font-weight: bold; color: #475569;" title="Zoom In">+</button>
+                        <button type="button" (click)="resetZoom()" style="background: transparent; border: none; cursor: pointer; padding: 0 8px; font-size: 0.8rem; color: #3b82f6; font-weight: 500;" title="Reset Zoom">Reset</button>
+                      </div>
+
+                      <div class="canvas-boundary" [style.transform]="'scale(' + workspaceZoom() + ')'">
                         @for (item of draggableItems(); track item.id) {
                           <div class="draggable-item" 
                                cdkDrag 
                                cdkDragBoundary=".canvas-boundary" 
                                [cdkDragFreeDragPosition]="{x: item.x, y: item.y}"
+                               [cdkDragScale]="workspaceZoom()"
                                (cdkDragEnded)="onDragEnded($event, item)"
                                (click)="selectItem(item.id)">
                             
@@ -568,7 +584,7 @@
                       <span class="spinner"></span> Submitting...
                     } @else {
                       <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
-                      Publish Event
+                      Create Event
                     }
                   </button>
                 </div>

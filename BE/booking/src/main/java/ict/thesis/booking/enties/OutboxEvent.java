@@ -1,21 +1,8 @@
 package ict.thesis.booking.enties;
 
-import ict.thesis.booking.enties.enums.OutboxEventStatus;
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.EnumType;
-import jakarta.persistence.Enumerated;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
-import jakarta.persistence.Table;
+import jakarta.persistence.*;
 import java.time.Instant;
-import java.util.UUID;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
+import lombok.*;
 
 @Entity
 @Table(name = "outbox_events")
@@ -27,33 +14,24 @@ import lombok.Setter;
 public class OutboxEvent {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.AUTO)
-    @Column(name = "id", columnDefinition = "uuid")
-    private UUID id;
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
 
-    @Column(name = "aggregate_type")
+    @Column(name = "aggregate_type", nullable = false)
     private String aggregateType;
 
-    @Column(name = "aggregate_id")
-    private Long aggregateId;
+    @Column(name = "aggregate_id", nullable = false)
+    private String aggregateId;
 
-    @Column(name = "event_type")
+    @Column(name = "event_type", nullable = false)
     private String eventType;
 
-    @Column(name = "payload", columnDefinition = "jsonb")
+    @Column(name = "payload", nullable = false, columnDefinition = "TEXT")
     private String payload;
 
-    @Enumerated(EnumType.STRING)
-    @Column(name = "status")
-    private OutboxEventStatus status;
-
-    @Column(name = "retry_count")
-    private Integer retryCount;
-
-    @Column(name = "created_at")
+    @Column(name = "created_at", nullable = false)
     private Instant createdAt;
 
-    @Column(name = "published_at")
-    private Instant publishedAt;
+    @Column(name = "status", nullable = false)
+    private String status; // PENDING, PROCESSED, FAILED
 }
-

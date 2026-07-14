@@ -1,0 +1,743 @@
+package ict.thesis.booking.service;
+
+import ict.thesis.booking.dto.BookingDtos.CreateBookingRequest;
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.kafka.core.KafkaTemplate;
+import org.springframework.stereotype.Service;
+import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
+
+import java.io.IOException;
+import java.util.Map;
+import java.util.UUID;
+import java.util.List;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Iterator;
+import java.util.concurrent.ConcurrentHashMap;
+import org.springframework.http.HttpEntity;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpMethod;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.client.RestTemplate;
+import ict.thesis.booking.enties.Order;
+import ict.thesis.booking.enties.OrderItem;
+import ict.thesis.booking.enties.Ticket;
+
+@Service
+@RequiredArgsConstructor
+@Slf4j
+public class BookingService {
+
+    private final KafkaTemplate<String, Object> kafkaTemplate;
+    private final ict.thesis.booking.repository.OrderRepository orderRepository;
+    private final ict.thesis.booking.repository.OrderItemRepository orderItemRepository;
+    private final RestTemplate restTemplate;
+    private final ict.thesis.booking.config.VNPayConfig vnPayConfig;
+    private final ict.thesis.booking.repository.OutboxEventRepository outboxEventRepository;
+    private final TicketService ticketService;
+    private final ict.thesis.booking.repository.TicketRepository ticketRepository;
+    private final ict.thesis.booking.repository.CheckinRepository checkinRepository;
+    private final PayPalService payPalService;
+
+    @Value("${gateway.shared-secret}")
+    private String gatewaySharedSecret;
+
+    @Value("${management.service.url}")
+    private String managementServiceUrl;
+
+    // Store SseEmitter for each request ID
+    private final Map<String, SseEmitter> emitters = new ConcurrentHashMap<>();
+
+    // Cache for completed results if the client hasn't subscribed yet
+    private final Map<String, Long> completedBookings = new ConcurrentHashMap<>();
+    private final Map<String, String> failedBookings = new ConcurrentHashMap<>();
+
+    private static final String BOOKING_TOPIC = "booking.requests";
+    private static final String SEAT_STATUS_TOPIC = "seat-status-updates";
+    private final com.fasterxml.jackson.databind.ObjectMapper objectMapper = new com.fasterxml.jackson.databind.ObjectMapper();
+
+    public record SeatStatusUpdateEvent(Long eventId, java.util.List<Long> seatIds, String status) {
+    }
+
+    /**
+     * Build HttpHeaders with gateway token and forward user context headers if
+     * present
+     */
+    private HttpHeaders buildInternalHeaders() {
+        HttpHeaders headers = new HttpHeaders();
+        headers.set("X-Gateway-Token", gatewaySharedSecret);
+
+        try {
+            org.springframework.web.context.request.RequestAttributes attributes = org.springframework.web.context.request.RequestContextHolder
+                    .getRequestAttributes();
+            if (attributes instanceof org.springframework.web.context.request.ServletRequestAttributes) {
+                jakarta.servlet.http.HttpServletRequest request = ((org.springframework.web.context.request.ServletRequestAttributes) attributes)
+                        .getRequest();
+
+                String userId = request.getHeader("X-User-Id");
+                String userRole = request.getHeader("X-User-Role");
+                String userEmail = request.getHeader("X-User-Email");
+
+                if (userId != null)
+                    headers.set("X-User-Id", userId);
+                if (userRole != null)
+                    headers.set("X-User-Role", userRole);
+                if (userEmail != null)
+                    headers.set("X-User-Email", userEmail);
+            }
+        } catch (Exception e) {
+            log.warn("Could not extract user headers to forward", e);
+        }
+        return headers;
+    }
+
+    public void publishSeatStatus(Long eventId, java.util.List<Long> seatIds, String status) {
+        if (eventId == null || seatIds == null || seatIds.isEmpty()) {
+            return;
+        }
+        String json = "";
+        try {
+            SeatStatusUpdateEvent event = new SeatStatusUpdateEvent(eventId, seatIds, status);
+            json = objectMapper.writeValueAsString(event);
+            log.info("Publishing seat status update event: {}", json);
+            kafkaTemplate.send(SEAT_STATUS_TOPIC, eventId.toString(), json);
+
+            // Save to Outbox DB as PROCESSED
+            outboxEventRepository.save(ict.thesis.booking.enties.OutboxEvent.builder()
+                    .aggregateType("SeatStatus")
+                    .aggregateId(eventId.toString())
+                    .eventType("SEAT_STATUS_UPDATED")
+                    .payload(json)
+                    .createdAt(java.time.Instant.now())
+                    .status("PROCESSED")
+                    .build());
+        } catch (Exception e) {
+            log.error("Failed to publish seat status update to Kafka", e);
+            // Save to Outbox DB as FAILED
+            outboxEventRepository.save(ict.thesis.booking.enties.OutboxEvent.builder()
+                    .aggregateType("SeatStatus")
+                    .aggregateId(eventId.toString())
+                    .eventType("SEAT_STATUS_UPDATED")
+                    .payload(json.isEmpty() ? "Error serializing payload" : json)
+                    .createdAt(java.time.Instant.now())
+                    .status("FAILED")
+                    .build());
+        }
+    }
+
+    public void completeMockPayment(Long orderId) {
+        orderRepository.findById(orderId).ifPresent(order -> {
+            order.setStatus(ict.thesis.booking.enties.enums.OrderStatus.PAID);
+            order.setUpdatedAt(java.time.Instant.now());
+            orderRepository.save(order);
+            log.info("Mock payment completed for order ID: {}", orderId);
+
+            // Generate tickets and send Kafka notification
+            ticketService.generateTicketsAndNotify(order);
+
+            java.util.List<Long> seatIds = orderItemRepository.findByOrderId(orderId).stream()
+                    .map(ict.thesis.booking.enties.OrderItem::getSeat)
+                    .filter(java.util.Objects::nonNull)
+                    .toList();
+
+            publishSeatStatus(order.getEventId(), seatIds, "SOLD");
+        });
+    }
+
+    public void cancelMockPayment(Long orderId) {
+        orderRepository.findById(orderId).ifPresent(order -> {
+            order.setStatus(ict.thesis.booking.enties.enums.OrderStatus.CANCELLED);
+            order.setUpdatedAt(java.time.Instant.now());
+            orderRepository.save(order);
+            log.info("Mock payment cancelled for order ID: {}", orderId);
+
+            java.util.List<Long> seatIds = orderItemRepository.findByOrderId(orderId).stream()
+                    .map(ict.thesis.booking.enties.OrderItem::getSeat)
+                    .filter(java.util.Objects::nonNull)
+                    .toList();
+
+            publishSeatStatus(order.getEventId(), seatIds, "AVAILABLE");
+        });
+    }
+
+    public String createVNPayPaymentUrl(Long orderId, jakarta.servlet.http.HttpServletRequest request) {
+        Order order = orderRepository.findById(orderId)
+                .orElseThrow(() -> new org.springframework.web.server.ResponseStatusException(
+                        org.springframework.http.HttpStatus.NOT_FOUND, "Order not found"));
+
+        String vnp_Version = vnPayConfig.getVnpVersion();
+        String vnp_Command = vnPayConfig.getVnpCommand();
+        String vnp_TxnRef = order.getId().toString() + "_" + UUID.randomUUID().toString().substring(0, 8);
+        String vnp_IpAddr = vnPayConfig.getIpAddress(request);
+        String vnp_TmnCode = vnPayConfig.getVnpCode();
+
+        // Amount must be multiplied by 100 as per VNPay spec
+        long amount = order.getTotalAmount().multiply(new java.math.BigDecimal("100")).longValue();
+
+        Map<String, String> vnp_Params = new java.util.HashMap<>();
+        vnp_Params.put("vnp_Version", vnp_Version);
+        vnp_Params.put("vnp_Command", vnp_Command);
+        vnp_Params.put("vnp_TmnCode", vnp_TmnCode);
+        vnp_Params.put("vnp_Amount", String.valueOf(amount));
+        vnp_Params.put("vnp_CurrCode", "VND");
+        vnp_Params.put("vnp_TxnRef", vnp_TxnRef);
+        vnp_Params.put("vnp_OrderInfo", "Thanh toan don hang " + order.getOrderCode());
+        vnp_Params.put("vnp_OrderType", "other");
+        vnp_Params.put("vnp_Locale", "vn");
+        vnp_Params.put("vnp_ReturnUrl", vnPayConfig.getVnpReturnUrl());
+        vnp_Params.put("vnp_IpAddr", vnp_IpAddr);
+
+        java.util.Calendar cld = java.util.Calendar.getInstance(java.util.TimeZone.getTimeZone("Etc/GMT+7"));
+        java.text.SimpleDateFormat formatter = new java.text.SimpleDateFormat("yyyyMMddHHmmss");
+        String vnp_CreateDate = formatter.format(cld.getTime());
+        vnp_Params.put("vnp_CreateDate", vnp_CreateDate);
+
+        cld.add(java.util.Calendar.MINUTE, 15);
+        String vnp_ExpireDate = formatter.format(cld.getTime());
+        vnp_Params.put("vnp_ExpireDate", vnp_ExpireDate);
+
+        List fieldNames = new ArrayList(vnp_Params.keySet());
+        Collections.sort(fieldNames);
+        StringBuilder hashData = new StringBuilder();
+        StringBuilder query = new StringBuilder();
+        Iterator itr = fieldNames.iterator();
+        while (itr.hasNext()) {
+            String fieldName = (String) itr.next();
+            String fieldValue = (String) vnp_Params.get(fieldName);
+            if ((fieldValue != null) && (fieldValue.length() > 0)) {
+                // Build hash data
+                hashData.append(fieldName);
+                hashData.append('=');
+                try {
+                    hashData.append(java.net.URLEncoder.encode(fieldValue,
+                            java.nio.charset.StandardCharsets.US_ASCII.toString()));
+                    // Build query
+                    query.append(java.net.URLEncoder.encode(fieldName,
+                            java.nio.charset.StandardCharsets.US_ASCII.toString()));
+                    query.append('=');
+                    query.append(java.net.URLEncoder.encode(fieldValue,
+                            java.nio.charset.StandardCharsets.US_ASCII.toString()));
+                } catch (java.io.UnsupportedEncodingException e) {
+                    log.error("Encoding error", e);
+                }
+                if (itr.hasNext()) {
+                    query.append('&');
+                    hashData.append('&');
+                }
+            }
+        }
+
+        String queryUrl = query.toString();
+        String vnp_SecureHash = vnPayConfig.hashAllFields(vnp_Params);
+        queryUrl += "&vnp_SecureHash=" + vnp_SecureHash;
+
+        return vnPayConfig.getVnpPayUrl() + "?" + queryUrl;
+    }
+
+    public boolean processVNPayCallback(Map<String, String> params) {
+        log.info("Processing VNPay Callback with params: {}", params);
+
+        String vnp_ResponseCode = params.get("vnp_ResponseCode");
+        String vnp_TxnRef = params.get("vnp_TxnRef");
+
+        if (vnp_TxnRef == null) {
+            return false;
+        }
+
+        // vnp_TxnRef is formatted as {orderId}_{randomString}
+        Long orderId = Long.parseLong(vnp_TxnRef.split("_")[0]);
+
+        if ("00".equals(vnp_ResponseCode)) {
+            completeMockPayment(orderId);
+            log.info("VNPay Payment Successful for order ID: {}", orderId);
+            return true;
+        } else {
+            cancelMockPayment(orderId);
+            log.warn("VNPay Payment Failed for order ID: {}, response code: {}", orderId, vnp_ResponseCode);
+            return false;
+        }
+    }
+
+    public String createPayPalPaymentUrl(Long orderId) {
+        Order order = orderRepository.findById(orderId)
+                .orElseThrow(() -> new org.springframework.web.server.ResponseStatusException(
+                        org.springframework.http.HttpStatus.NOT_FOUND, "Order not found"));
+        return payPalService.createPayPalOrder(order);
+    }
+
+    public boolean processPayPalCallback(Long orderId, String token) {
+        log.info("Processing PayPal Callback for order ID: {}, token: {}", orderId, token);
+        boolean success = payPalService.capturePayPalOrder(token);
+        if (success) {
+            completeMockPayment(orderId);
+            log.info("PayPal Payment Successful for order ID: {}", orderId);
+            return true;
+        } else {
+            cancelMockPayment(orderId);
+            log.warn("PayPal Payment Failed for order ID: {}", orderId);
+            return false;
+        }
+    }
+
+
+    @Data
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class BookingMessage {
+        private String requestId;
+        private CreateBookingRequest payload;
+    }
+
+    public String submitBookingRequest(CreateBookingRequest request) {
+        String requestId = UUID.randomUUID().toString();
+        log.info("Submitting booking request {} to Kafka", requestId);
+
+        BookingMessage message = new BookingMessage(requestId, request);
+        String json = "";
+        try {
+            json = objectMapper.writeValueAsString(message);
+            kafkaTemplate.send(BOOKING_TOPIC, requestId, json);
+
+            // Save to Outbox DB as PROCESSED
+            outboxEventRepository.save(ict.thesis.booking.enties.OutboxEvent.builder()
+                    .aggregateType("BookingRequest")
+                    .aggregateId(requestId)
+                    .eventType("BOOKING_REQUEST_CREATED")
+                    .payload(json)
+                    .createdAt(java.time.Instant.now())
+                    .status("PROCESSED")
+                    .build());
+        } catch (Exception e) {
+            log.error("Failed to serialize BookingMessage for requestId: {}", requestId, e);
+            // Save to Outbox DB as FAILED
+            outboxEventRepository.save(ict.thesis.booking.enties.OutboxEvent.builder()
+                    .aggregateType("BookingRequest")
+                    .aggregateId(requestId)
+                    .eventType("BOOKING_REQUEST_CREATED")
+                    .payload(json.isEmpty() ? "Error serializing payload" : json)
+                    .createdAt(java.time.Instant.now())
+                    .status("FAILED")
+                    .build());
+            throw new RuntimeException("Failed to serialize booking request", e);
+        }
+        return requestId;
+    }
+
+    public SseEmitter subscribeToBookingResult(String requestId) {
+        SseEmitter emitter = new SseEmitter(60000L); // 60 seconds timeout
+
+        // Check if there is already a cached success result
+        if (completedBookings.containsKey(requestId)) {
+            Long orderId = completedBookings.remove(requestId);
+            try {
+                emitter.send(SseEmitter.event().name("SUCCESS").data(orderId));
+                emitter.complete();
+            } catch (IOException e) {
+                emitter.completeWithError(e);
+            }
+            return emitter;
+        }
+
+        // Check if there is already a cached failed result
+        if (failedBookings.containsKey(requestId)) {
+            String reason = failedBookings.remove(requestId);
+            try {
+                emitter.send(SseEmitter.event().name("FAILED").data(reason));
+                emitter.complete();
+            } catch (IOException e) {
+                emitter.completeWithError(e);
+            }
+            return emitter;
+        }
+
+        emitters.put(requestId, emitter);
+
+        emitter.onCompletion(() -> emitters.remove(requestId));
+        emitter.onTimeout(() -> {
+            emitter.complete();
+            emitters.remove(requestId);
+        });
+        emitter.onError(e -> {
+            emitter.completeWithError(e);
+            emitters.remove(requestId);
+        });
+
+        // Send a dummy event to establish connection immediately
+        try {
+            emitter.send(SseEmitter.event().name("INIT").data("Connected"));
+        } catch (IOException e) {
+            emitter.completeWithError(e);
+        }
+
+        return emitter;
+    }
+
+    public void notifyBookingSuccess(String requestId, Long orderId) {
+        SseEmitter emitter = emitters.get(requestId);
+        if (emitter != null) {
+            try {
+                emitter.send(SseEmitter.event().name("SUCCESS").data(orderId));
+                emitter.complete();
+            } catch (IOException e) {
+                log.error("Failed to send SSE for requestId {}", requestId, e);
+                emitter.completeWithError(e);
+            } finally {
+                emitters.remove(requestId);
+            }
+        } else {
+            log.info("SseEmitter not found for requestId: {}, caching success result.", requestId);
+            completedBookings.put(requestId, orderId);
+        }
+    }
+
+    public void notifyBookingFailed(String requestId, String reason) {
+        SseEmitter emitter = emitters.get(requestId);
+        if (emitter != null) {
+            try {
+                emitter.send(SseEmitter.event().name("FAILED").data(reason));
+                emitter.complete();
+            } catch (IOException e) {
+                log.error("Failed to send FAILED SSE for requestId {}", requestId, e);
+                emitter.completeWithError(e);
+            } finally {
+                emitters.remove(requestId);
+            }
+        } else {
+            log.info("SseEmitter not found for requestId: {}, caching failed result.", requestId);
+            failedBookings.put(requestId, reason);
+        }
+    }
+
+    @org.springframework.transaction.annotation.Transactional(readOnly = true)
+    public Map<String, Object> getOrderDetail(Long orderId) {
+        Order order = orderRepository.findById(orderId)
+                .orElseThrow(() -> new org.springframework.web.server.ResponseStatusException(
+                        org.springframework.http.HttpStatus.NOT_FOUND, "Order not found"));
+
+        Map<String, Object> response = new java.util.HashMap<>();
+        response.put("orderId", order.getId());
+        response.put("orderCode", order.getOrderCode());
+        response.put("eventId", order.getEventId());
+        response.put("subtotal", order.getSubtotal());
+        response.put("totalAmount", order.getTotalAmount());
+        response.put("status", order.getStatus().toString());
+
+        // Use @LoadBalanced RestTemplate with Eureka service name
+        HttpHeaders headers = buildInternalHeaders();
+        HttpEntity<Void> entity = new HttpEntity<>(headers);
+
+        Map<String, String> tierColorMap = new java.util.HashMap<>();
+        String eventUrl = managementServiceUrl + "/api/events/" + order.getEventId();
+        try {
+            ResponseEntity<Map> eventResponse = restTemplate.exchange(eventUrl, HttpMethod.GET, entity, Map.class);
+            Map<String, Object> event = eventResponse.getBody();
+            if (event != null) {
+                response.put("eventTitle", event.get("title"));
+                response.put("eventDate", event.get("startTime"));
+                response.put("eventEndDate", event.get("endTime"));
+                response.put("eventVenue", event.get("venue"));
+                response.put("bannerUrl", event.get("bannerUrl"));
+
+                if (event.get("ticketTiers") != null) {
+                    List<Map<String, Object>> tiers = (List<Map<String, Object>>) event.get("ticketTiers");
+                    for (Map<String, Object> tier : tiers) {
+                        String name = (String) tier.get("name");
+                        String color = (String) tier.get("colorCode");
+                        if (name != null && color != null) {
+                            tierColorMap.put(name, color);
+                        }
+                    }
+                }
+            }
+        } catch (Exception e) {
+            log.error("Failed to fetch event details from management service", e);
+            response.put("eventTitle", "Event " + order.getEventId());
+        }
+
+        // Fetch seat codes mapping (with gateway token)
+        Map<Long, String> seatCodeMap = new java.util.HashMap<>();
+        try {
+            String seatMapsUrl = managementServiceUrl + "/api/events/" + order.getEventId() + "/seat-maps";
+            ResponseEntity<List> seatMapsResponse = restTemplate.exchange(seatMapsUrl, HttpMethod.GET, entity,
+                    List.class);
+            List<Map<String, Object>> seatMaps = seatMapsResponse.getBody();
+            if (seatMaps != null) {
+                for (Map<String, Object> map : seatMaps) {
+                    List<Map<String, Object>> seats = (List<Map<String, Object>>) map.get("seats");
+                    if (seats != null) {
+                        for (Map<String, Object> seat : seats) {
+                            Number idNum = (Number) seat.get("id");
+                            String seatCode = (String) seat.get("seatCode");
+                            if (idNum != null && seatCode != null) {
+                                seatCodeMap.put(idNum.longValue(), seatCode);
+                            }
+                        }
+                    }
+                }
+            }
+        } catch (Exception e) {
+            log.error("Failed to fetch seat map details from management service", e);
+        }
+
+        // Map items
+        List<Map<String, Object>> itemsList = new java.util.ArrayList<>();
+        List<OrderItem> items = orderItemRepository.findByOrderId(orderId);
+        for (OrderItem item : items) {
+            Map<String, Object> itemMap = new java.util.HashMap<>();
+            String tierName = item.getTicketTier() != null ? item.getTicketTier().getName() : "Standard";
+            itemMap.put("ticketTierName", tierName);
+            itemMap.put("price", item.getFinalPrice());
+            itemMap.put("quantity", 1);
+            itemMap.put("ticketTierColor", tierColorMap.getOrDefault(tierName, "#2563eb"));
+
+            String seatLabel = item.getSeatCode();
+            if (seatLabel == null && item.getSeat() != null) {
+                seatLabel = seatCodeMap.get(item.getSeat());
+            }
+            if (seatLabel == null) {
+                seatLabel = "Seat " + item.getSeat();
+            }
+            itemMap.put("seatLabel", seatLabel);
+            itemsList.add(itemMap);
+        }
+        response.put("items", itemsList);
+
+        return response;
+    }
+
+    @org.springframework.transaction.annotation.Transactional(readOnly = true)
+    public org.springframework.data.domain.Page<java.util.Map<String, Object>> getCustomerOrders(Long customerId, org.springframework.data.domain.Pageable pageable) {
+        org.springframework.data.domain.Page<Order> ordersPage = orderRepository.findByCustomerOrderByCreatedAtDesc(customerId, pageable);
+        java.util.List<java.util.Map<String, Object>> result = new java.util.ArrayList<>();
+
+        java.util.Map<Long, java.util.Map<String, Object>> eventCache = new java.util.HashMap<>();
+        HttpHeaders headers = buildInternalHeaders();
+        HttpEntity<Void> entity = new HttpEntity<>(headers);
+
+        for (Order order : ordersPage.getContent()) {
+            java.util.Map<String, Object> orderMap = new java.util.HashMap<>();
+            orderMap.put("id", order.getId());
+            orderMap.put("orderCode", order.getOrderCode());
+            orderMap.put("totalAmount", order.getTotalAmount());
+            orderMap.put("status", order.getStatus().toString());
+            orderMap.put("createdAt", order.getCreatedAt());
+            orderMap.put("eventId", order.getEventId());
+
+            java.util.Map<String, Object> eventData = eventCache.get(order.getEventId());
+            if (eventData == null) {
+                String eventUrl = managementServiceUrl + "/api/events/" + order.getEventId();
+                try {
+                    ResponseEntity<Map> eventResponse = restTemplate.exchange(eventUrl, HttpMethod.GET, entity,
+                            Map.class);
+                    Map<String, Object> event = eventResponse.getBody();
+                    if (event != null) {
+                        eventData = new java.util.HashMap<>();
+                        eventData.put("title", event.get("title"));
+                        eventData.put("bannerUrl", event.get("bannerUrl"));
+                        eventData.put("startTime", event.get("startTime"));
+                        eventCache.put(order.getEventId(), eventData);
+                    }
+                } catch (Exception e) {
+                    log.error("Failed to fetch event details for order {}", order.getId(), e);
+                }
+            }
+
+            if (eventData != null) {
+                orderMap.put("eventTitle", eventData.get("title"));
+                orderMap.put("bannerUrl", eventData.get("bannerUrl"));
+                orderMap.put("eventDate", eventData.get("startTime"));
+            } else {
+                orderMap.put("eventTitle", "Sự kiện " + order.getEventId());
+                orderMap.put("bannerUrl", null);
+                orderMap.put("eventDate", order.getCreatedAt());
+            }
+            result.add(orderMap);
+        }
+        return new org.springframework.data.domain.PageImpl<>(result, pageable, ordersPage.getTotalElements());
+    }
+
+    @org.springframework.transaction.annotation.Transactional(readOnly = true)
+    public org.springframework.data.domain.Page<java.util.Map<String, Object>> getCustomerTickets(Long customerId, org.springframework.data.domain.Pageable pageable) {
+        org.springframework.data.domain.Page<Ticket> ticketsPage = ticketRepository.findByCustomerId(customerId, pageable);
+        java.util.List<java.util.Map<String, Object>> result = new java.util.ArrayList<>();
+
+        java.util.Map<Long, java.util.Map<String, Object>> eventCache = new java.util.HashMap<>();
+        HttpHeaders headers = buildInternalHeaders();
+        HttpEntity<Void> entity = new HttpEntity<>(headers);
+
+        for (Ticket ticket : ticketsPage.getContent()) {
+            java.util.Map<String, Object> ticketMap = new java.util.HashMap<>();
+            ticketMap.put("id", ticket.getId());
+            ticketMap.put("ticketCode", ticket.getTicketCode());
+            ticketMap.put("status", ticket.getStatus() != null ? ticket.getStatus().toString() : null);
+            ticketMap.put("seatLabel",
+                    ticket.getSeatCode() != null ? ticket.getSeatCode() : ("Seat " + ticket.getSeat()));
+            String qrCodeUrl = ticket.getQrCodeUrl();
+            if (qrCodeUrl == null || qrCodeUrl.trim().isEmpty()) {
+                qrCodeUrl = "https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=" + ticket.getTicketCode();
+            }
+            ticketMap.put("qrCodeUrl", qrCodeUrl);
+
+            OrderItem item = ticket.getOrderItem();
+            if (item != null && item.getOrder() != null) {
+                Long eventId = item.getOrder().getEventId();
+                java.util.Map<String, Object> eventData = eventCache.get(eventId);
+                if (eventData == null) {
+                    String eventUrl = managementServiceUrl + "/api/events/" + eventId;
+                    try {
+                        ResponseEntity<Map> eventResponse = restTemplate.exchange(eventUrl, HttpMethod.GET, entity,
+                                Map.class);
+                        Map<String, Object> event = eventResponse.getBody();
+                        if (event != null) {
+                            eventData = new java.util.HashMap<>();
+                            eventData.put("eventTitle", event.get("title"));
+                            eventData.put("eventDate", event.get("startTime"));
+                            eventData.put("venue", event.get("venue"));
+                            eventData.put("bannerUrl", event.get("bannerUrl"));
+                            eventCache.put(eventId, eventData);
+                        }
+                    } catch (Exception e) {
+                        log.error("Failed to fetch event details for ticket {}", ticket.getId(), e);
+                    }
+                }
+
+                if (eventData != null) {
+                    ticketMap.put("eventTitle", eventData.get("eventTitle"));
+                    ticketMap.put("eventDate", eventData.get("eventDate"));
+                    ticketMap.put("venue", eventData.get("venue"));
+                    ticketMap.put("bannerUrl", eventData.get("bannerUrl"));
+                } else {
+                    ticketMap.put("eventTitle", "Sự kiện " + eventId);
+                    ticketMap.put("eventDate", ticket.getExpiresAt());
+                    ticketMap.put("venue", "Chưa xác định");
+                    ticketMap.put("bannerUrl", null);
+                }
+            }
+            result.add(ticketMap);
+        }
+        return new org.springframework.data.domain.PageImpl<>(result, pageable, ticketsPage.getTotalElements());
+    }
+
+    private String fetchCustomerEmailFromIdentityService(Long customerId) {
+        if (customerId == null) {
+            return null;
+        }
+        try {
+            String url = "http://identity/api/users/" + customerId;
+            HttpHeaders headers = buildInternalHeaders();
+            HttpEntity<Void> entity = new HttpEntity<>(headers);
+            ResponseEntity<Map> response = restTemplate.exchange(url, HttpMethod.GET, entity, Map.class);
+            Map<String, Object> body = response.getBody();
+            if (body != null && body.get("email") != null) {
+                return body.get("email").toString();
+            }
+        } catch (Exception e) {
+            log.error("Failed to fetch customer email from Identity service for customerId: {}", customerId, e);
+        }
+        return null;
+    }
+
+    @org.springframework.transaction.annotation.Transactional
+    public java.util.Map<String, Object> getTicketDetailByCode(String ticketCode) {
+        Ticket ticket = ticketRepository.findByTicketCode(ticketCode)
+                .orElseThrow(() -> new org.springframework.web.server.ResponseStatusException(
+                        org.springframework.http.HttpStatus.NOT_FOUND, "Ticket not found"));
+
+        java.util.Map<String, Object> response = new java.util.HashMap<>();
+        
+        // 1. Ticket basic info
+        response.put("id", ticket.getId());
+        response.put("ticketCode", ticket.getTicketCode());
+        response.put("status", ticket.getStatus() != null ? ticket.getStatus().toString() : null);
+        response.put("issuedAt", ticket.getIssuedAt());
+        response.put("expiresAt", ticket.getExpiresAt());
+        
+        String qrCodeUrl = ticket.getQrCodeUrl();
+        if (qrCodeUrl == null || qrCodeUrl.trim().isEmpty()) {
+            qrCodeUrl = "https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=" + ticket.getTicketCode();
+        }
+        response.put("qrCodeUrl", qrCodeUrl);
+
+        // 2. Seat info
+        response.put("seatId", ticket.getSeat());
+        response.put("seatLabel", ticket.getSeatCode() != null ? ticket.getSeatCode() : ("Seat " + ticket.getSeat()));
+
+        // 3. Price & Tier details
+        OrderItem item = ticket.getOrderItem();
+        if (item != null) {
+            response.put("originalPrice", item.getOriginalPrice());
+            response.put("finalPrice", item.getFinalPrice());
+            if (item.getTicketTier() != null) {
+                response.put("ticketTierId", item.getTicketTier().getId());
+                response.put("ticketTierName", item.getTicketTier().getName());
+                response.put("ticketTierColor", "#2563eb");
+            }
+            
+            // 4. Order info
+            Order order = item.getOrder();
+            if (order != null) {
+                response.put("orderId", order.getId());
+                response.put("orderCode", order.getOrderCode());
+                response.put("customerId", order.getCustomer());
+                
+                String customerEmail = order.getCustomerEmail();
+                if (customerEmail == null || customerEmail.trim().isEmpty()) {
+                    customerEmail = fetchCustomerEmailFromIdentityService(order.getCustomer());
+                    if (customerEmail != null) {
+                        order.setCustomerEmail(customerEmail);
+                        orderRepository.save(order);
+                    }
+                }
+                response.put("customerEmail", customerEmail);
+                response.put("orderStatus", order.getStatus() != null ? order.getStatus().toString() : null);
+                response.put("orderCreatedAt", order.getCreatedAt());
+
+                // 5. Event details (Fetch from Management service)
+                Long eventId = order.getEventId();
+                response.put("eventId", eventId);
+                
+                String eventUrl = managementServiceUrl + "/api/events/" + eventId;
+                HttpHeaders headers = buildInternalHeaders();
+                HttpEntity<Void> entity = new HttpEntity<>(headers);
+                try {
+                    ResponseEntity<Map> eventResponse = restTemplate.exchange(eventUrl, HttpMethod.GET, entity, Map.class);
+                    Map<String, Object> event = eventResponse.getBody();
+                    if (event != null) {
+                        response.put("eventTitle", event.get("title"));
+                        response.put("eventDate", event.get("startTime"));
+                        response.put("venue", event.get("venue"));
+                        response.put("bannerUrl", event.get("bannerUrl"));
+                        response.put("eventCity", event.get("city"));
+                    }
+                } catch (Exception e) {
+                    log.error("Failed to fetch event details for ticket detail {}", ticket.getId(), e);
+                    response.put("eventTitle", "Sự kiện " + eventId);
+                    response.put("eventDate", ticket.getExpiresAt());
+                    response.put("venue", "Chưa xác định");
+                    response.put("bannerUrl", null);
+                }
+            }
+        }
+
+        // 6. Check-in history
+        java.util.List<ict.thesis.booking.enties.Checkin> checkins = checkinRepository.findByTicketId(ticket.getId());
+        java.util.List<java.util.Map<String, Object>> checkinList = new java.util.ArrayList<>();
+        for (ict.thesis.booking.enties.Checkin checkin : checkins) {
+            java.util.Map<String, Object> checkinMap = new java.util.HashMap<>();
+            checkinMap.put("id", checkin.getId());
+            checkinMap.put("staffId", checkin.getStaff());
+            checkinMap.put("method", checkin.getMethod() != null ? checkin.getMethod().toString() : null);
+            checkinMap.put("deviceId", checkin.getDeviceId());
+            checkinMap.put("checkedInAt", checkin.getCheckedInAt());
+            checkinList.add(checkinMap);
+        }
+        response.put("checkins", checkinList);
+
+        return response;
+    }
+}

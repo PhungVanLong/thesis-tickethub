@@ -39,7 +39,7 @@ public class Ticket {
     @JoinColumn(name = "order_item_id")
     private OrderItem orderItem;
 
-    @Column(name = "seat_id", unique = true)
+    @Column(name = "seat_id")
     private Long seat;
 
     @Column(name = "seat_code")

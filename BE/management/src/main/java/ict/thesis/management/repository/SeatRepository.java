@@ -10,5 +10,9 @@ import java.util.List;
 public interface SeatRepository extends JpaRepository<Seat, Long> {
     List<Seat> findBySeatMapId(Long seatMapId);
     void deleteAllBySeatMapId(Long seatMapId);
+
+    @org.springframework.data.jpa.repository.Modifying
+    @org.springframework.data.jpa.repository.Query("UPDATE Seat s SET s.status = :status WHERE s.id IN :ids")
+    int updateStatusForIds(ict.thesis.management.entity.enums.SeatStatus status, java.util.List<Long> ids);
 }
 

@@ -5,11 +5,12 @@ import { LanguageService } from '../../../core/services/language.service';
 import { UpperCasePipe } from '@angular/common';
 import { CreateEventTabComponent } from './components/create-event-tab/create-event-tab.component';
 import { EventsTabComponent } from './components/events-tab/events-tab.component';
+import { StaffTabComponent } from './components/staff-tab/staff-tab.component';
 
 @Component({
   selector: 'app-organizer-portal',
   standalone: true,
-  imports: [UpperCasePipe, CreateEventTabComponent, EventsTabComponent, RouterLink],
+  imports: [UpperCasePipe, CreateEventTabComponent, EventsTabComponent, StaffTabComponent, RouterLink],
   templateUrl: './portal.html',
   styleUrl: './portal.scss',
 })

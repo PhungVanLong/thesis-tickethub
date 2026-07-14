@@ -69,6 +69,17 @@ export class EventApiService {
     return this.http.get<any[]>(this.API, { params });
   }
 
+  /** Lấy danh sách sự kiện trang chủ (discovery) theo bộ lọc */
+  getDiscoveryEvents(filters: { category?: string; city?: string; timeRange?: string; sortBy?: string; limit?: number }): Observable<any[]> {
+    const params: any = {};
+    if (filters.category) params['category'] = filters.category;
+    if (filters.city) params['city'] = filters.city;
+    if (filters.timeRange) params['timeRange'] = filters.timeRange;
+    if (filters.sortBy) params['sortBy'] = filters.sortBy;
+    if (filters.limit) params['limit'] = filters.limit;
+    return this.http.get<any[]>(`${this.API}/discovery`, { params });
+  }
+
   /** Organizer lấy danh sách sự kiện của mình */
   getOrganizerEvents(): Observable<any[]> {
     return this.http.get<any[]>(`${this.API}/organizer/my-events`);
@@ -77,6 +88,11 @@ export class EventApiService {
   /** Lấy chi tiết thông tin của một sự kiện */
   getEventDetail(eventId: number): Observable<any> {
     return this.http.get<any>(`${this.API}/${eventId}`);
+  }
+
+  /** Trả về URL của luồng SSE để lắng nghe cập nhật sơ đồ ghế */
+  getSeatMapStreamUrl(eventId: number): string {
+    return `${this.API}/${eventId}/seat-maps/stream`;
   }
 
   /** Organizer publish sự kiện (phải ở trạng thái APPROVED) */
@@ -92,5 +108,12 @@ export class EventApiService {
   /** Admin duyệt / từ chối sự kiện */
   approveEvent(eventId: number, decision: ApprovalDecision, reason: string): Observable<any> {
     return this.http.post(`${this.API}/${eventId}/approve`, { decision, reason });
+  }
+
+  /** Lấy danh sách sự kiện liên quan (You Might Also Like) */
+  getRelatedEvents(eventId: number, limit?: number): Observable<any[]> {
+    const params: any = {};
+    if (limit) params['limit'] = limit;
+    return this.http.get<any[]>(`${this.API}/${eventId}/related`, { params });
   }
 }

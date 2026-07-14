@@ -17,6 +17,7 @@ import java.util.List;
 public class SeatMapController {
 
     private final SeatMapService seatMapService;
+    private final ict.thesis.management.service.SeatStatusSseService seatStatusSseService;
 
     /**
      * GET /api/events/{eventId}/seat-maps
@@ -27,6 +28,16 @@ public class SeatMapController {
     public ResponseEntity<List<SeatMapResponse>> getSeatMaps(
             @PathVariable Long eventId) {
         return ResponseEntity.ok(seatMapService.getSeatMaps(eventId));
+    }
+
+    /**
+     * GET /api/events/{eventId}/seat-maps/stream
+     * Đăng ký nhận luồng dữ liệu thay đổi trạng thái ghế theo thời gian thực.
+     */
+    @GetMapping(path = "/stream", produces = org.springframework.http.MediaType.TEXT_EVENT_STREAM_VALUE)
+    public org.springframework.web.servlet.mvc.method.annotation.SseEmitter streamSeatUpdates(
+            @PathVariable Long eventId) {
+        return seatStatusSseService.subscribe(eventId);
     }
 
     /**

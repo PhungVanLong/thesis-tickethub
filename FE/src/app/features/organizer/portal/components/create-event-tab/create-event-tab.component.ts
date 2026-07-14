@@ -77,11 +77,73 @@ export class CreateEventTabComponent implements OnInit {
     cols?: number;
     tierName?: string;
     labelPrefix?: string;
+    customPrefix?: boolean;
     rotation?: number;
     startCol?: number;
   }[]>([]);
 
   selectedItemId = signal<string | null>(null);
+  workspaceZoom = signal<number>(1);
+
+  zoomIn(): void {
+    this.workspaceZoom.update(z => Math.min(z + 0.1, 2));
+  }
+
+  zoomOut(): void {
+    this.workspaceZoom.update(z => Math.max(z - 0.1, 0.2));
+  }
+
+  resetZoom(): void {
+    this.workspaceZoom.set(1);
+  }
+
+  onWheelZoom(event: WheelEvent): void {
+    if (event.ctrlKey || event.metaKey) {
+      event.preventDefault();
+      if (event.deltaY < 0) {
+        this.zoomIn();
+      } else {
+        this.zoomOut();
+      }
+    }
+  }
+
+  onMouseDown(e: MouseEvent): void {
+    const target = e.target as HTMLElement;
+    if (target.closest('.draggable-item')) return; // let cdkDrag handle item dragging
+    
+    this.isDraggingMap = true;
+    const currentTarget = e.currentTarget as HTMLElement;
+    this.dragStartX = e.pageX - currentTarget.offsetLeft;
+    this.dragStartY = e.pageY - currentTarget.offsetTop;
+    this.dragScrollLeft = currentTarget.scrollLeft;
+    this.dragScrollTop = currentTarget.scrollTop;
+    currentTarget.style.cursor = 'grabbing';
+  }
+
+  onMouseLeave(e: MouseEvent): void {
+    this.isDraggingMap = false;
+    const currentTarget = e.currentTarget as HTMLElement;
+    currentTarget.style.cursor = 'default';
+  }
+
+  onMouseUp(e: MouseEvent): void {
+    this.isDraggingMap = false;
+    const currentTarget = e.currentTarget as HTMLElement;
+    currentTarget.style.cursor = 'default';
+  }
+
+  onMouseMove(e: MouseEvent): void {
+    if (!this.isDraggingMap) return;
+    e.preventDefault();
+    const currentTarget = e.currentTarget as HTMLElement;
+    const x = e.pageX - currentTarget.offsetLeft;
+    const y = e.pageY - currentTarget.offsetTop;
+    const walkX = (x - this.dragStartX);
+    const walkY = (y - this.dragStartY);
+    currentTarget.scrollLeft = this.dragScrollLeft - walkX;
+    currentTarget.scrollTop = this.dragScrollTop - walkY;
+  }
 
   get tiersArray(): FormArray {
     return this.step2Form.get('tiers') as FormArray;
@@ -119,23 +181,44 @@ export class CreateEventTabComponent implements OnInit {
     return this.tiersArray.value.filter((t: any) => t.tierType === 'SEATED');
   }
 
+  // Panning State
+  isDraggingMap = false;
+  dragStartX = 0;
+  dragStartY = 0;
+  dragScrollLeft = 0;
+  dragScrollTop = 0;
+
+  getCenterCoords(): { x: number, y: number } {
+    const container = document.querySelector('.grid-canvas-container');
+    if (container) {
+      const rect = container.getBoundingClientRect();
+      const zoom = this.workspaceZoom();
+      const x = (container.scrollLeft + rect.width / 2) / zoom;
+      const y = (container.scrollTop + rect.height / 2) / zoom;
+      return { x: Math.max(0, x - 100), y: Math.max(0, y - 50) };
+    }
+    return { x: 1500, y: 1500 };
+  }
+
   addStage(): void {
     const items = this.draggableItems();
+    const pos = this.getCenterCoords();
     this.draggableItems.set([...items, {
       id: `stage-${Date.now()}`,
       type: 'stage',
-      x: 350,
-      y: 50
+      x: pos.x,
+      y: pos.y
     }]);
   }
 
   addSeatBlock(): void {
     const items = this.draggableItems();
+    const pos = this.getCenterCoords();
     const newItems = [...items, {
       id: `block-${Date.now()}`,
       type: 'block',
-      x: 350,
-      y: 200,
+      x: pos.x,
+      y: pos.y,
       rows: 5,
       cols: 10,
       labelPrefix: 'A',
@@ -171,17 +254,24 @@ export class CreateEventTabComponent implements OnInit {
     if (!id) return;
     
     let finalValue = value;
+    let isCustomPrefix = false;
+
     if (field === 'rows' || field === 'cols' || field === 'rotation') {
       finalValue = Number(value) || 0;
     }
     if (field === 'labelPrefix') {
       finalValue = value.toUpperCase();
+      isCustomPrefix = true;
     }
 
     const items = this.draggableItems();
-    let newItems = items.map(item => item.id === id ? { ...item, [field]: finalValue } : item);
+    let newItems = items.map(item => item.id === id ? { 
+      ...item, 
+      [field]: finalValue,
+      ...(isCustomPrefix ? { customPrefix: true } : {})
+    } : item);
+    
     newItems = this.recalculateSeatLayout(newItems);
-
     this.draggableItems.set(newItems);
   }
 
@@ -261,9 +351,9 @@ export class CreateEventTabComponent implements OnInit {
     groups.sort((a, b) => a.y - b.y);
 
     // 2. Intelligent Numbering
-    const firstBlock = items.find(i => i.type === 'block');
     let nextPrefixCode = 65; // 'A'
-    if (firstBlock && firstBlock.labelPrefix && firstBlock.labelPrefix.length === 1) {
+    const firstBlock = items.find(i => i.type === 'block');
+    if (firstBlock && firstBlock.labelPrefix && firstBlock.labelPrefix.length === 1 && !firstBlock.customPrefix) {
        nextPrefixCode = firstBlock.labelPrefix.charCodeAt(0);
     }
 
@@ -273,14 +363,24 @@ export class CreateEventTabComponent implements OnInit {
       // Sort blocks left to right
       group.blocks.sort((a, b) => a.x - b.x);
 
+      let groupPrefix = String.fromCharCode(nextPrefixCode);
+      
+      const customBlock = group.blocks.find(b => b.customPrefix);
+      if (customBlock && customBlock.labelPrefix) {
+        groupPrefix = customBlock.labelPrefix;
+        if (groupPrefix.length === 1) {
+          nextPrefixCode = groupPrefix.charCodeAt(0);
+        }
+      }
+
       let currentColOffset = 0;
       let maxRowsInGroup = 0;
-      const groupPrefix = String.fromCharCode(nextPrefixCode);
 
       for (const block of group.blocks) {
+        const blockPrefix = block.customPrefix ? block.labelPrefix : groupPrefix;
         updatedBlocks.set(block.id, {
           ...block,
-          labelPrefix: groupPrefix,
+          labelPrefix: blockPrefix,
           startCol: currentColOffset + 1
         });
         currentColOffset += (block.cols || 1);
@@ -289,7 +389,9 @@ export class CreateEventTabComponent implements OnInit {
         }
       }
 
-      nextPrefixCode += maxRowsInGroup;
+      if (groupPrefix.length === 1) {
+         nextPrefixCode = groupPrefix.charCodeAt(0) + maxRowsInGroup;
+      }
     }
 
     return items.map(item => {
@@ -427,6 +529,7 @@ export class CreateEventTabComponent implements OnInit {
     return {
       organizationId,
       title: s1.title,
+      category: s1.category,
       description: s1.description || '',
       startTime: s1.startTime ? new Date(s1.startTime).toISOString() : null,
       endTime: s1.endTime ? new Date(s1.endTime).toISOString() : null,
