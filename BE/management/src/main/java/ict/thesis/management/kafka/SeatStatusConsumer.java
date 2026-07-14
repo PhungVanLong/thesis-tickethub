@@ -20,7 +20,7 @@ public class SeatStatusConsumer {
     private final SeatStatusSseService seatStatusSseService;
     private final ObjectMapper objectMapper = new ObjectMapper();
 
-    @KafkaListener(topics = "seat-status-updates", groupId = "management-group")
+    @KafkaListener(topics = "${kafka.topic.seat-status-updates}", groupId = "management-group")
     @Transactional
     public void consume(String payload) {
         log.info("Received seat status update event payload: {}", payload);

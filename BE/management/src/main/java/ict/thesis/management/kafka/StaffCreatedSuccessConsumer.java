@@ -35,7 +35,7 @@ public class StaffCreatedSuccessConsumer {
     private final EventStaffRepository eventStaffRepository;
     private final ObjectMapper objectMapper;
 
-    @KafkaListener(topics = "user-staff-created-success-topic", groupId = "management-group")
+    @KafkaListener(topics = "${kafka.topic.user-staff-created-success}", groupId = "management-group")
     @Transactional
     public void consume(String payload) {
         logger.info("Received staff creation success callback event. Payload: {}", payload);

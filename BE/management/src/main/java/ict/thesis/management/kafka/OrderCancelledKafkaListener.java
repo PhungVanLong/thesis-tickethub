@@ -20,7 +20,7 @@ public class OrderCancelledKafkaListener {
     private final TicketTierRepository ticketTierRepository;
     private final ObjectMapper objectMapper = new ObjectMapper();
 
-    @KafkaListener(topics = "order-cancelled-topic", groupId = "management-group")
+    @KafkaListener(topics = "${kafka.topic.order-cancelled}", groupId = "management-group")
     @Transactional
     public void handleOrderCancelledEvent(String message) {
         log.info("Received order-cancelled event: {}", message);

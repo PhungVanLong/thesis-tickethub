@@ -88,7 +88,7 @@ public class TicketController {
             throw new ResponseStatusException(HttpStatus.CONFLICT, "Ticket has already been checked in");
         }
 
-        // Event time check
+        // Event time check (Local via EventRef / write-through fallback)
         Long eventId = request.getEventId() != null ? request.getEventId()
                 : (ticket.getOrderItem() != null && ticket.getOrderItem().getOrder() != null
                         ? ticket.getOrderItem().getOrder().getEventId() : null);
@@ -96,22 +96,13 @@ public class TicketController {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Ticket does not belong to any event");
         }
 
-        String eventUrl = managementServiceUrl + "/api/events/" + eventId;
         try {
-            org.springframework.http.HttpHeaders headers = new org.springframework.http.HttpHeaders();
-            headers.set("X-Gateway-Token", gatewaySharedSecret);
-            org.springframework.http.HttpEntity<Void> entity = new org.springframework.http.HttpEntity<>(headers);
-            ResponseEntity<Map> eventResponse = restTemplate.exchange(
-                    eventUrl, org.springframework.http.HttpMethod.GET, entity, Map.class
-            );
-            Map eventData = eventResponse.getBody();
-            if (eventData != null) {
-                String startStr = (String) eventData.get("startTime");
-                String endStr = (String) eventData.get("endTime");
-                if (startStr != null && endStr != null) {
-                    Instant startTime = Instant.parse(startStr);
-                    Instant endTime = Instant.parse(endStr);
-                    Instant now = Instant.now();
+            ict.thesis.booking.enties.EventRef event = bookingService.getOrSyncEvent(eventId);
+            if (event != null) {
+                Instant startTime = event.getStartTime();
+                Instant endTime = event.getEndTime();
+                Instant now = Instant.now();
+                if (startTime != null && endTime != null) {
                     if (now.isBefore(startTime) || now.isAfter(endTime)) {
                         throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Check-in is only allowed during the event time");
                     }
@@ -225,23 +216,14 @@ public class TicketController {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Ticket does not belong to any event");
         }
 
-        // Event time check
-        String eventUrl = managementServiceUrl + "/api/events/" + eventId;
+        // Event time check (Local via EventRef / write-through fallback)
         try {
-            org.springframework.http.HttpHeaders headers = new org.springframework.http.HttpHeaders();
-            headers.set("X-Gateway-Token", gatewaySharedSecret);
-            org.springframework.http.HttpEntity<Void> entity = new org.springframework.http.HttpEntity<>(headers);
-            ResponseEntity<Map> eventResponse = restTemplate.exchange(
-                    eventUrl, org.springframework.http.HttpMethod.GET, entity, Map.class
-            );
-            Map eventData = eventResponse.getBody();
-            if (eventData != null) {
-                String startStr = (String) eventData.get("startTime");
-                String endStr = (String) eventData.get("endTime");
-                if (startStr != null && endStr != null) {
-                    Instant startTime = Instant.parse(startStr);
-                    Instant endTime = Instant.parse(endStr);
-                    Instant now = Instant.now();
+            ict.thesis.booking.enties.EventRef event = bookingService.getOrSyncEvent(eventId);
+            if (event != null) {
+                Instant startTime = event.getStartTime();
+                Instant endTime = event.getEndTime();
+                Instant now = Instant.now();
+                if (startTime != null && endTime != null) {
                     if (now.isBefore(startTime) || now.isAfter(endTime)) {
                         throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Check-in is only allowed during the event time");
                     }

@@ -34,7 +34,7 @@ public class OrderRefundKafkaListener {
     private final BookingService bookingService;
     private final ObjectMapper objectMapper = new ObjectMapper();
 
-    @KafkaListener(topics = "order-refund-topic", groupId = "booking-group")
+    @KafkaListener(topics = "${kafka.topic.order-refund}", groupId = "booking-group")
     @Transactional
     public void handleOrderRefundEvent(String message) {
         log.info("Received order-refund event: {}", message);

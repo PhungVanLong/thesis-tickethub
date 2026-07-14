@@ -26,7 +26,10 @@ public class OrderPaidKafkaListener {
     private final EmailService emailService;
     private final ObjectMapper objectMapper = new ObjectMapper();
 
-    @KafkaListener(topics = "order-paid-topic", groupId = "management-group")
+    @org.springframework.beans.factory.annotation.Value("${kafka.topic.order-refund}")
+    private String orderRefundTopic;
+
+    @KafkaListener(topics = "${kafka.topic.order-paid}", groupId = "management-group")
     @Transactional
     public void handleOrderPaidEvent(String message) {
         log.info("Received order-paid event: {}", message);
@@ -73,7 +76,7 @@ public class OrderPaidKafkaListener {
                     refundEvent.put("reason", "Seat already sold (overbooking conflict)");
                     String refundMsg = objectMapper.writeValueAsString(refundEvent);
                     log.info("Publishing refund event to order-refund-topic: {}", refundMsg);
-                    kafkaTemplate.send("order-refund-topic", orderId.toString(), refundMsg);
+                    kafkaTemplate.send(orderRefundTopic, orderId.toString(), refundMsg);
                     return; // Abort ticket processing and email sending
                 }
 

@@ -16,7 +16,7 @@ public class UserRolePromotedFailedConsumer {
     private static final Logger logger = LoggerFactory.getLogger(UserRolePromotedFailedConsumer.class);
     private final OrganizationRepository organizationRepository;
 
-    @KafkaListener(topics = "user-role-promote-failed-topic", groupId = "management-group")
+    @KafkaListener(topics = "${kafka.topic.user-role-promote-failed}", groupId = "management-group")
     @Transactional
     public void consume(String payload) {
         logger.error("Received user role promotion failed callback event. Starting Saga compensating transaction. Payload: {}", payload);

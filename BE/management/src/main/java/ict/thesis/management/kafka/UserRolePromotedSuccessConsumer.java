@@ -17,7 +17,7 @@ public class UserRolePromotedSuccessConsumer {
     private final OrganizationRepository organizationRepository;
     private final EmailService emailService;
 
-    @KafkaListener(topics = "user-role-promoted-success-topic", groupId = "management-group")
+    @KafkaListener(topics = "${kafka.topic.user-role-promoted-success}", groupId = "management-group")
     public void consume(String payload) {
         logger.info("Received user role promotion success callback event. Payload: {}", payload);
         try {
