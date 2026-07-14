@@ -501,6 +501,7 @@ public class BookingService {
         response.put("subtotal", order.getSubtotal());
         response.put("totalAmount", order.getTotalAmount());
         response.put("status", order.getStatus().toString());
+        response.put("createdAt", order.getCreatedAt() != null ? order.getCreatedAt().toString() : null);
 
         Map<String, String> tierColorMap = new java.util.HashMap<>();
         try {

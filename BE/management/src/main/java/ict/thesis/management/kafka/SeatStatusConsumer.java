@@ -39,13 +39,8 @@ public class SeatStatusConsumer {
             // Convert String status to SeatStatus enum
             SeatStatus targetStatus = SeatStatus.valueOf(event.status());
             
-            // Perform DB update ONLY if not RESERVED (no-timer pay-to-win logic)
-            if (targetStatus != SeatStatus.RESERVED) {
-                int updatedCount = seatRepository.updateStatusForIds(targetStatus, event.seatIds());
-                log.info("Updated {} seats to status {} in DB", updatedCount, targetStatus);
-            } else {
-                log.info("Skipped DB update for RESERVED status (Pay-To-Win logic), but will broadcast SSE");
-            }
+            int updatedCount = seatRepository.updateStatusForIds(targetStatus, event.seatIds());
+            log.info("Updated {} seats to status {} in DB", updatedCount, targetStatus);
 
             // Broadcast to all active SSE clients
             seatStatusSseService.broadcast(event.eventId(), event);
