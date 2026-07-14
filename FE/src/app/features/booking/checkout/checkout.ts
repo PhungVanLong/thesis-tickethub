@@ -118,6 +118,9 @@ export class CheckoutComponent implements OnInit, OnDestroy {
         if (res.status === 'PAID') {
           this.paymentCompleted = true;
           this.showSuccessModal.set(true);
+        } else if (res.status === 'REFUNDED') {
+          this.paymentCompleted = true;
+          this.paymentError.set('Seat conflict detected! This seat was booked by another user first. You have been fully refunded.');
         }
       },
       error: () => {
@@ -247,6 +250,11 @@ export class CheckoutComponent implements OnInit, OnDestroy {
             clearInterval(this.pollInterval);
             this.showProcessingModal.set(false);
             this.paymentError.set('Payment was cancelled or failed.');
+          } else if (res.status === 'REFUNDED') {
+            clearInterval(this.pollInterval);
+            this.showProcessingModal.set(false);
+            this.paymentCompleted = true;
+            this.paymentError.set('Seat conflict detected! This seat was booked by another user first. You have been fully refunded.');
           }
         }
       });

@@ -18,7 +18,10 @@ public class UserRoleDemoteConsumer {
     private final UserRepository userRepository;
     private final KafkaTemplate<String, String> kafkaTemplate;
 
-    @KafkaListener(topics = "user-role-demote-topic", groupId = "identity-group")
+    @org.springframework.beans.factory.annotation.Value("${kafka.topic.user-role-demoted-success}")
+    private String demoteSuccessTopic;
+
+    @KafkaListener(topics = "${kafka.topic.user-role-demote}", groupId = "identity-group")
     @Transactional
     public void consume(String payload) {
         logger.info("Received request to demote user role. Payload: {}", payload);
@@ -58,7 +61,7 @@ public class UserRoleDemoteConsumer {
                 // Gửi callback thành công về cho management
                 if (!finalOrgIdStr.isEmpty()) {
                     logger.info("Sending callback demote success event to Kafka: {}", payload);
-                    kafkaTemplate.send("user-role-demoted-success-topic", payload);
+                    kafkaTemplate.send(demoteSuccessTopic, payload);
                 }
             }, () -> {
                 logger.error("User with ID: {} not found for role demotion", finalUserId);

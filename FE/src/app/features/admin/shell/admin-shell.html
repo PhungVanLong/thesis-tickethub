@@ -2,13 +2,16 @@
   <!-- Sidebar -->
   <aside class="sidebar">
     <div class="sidebar-brand">
-      <span class="brand-logo">
-        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width: 1.2em; height: 1.2em;"><path d="M4 14a2 2 0 0 1-2-2 2 2 0 0 1 2-2V6a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v4a2 2 0 0 1 2 2 2 2 0 0 1-2 2v4a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2z"/><line x1="9" y1="8" x2="15" y2="8"/><line x1="9" y1="12" x2="15" y2="12"/><line x1="9" y1="16" x2="15" y2="16"/></svg>
-      </span>
+      <div class="brand-icon" style="background-color: #003fc4; display: flex; align-items: center; justify-content: center; width: 36px; height: 36px; border-radius: 4px; flex-shrink: 0;">
+        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="#ffffff" stroke="#003fc4" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M2 9a3 3 0 0 1 0 6v2a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-2a3 3 0 0 1 0-6V7a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2Z"/>
+          <path d="M13 5v2"/><path d="M13 17v2"/><path d="M13 11v2"/>
+        </svg>
+      </div>
       @if (sidebarOpen()) {
         <div class="brand-text">
-          <span class="brand-name">TicketHub</span>
-          <span class="brand-sub">Admin Portal</span>
+          <span class="brand-name" style="color: #003fc4; font-size: 18px;">TicketHub</span>
+          <span class="brand-sub" style="font-size: 12px; color: #64748b;">Admin Portal</span>
         </div>
       }
     </div>
@@ -16,7 +19,12 @@
     <nav class="sidebar-nav">
       <a routerLink="/admin/dashboard" routerLinkActive="active" class="nav-item">
         <span class="nav-icon">
-          <svg stroke-linejoin="round" stroke-linecap="round" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="currentColor" stroke="none">
+            <rect width="7" height="9" x="3" y="3" rx="1"/>
+            <rect width="7" height="5" x="14" y="3" rx="1"/>
+            <rect width="7" height="9" x="14" y="12" rx="1"/>
+            <rect width="7" height="5" x="3" y="16" rx="1"/>
+          </svg>
         </span>
         @if (sidebarOpen()) {
           <span class="nav-label">Dashboard</span>
@@ -34,17 +42,27 @@
 
       <a routerLink="/admin/events" routerLinkActive="active" class="nav-item">
         <span class="nav-icon">
-          <svg stroke-linejoin="round" stroke-linecap="round" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <rect width="18" height="18" x="3" y="4" rx="2" ry="2"/>
+            <line x1="16" x2="16" y1="2" y2="6"/>
+            <line x1="8" x2="8" y1="2" y2="6"/>
+            <line x1="3" x2="21" y1="10" y2="10"/>
+            <circle cx="8" cy="16" r="2" fill="currentColor" stroke="none"/>
+          </svg>
         </span>
         @if (sidebarOpen()) {
           <span class="nav-label">Event Verification</span>
         }
       </a>
 
-      <!-- Dummy links for matching screen mockup -->
       <a routerLink="." class="nav-item dummy-link">
         <span class="nav-icon">
-          <svg stroke-linejoin="round" stroke-linecap="round" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/>
+            <circle cx="9" cy="7" r="4"/>
+            <path d="M22 21v-2a4 4 0 0 0-3-3.87"/>
+            <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+          </svg>
         </span>
         @if (sidebarOpen()) {
           <span class="nav-label">User Management</span>
@@ -78,18 +96,6 @@
         }
       </a>
     </nav>
-
-    <div class="sidebar-footer">
-      <div class="user-info">
-        <div class="user-avatar">{{ userInitial }}</div>
-        @if (sidebarOpen()) {
-          <div class="user-details">
-            <span class="user-name">{{ userProfile()?.fullName || 'Admin User' }}</span>
-            <span class="user-role">Super Admin</span>
-          </div>
-        }
-      </div>
-    </div>
   </aside>
 
   <!-- Main Content -->
@@ -106,9 +112,45 @@
       </div>
 
       <div class="topbar-actions">
-        <button class="icon-btn" aria-label="Notifications" title="Notifications">
-          <svg stroke-linejoin="round" stroke-linecap="round" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
-        </button>
+        <!-- Notifications Dropdown -->
+        <div class="dropdown-wrapper">
+          <button type="button" class="icon-btn" (click)="toggleNotifications($event)" aria-label="Notifications" title="Notifications" style="position: relative;">
+            <svg stroke-linejoin="round" stroke-linecap="round" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+            @if (unreadCount() > 0) {
+              <span class="notification-badge">{{ unreadCount() }}</span>
+            }
+          </button>
+          
+          @if (showNotifications()) {
+            <div class="dropdown-menu notifications-menu" (click)="$event.stopPropagation()" style="width: 320px; max-height: 400px; overflow-y: auto;">
+              <div class="notifications-header" style="display: flex; justify-content: space-between; align-items: center; padding: 10px 15px; border-bottom: 1px solid #e2e8f0;">
+                <span class="notifications-title" style="font-weight: 600; font-size: 14px;">Notifications</span>
+                @if (unreadCount() > 0) {
+                  <button type="button" class="mark-all-read-btn" (click)="markAllAsRead($event)" style="font-size: 11px; color: #3b82f6; background: none; border: none; cursor: pointer; padding: 0;">Mark all as read</button>
+                }
+              </div>
+              
+    <div class="notifications-list">
+      @if (notifications().length === 0) {
+        <div class="no-notifications" style="padding: 20px; text-align: center; color: #64748b; font-size: 13px;">No notifications</div>
+      } @else {
+        @for (n of notifications(); track n.id) {
+          <div class="notification-item" [class.unread]="!n.read" (click)="onNotificationClick(n, $event)" style="padding: 12px 15px; border-bottom: 1px solid #f1f5f9; display: flex; justify-content: space-between; align-items: flex-start; cursor: pointer; transition: background-color 0.2s;" [style.background-color]="!n.read ? '#f8fafc' : 'transparent'">
+            <div class="notification-body" style="flex: 1; margin-right: 8px;">
+              <div class="notification-item-title" style="font-weight: 600; font-size: 13px; color: #1e293b; margin-bottom: 2px;">{{ n.title }}</div>
+              <div class="notification-item-msg" style="font-size: 12px; color: #475569; line-height: 1.4; margin-bottom: 4px;">{{ n.message }}</div>
+              <div class="notification-item-time" style="font-size: 10px; color: #94a3b8;">{{ n.createdAt | date:'HH:mm dd/MM/yyyy' }}</div>
+            </div>
+            @if (!n.read) {
+              <button type="button" class="read-dot-btn" (click)="markAsRead(n.id, $event)" title="Mark as read" style="width: 8px; height: 8px; border-radius: 50%; background-color: #3b82f6; border: none; cursor: pointer; padding: 0; align-self: center; margin-left: 4px; flex-shrink: 0;"></button>
+            }
+          </div>
+        }
+      }
+    </div>
+            </div>
+          }
+        </div>
         <button class="icon-btn" aria-label="Help" title="Help">
           <svg stroke-linejoin="round" stroke-linecap="round" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
         </button>

@@ -1,0 +1,147 @@
+<div class="organizer-checkin-shell" style="padding: 24px; background: #ffffff; border-radius: 12px; border: 1px solid #e2e8f0;">
+  <!-- Header -->
+  <header class="page-header" style="margin-bottom: 24px;">
+    <div class="header-title-section" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 16px;">
+      <div>
+        <h1 style="font-size: 24px; font-weight: 700; color: #0f172a; margin: 0;">Event Check-in Manager</h1>
+        <p style="font-size: 13.5px; color: #64748b; margin: 4px 0 0 0;">Monitor live entries and manually check in attendees across all gates.</p>
+      </div>
+
+      <div class="event-selector-row" style="display: flex; align-items: center; gap: 8px;">
+        <span class="calendar-icon" style="color: #64748b; display: flex; align-items: center;">
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <rect width="18" height="18" x="3" y="4" rx="2" ry="2"/>
+            <line x1="16" x2="16" y1="2" y2="6"/>
+            <line x1="8" x2="8" y1="2" y2="6"/>
+            <line x1="3" x2="21" y1="10" y2="10"/>
+          </svg>
+        </span>
+        <select class="event-select" [ngModel]="selectedEventId()" (ngModelChange)="onEventChange($event)" style="padding: 8px 12px; border-radius: 6px; border: 1px solid #cbd5e1; background: #ffffff; color: #0f172a; font-size: 14px; font-weight: 500; outline: none; cursor: pointer;">
+          @for (event of events(); track event.id) {
+            <option [ngValue]="event.id">{{ event.title }}</option>
+          }
+        </select>
+      </div>
+    </div>
+
+    <!-- Live occupancy stats -->
+    <div class="summary-cards" style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-top: 20px;">
+      <div class="summary-card" style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 16px;">
+        <span class="summary-label" style="font-size: 11px; font-weight: 700; color: #64748b; letter-spacing: 0.05em; text-transform: uppercase;">Checked-In</span>
+        <strong class="text-blue" style="font-size: 24px; font-weight: 800; color: #2563eb; display: block; margin-top: 6px;">{{ checkedInCount() | number }}</strong>
+      </div>
+      <div class="summary-card" style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 16px;">
+        <span class="summary-label" style="font-size: 11px; font-weight: 700; color: #64748b; letter-spacing: 0.05em; text-transform: uppercase;">Total Capacity</span>
+        <strong style="font-size: 24px; font-weight: 800; color: #0f172a; display: block; margin-top: 6px;">{{ totalCapacity() | number }}</strong>
+      </div>
+      <div class="summary-card" style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 16px;">
+        <span class="summary-label" style="font-size: 11px; font-weight: 700; color: #64748b; letter-spacing: 0.05em; text-transform: uppercase;">Occupancy Percentage</span>
+        <strong style="font-size: 24px; font-weight: 800; color: #0f172a; display: block; margin-top: 6px;">{{ capacityPercent() }}%</strong>
+      </div>
+    </div>
+  </header>
+
+  <!-- Navigation tab buttons (Scan vs History) -->
+  <div class="tab-buttons-row" style="display: flex; gap: 8px; border-bottom: 1px solid #e2e8f0; margin-bottom: 24px; padding-bottom: 1px;">
+    <button type="button" (click)="activeTab.set('scan')" [class.active]="activeTab() === 'scan'" style="background: none; border: none; padding: 10px 16px; font-size: 14px; font-weight: 600; color: #64748b; cursor: pointer; border-bottom: 2px solid transparent; transition: all 0.2s;" [style.color]="activeTab() === 'scan' ? '#2563eb' : '#64748b'" [style.border-color]="activeTab() === 'scan' ? '#2563eb' : 'transparent'">
+      Manual Entry
+    </button>
+    <button type="button" (click)="activeTab.set('history')" [class.active]="activeTab() === 'history'" style="background: none; border: none; padding: 10px 16px; font-size: 14px; font-weight: 600; color: #64748b; cursor: pointer; border-bottom: 2px solid transparent; transition: all 0.2s;" [style.color]="activeTab() === 'history' ? '#2563eb' : '#64748b'" [style.border-color]="activeTab() === 'history' ? '#2563eb' : 'transparent'">
+      Live Logs (All Staff)
+    </button>
+  </div>
+
+  <!-- Manual Entry Tab -->
+  @if (activeTab() === 'scan') {
+    <div class="manual-checkin-container" style="max-width: 480px; margin: 0 auto; padding: 24px; border: 1px solid #e2e8f0; border-radius: 8px; background: #f8fafc;">
+      <h2 style="font-size: 16px; font-weight: 700; color: #0f172a; margin: 0 0 16px 0; display: flex; align-items: center; gap: 8px;">
+        <span style="font-size: 18px;">🔑</span> Verify Ticket Code
+      </h2>
+
+      <div class="form-group" style="display: flex; flex-direction: column; gap: 6px; margin-bottom: 16px;">
+        <label style="font-size: 12px; font-weight: 600; color: #475569;">Enter Ticket Code</label>
+        <input type="text" placeholder="e.g. TH-8821-X" [ngModel]="ticketCodeInput()" (ngModelChange)="ticketCodeInput.set($event)" style="padding: 10px 12px; border-radius: 6px; border: 1px solid #cbd5e1; font-size: 14px; color: #0f172a; outline: none; background: #ffffff;" />
+      </div>
+
+      <button type="button" (click)="verifyTicket()" style="width: 100%; padding: 10px; border-radius: 6px; border: none; background: #2563eb; color: #ffffff; font-size: 14px; font-weight: 700; cursor: pointer; transition: all 0.2s;">
+        Verify & Check In
+      </button>
+
+      @if (successMessage()) {
+        <div class="success-alert" style="margin-top: 16px; color: #16a34a; font-weight: 600; font-size: 13.5px; text-align: center; padding: 10px; background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 6px;">
+          ✓ {{ successMessage() }}
+        </div>
+      }
+      @if (errorMessage()) {
+        <div class="error-alert" style="margin-top: 16px; color: #dc2626; font-weight: 600; font-size: 13.5px; text-align: center; padding: 10px; background: #fef2f2; border: 1px solid #fca5a5; border-radius: 6px;">
+          ✗ {{ errorMessage() }}
+        </div>
+      }
+    </div>
+  }
+
+  <!-- Live Logs Tab -->
+  @if (activeTab() === 'history') {
+    <div class="history-logs-container">
+      <div class="filter-search-row" style="display: flex; gap: 12px; margin-bottom: 16px; flex-wrap: wrap;">
+        <input type="text" placeholder="Search Attendee Name, Email, or Ticket Code..." [ngModel]="historySearchQuery()" (ngModelChange)="historySearchQuery.set($event)" style="flex: 1; min-width: 240px; padding: 8px 12px; border-radius: 6px; border: 1px solid #cbd5e1; font-size: 13.5px; outline: none;" />
+
+        <select [ngModel]="historyStatusFilter()" (ngModelChange)="historyStatusFilter.set($event)" style="padding: 8px 12px; border-radius: 6px; border: 1px solid #cbd5e1; font-size: 13.5px; outline: none; background: #ffffff; cursor: pointer;">
+          <option value="ALL">All Statuses</option>
+          <option value="SUCCESS">Success</option>
+          <option value="FAILED">Failed</option>
+          <option value="FLAGGED">Flagged</option>
+        </select>
+      </div>
+
+      <div class="table-responsive-container" style="overflow-x: auto; border: 1px solid #e2e8f0; border-radius: 8px;">
+        <table class="recent-table" style="width: 100%; border-collapse: collapse; text-align: left;">
+          <thead>
+            <tr style="background: #f8fafc; border-bottom: 1px solid #e2e8f0;">
+              <th style="padding: 12px 16px; font-size: 11px; font-weight: 700; color: #64748b; text-transform: uppercase;">Status</th>
+              <th style="padding: 12px 16px; font-size: 11px; font-weight: 700; color: #64748b; text-transform: uppercase;">Ticket Code</th>
+              <th style="padding: 12px 16px; font-size: 11px; font-weight: 700; color: #64748b; text-transform: uppercase;">Attendee</th>
+              <th style="padding: 12px 16px; font-size: 11px; font-weight: 700; color: #64748b; text-transform: uppercase;">Seat</th>
+              <th style="padding: 12px 16px; font-size: 11px; font-weight: 700; color: #64748b; text-transform: uppercase;">Checkin By</th>
+              <th style="padding: 12px 16px; font-size: 11px; font-weight: 700; color: #64748b; text-transform: uppercase;">Method</th>
+              <th style="padding: 12px 16px; font-size: 11px; font-weight: 700; color: #64748b; text-transform: uppercase;">Timestamp</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (record of filteredHistoryCheckIns(); track trackById($index, record)) {
+              <tr style="border-bottom: 1px solid #e2e8f0;">
+                <td style="padding: 12px 16px; font-size: 13.5px; color: #0f172a;">
+                  <span class="status-pill verified" style="display: inline-flex; align-items: center; gap: 4px; padding: 2px 8px; border-radius: 12px; font-size: 11px; font-weight: 700; background: #f0fdf4; color: #16a34a;">
+                    <span class="dot" style="width: 6px; height: 6px; border-radius: 50%; background: #16a34a;"></span>
+                    Verified
+                  </span>
+                </td>
+                <td style="padding: 12px 16px; font-size: 13.5px; font-weight: 700; color: #0f172a;">{{ record.orderId }}</td>
+                <td style="padding: 12px 16px; font-size: 13.5px; color: #0f172a;">
+                  <div style="display: flex; flex-direction: column;">
+                    <span style="font-weight: 600; color: #0f172a;">{{ record.attendeeName }}</span>
+                    <span style="font-size: 11px; color: #64748b;">{{ record.email }}</span>
+                  </div>
+                </td>
+                <td style="padding: 12px 16px; font-size: 13.5px; color: #0f172a;">
+                  <span style="padding: 2px 6px; background: #eff6ff; color: #2563eb; font-weight: 700; border-radius: 4px; font-size: 11px;">{{ record.seat }}</span>
+                </td>
+                <td style="padding: 12px 16px; font-size: 13.5px; color: #475569; font-weight: 600;">{{ record.staffName }}</td>
+                <td style="padding: 12px 16px; font-size: 13.5px; color: #0f172a;">
+                  <span style="padding: 2px 6px; border-radius: 4px; font-size: 11px; font-weight: 700; text-transform: uppercase;" [style.background]="record.method === 'QR_SCAN' ? 'rgba(37, 99, 235, 0.1)' : 'rgba(245, 158, 11, 0.1)'" [style.color]="record.method === 'QR_SCAN' ? '#2563eb' : '#d97706'">
+                    {{ record.method || 'QR_SCAN' }}
+                  </span>
+                </td>
+                <td style="padding: 12px 16px; font-size: 13.5px; color: #64748b;">{{ record.timestamp }}</td>
+              </tr>
+            } @empty {
+              <tr>
+                <td colspan="7" style="padding: 24px; text-align: center; color: #64748b; font-size: 13.5px;">No check-in records found.</td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    </div>
+  }
+</div>

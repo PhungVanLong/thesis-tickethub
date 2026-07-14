@@ -88,6 +88,32 @@ public class TicketController {
             throw new ResponseStatusException(HttpStatus.CONFLICT, "Ticket has already been checked in");
         }
 
+        // Event time check (Local via EventRef / write-through fallback)
+        Long eventId = request.getEventId() != null ? request.getEventId()
+                : (ticket.getOrderItem() != null && ticket.getOrderItem().getOrder() != null
+                        ? ticket.getOrderItem().getOrder().getEventId() : null);
+        if (eventId == null) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Ticket does not belong to any event");
+        }
+
+        try {
+            ict.thesis.booking.enties.EventRef event = bookingService.getOrSyncEvent(eventId);
+            if (event != null) {
+                Instant startTime = event.getStartTime();
+                Instant endTime = event.getEndTime();
+                Instant now = Instant.now();
+                if (startTime != null && endTime != null) {
+                    if (now.isBefore(startTime) || now.isAfter(endTime)) {
+                        throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Check-in is only allowed during the event time");
+                    }
+                }
+            }
+        } catch (ResponseStatusException e) {
+            throw e;
+        } catch (Exception e) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Failed to verify event time");
+        }
+
         // 4. Determine staffId
         Long staffId = request.getStaffId();
         if (staffId == null && userIdHeader != null) {
@@ -137,9 +163,9 @@ public class TicketController {
             response.put("tierName", ticket.getOrderItem().getTicketTier().getName());
         }
 
-        Long eventId = checkin.getEventId();
-        if (eventId != null) {
-            checkinSseService.broadcast(eventId, response);
+        Long broadcastEventId = checkin.getEventId();
+        if (broadcastEventId != null) {
+            checkinSseService.broadcast(broadcastEventId, response);
         }
 
         return ResponseEntity.ok(response);
@@ -188,6 +214,25 @@ public class TicketController {
         }
         if (eventId == null) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Ticket does not belong to any event");
+        }
+
+        // Event time check (Local via EventRef / write-through fallback)
+        try {
+            ict.thesis.booking.enties.EventRef event = bookingService.getOrSyncEvent(eventId);
+            if (event != null) {
+                Instant startTime = event.getStartTime();
+                Instant endTime = event.getEndTime();
+                Instant now = Instant.now();
+                if (startTime != null && endTime != null) {
+                    if (now.isBefore(startTime) || now.isAfter(endTime)) {
+                        throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Check-in is only allowed during the event time");
+                    }
+                }
+            }
+        } catch (ResponseStatusException e) {
+            throw e;
+        } catch (Exception e) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Failed to verify event time");
         }
 
         // 4. Verify staff is assigned to the event of the ticket
@@ -322,6 +367,44 @@ public class TicketController {
     public org.springframework.web.servlet.mvc.method.annotation.SseEmitter streamCheckins(
             @RequestParam Long eventId) {
         return checkinSseService.subscribe(eventId);
+    }
+
+    @GetMapping("/event/{eventId}/checkins")
+    public ResponseEntity<org.springframework.data.domain.Page<Map<String, Object>>> getEventCheckins(
+            @PathVariable Long eventId,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size) {
+        
+        org.springframework.data.domain.Pageable pageable = org.springframework.data.domain.PageRequest.of(page, size, org.springframework.data.domain.Sort.by("checkedInAt").descending());
+        org.springframework.data.domain.Page<Checkin> checkinPage = checkinRepository.findByEventId(eventId, pageable);
+        
+        org.springframework.data.domain.Page<Map<String, Object>> responsePage = checkinPage.map(c -> {
+            Map<String, Object> map = new HashMap<>();
+            map.put("checkinId", c.getId());
+            map.put("checkedInAt", c.getCheckedInAt());
+            map.put("method", c.getMethod() != null ? c.getMethod().name() : null);
+            map.put("deviceId", c.getDeviceId());
+            map.put("eventId", c.getEventId());
+            map.put("staffId", c.getStaff());
+
+            Ticket t = c.getTicket();
+            if (t != null) {
+                map.put("ticketCode", t.getTicketCode());
+                map.put("seatCode", t.getSeatCode());
+                map.put("ticketStatus", t.getStatus() != null ? t.getStatus().name() : null);
+                if (t.getOrderItem() != null) {
+                    if (t.getOrderItem().getOrder() != null) {
+                        map.put("customerEmail", t.getOrderItem().getOrder().getCustomerEmail());
+                    }
+                    if (t.getOrderItem().getTicketTier() != null) {
+                        map.put("tierName", t.getOrderItem().getTicketTier().getName());
+                    }
+                }
+            }
+            return map;
+        });
+
+        return ResponseEntity.ok(responsePage);
     }
 }
 

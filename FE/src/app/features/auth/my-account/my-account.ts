@@ -39,7 +39,7 @@ export class MyAccountComponent implements OnInit, OnDestroy {
   readonly tickets = signal<any[]>([]);
   readonly orders  = signal<any[]>([]);
   readonly orderFilter = signal<'ALL' | 'PAID' | 'PENDING' | 'CANCELLED'>('ALL');
-  readonly ticketTimeFilter = signal<'UPCOMING' | 'ENDED'>('UPCOMING');
+  readonly ticketTimeFilter = signal<'UPCOMING' | 'UNUSED' | 'USED' | 'ENDED'>('UPCOMING');
 
   readonly ticketPage = signal<number>(0);
   readonly ticketSize = signal<number>(5);
@@ -81,13 +81,24 @@ export class MyAccountComponent implements OnInit, OnDestroy {
   });
 
   readonly filteredTickets = computed(() => {
-    // Basic filter logic matching UI states
     const all = this.tickets();
     return all.filter(t => {
       const isEnded = new Date(t.eventDate) < new Date();
-      if (this.ticketTimeFilter() === 'UPCOMING' && isEnded) return false;
-      if (this.ticketTimeFilter() === 'ENDED' && !isEnded) return false;
-      
+      const filter = this.ticketTimeFilter();
+      const status = t.status || 'VALID';
+
+      if (filter === 'UPCOMING') {
+        return !isEnded && status === 'VALID';
+      }
+      if (filter === 'UNUSED') {
+        return status === 'VALID';
+      }
+      if (filter === 'USED') {
+        return status === 'USED';
+      }
+      if (filter === 'ENDED') {
+        return isEnded;
+      }
       return true;
     });
   });
@@ -186,7 +197,7 @@ export class MyAccountComponent implements OnInit, OnDestroy {
     }
   }
 
-  setTicketTimeFilter(filter: 'UPCOMING' | 'ENDED'): void {
+  setTicketTimeFilter(filter: 'UPCOMING' | 'UNUSED' | 'USED' | 'ENDED'): void {
     this.ticketTimeFilter.set(filter);
     this.ticketPage.set(0);
     this.fetchTicketsAndOrders();

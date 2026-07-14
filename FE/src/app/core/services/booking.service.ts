@@ -31,4 +31,12 @@ export class BookingApiService {
   getBookingStreamUrl(requestId: string): string {
     return `${this.API}/stream/${requestId}`;
   }
+
+  getOrganizerStats(eventIds: number[]): Observable<any> {
+    return this.http.post<any>('http://localhost:8080/api/orders/analytics/stats', eventIds);
+  }
+
+  getOrganizerRecentOrders(eventIds: number[]): Observable<any[]> {
+    return this.http.post<any[]>('http://localhost:8080/api/orders/analytics/recent', eventIds);
+  }
 }

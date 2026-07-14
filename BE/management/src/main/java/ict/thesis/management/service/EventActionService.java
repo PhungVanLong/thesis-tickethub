@@ -45,6 +45,7 @@ public class EventActionService {
     private final SeatRepository seatRepository;
     private final OutboxEventRepository outboxEventRepository;
     private final ObjectMapper objectMapper;
+    private final NotificationService notificationService;
 
     @Transactional
     public void publishEvent(Long userId, Long eventId) {
@@ -215,6 +216,26 @@ public class EventActionService {
 
         Long organizerId = (ownerMember != null) ? ownerMember.getUserId() : null;
         String organizerRole = (ownerMember != null) ? ownerMember.getMemberRole().name() : null;
+
+        // Notify Organizer of Admin's Decision
+        if (organizerId != null) {
+            try {
+                String title = request.decision() == ApprovalDecision.APPROVED ? "Sự kiện được phê duyệt" : "Sự kiện bị từ chối";
+                String msg = request.decision() == ApprovalDecision.APPROVED 
+                    ? "Sự kiện '" + event.getTitle() + "' của bạn đã được phê duyệt thành công." 
+                    : "Sự kiện '" + event.getTitle() + "' của bạn đã bị từ chối. Lý do: " + request.reason();
+
+                notificationService.createNotification(
+                    organizerId, 
+                    null, 
+                    title, 
+                    msg, 
+                    event.getId()
+                );
+            } catch (Exception e) {
+                // Ignore warning
+            }
+        }
 
         return new EventApprovalResponse(
             savedApproval.getId(),

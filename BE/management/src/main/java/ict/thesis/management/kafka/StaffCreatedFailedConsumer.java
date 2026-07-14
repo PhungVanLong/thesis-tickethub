@@ -9,7 +9,7 @@ import org.springframework.stereotype.Component;
 public class StaffCreatedFailedConsumer {
     private static final Logger logger = LoggerFactory.getLogger(StaffCreatedFailedConsumer.class);
 
-    @KafkaListener(topics = "user-staff-create-failed-topic", groupId = "management-group")
+    @KafkaListener(topics = "${kafka.topic.user-staff-create-failed}", groupId = "management-group")
     public void consume(String payload) {
         logger.error("Received staff creation failed callback event. Payload: {}", payload);
     }

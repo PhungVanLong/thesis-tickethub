@@ -23,7 +23,13 @@ public class StaffCreateConsumer {
     private final KafkaTemplate<String, String> kafkaTemplate;
     private final ObjectMapper objectMapper;
 
-    @KafkaListener(topics = "user-staff-create-topic", groupId = "identity-group")
+    @org.springframework.beans.factory.annotation.Value("${kafka.topic.user-staff-created-success}")
+    private String staffSuccessTopic;
+
+    @org.springframework.beans.factory.annotation.Value("${kafka.topic.user-staff-create-failed}")
+    private String staffFailedTopic;
+
+    @KafkaListener(topics = "${kafka.topic.user-staff-create}", groupId = "identity-group")
     public void consume(String payload) {
         logger.info("Received request to create staff account. Payload: {}", payload);
         String orgIdStr = "";
@@ -50,11 +56,11 @@ public class StaffCreateConsumer {
 
             UserResponse created = authService.createStaffAccount(
                     new ict.thesis.identity.dto.StaffRegisterRequest(request.email(), request.password(),
-                            request.fullName(), request.phone()));
+                             request.fullName(), request.phone()));
             userIdStr = created.getId() != null ? created.getId().toString() : "";
 
             String successPayload = String.format("{\"organizationId\":%s,\"userId\":%s}", orgIdStr, userIdStr);
-            kafkaTemplate.send("user-staff-created-success-topic", successPayload);
+            kafkaTemplate.send(staffSuccessTopic, successPayload);
             logger.info("Successfully created staff account for organization {} with user {}", orgIdStr, userIdStr);
         } catch (Exception e) {
             try {
@@ -62,7 +68,7 @@ public class StaffCreateConsumer {
                 String failedPayload = String.format("{\"organizationId\":%s,\"error\":\"%s\"}",
                         orgIdStr.isBlank() ? "null" : orgIdStr,
                         errorMsg.replace("\"", "\\\""));
-                kafkaTemplate.send("user-staff-create-failed-topic", failedPayload);
+                kafkaTemplate.send(staffFailedTopic, failedPayload);
             } catch (Exception ex) {
                 logger.error("Failed to send staff create failure event to Kafka", ex);
             }

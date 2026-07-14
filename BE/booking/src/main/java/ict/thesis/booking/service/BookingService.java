@@ -43,6 +43,8 @@ public class BookingService {
     private final ict.thesis.booking.repository.TicketRepository ticketRepository;
     private final ict.thesis.booking.repository.CheckinRepository checkinRepository;
     private final PayPalService payPalService;
+    private final ict.thesis.booking.repository.EventRefRepository eventRefRepository;
+    private final ict.thesis.booking.repository.TicketTierRefRepository ticketTierRefRepository;
 
     @Value("${gateway.shared-secret}")
     private String gatewaySharedSecret;
@@ -57,8 +59,12 @@ public class BookingService {
     private final Map<String, Long> completedBookings = new ConcurrentHashMap<>();
     private final Map<String, String> failedBookings = new ConcurrentHashMap<>();
 
-    private static final String BOOKING_TOPIC = "booking.requests";
-    private static final String SEAT_STATUS_TOPIC = "seat-status-updates";
+    @Value("${kafka.topic.booking-requests}")
+    private String bookingTopic;
+
+    @Value("${kafka.topic.seat-status-updates}")
+    private String seatStatusTopic;
+
     private final com.fasterxml.jackson.databind.ObjectMapper objectMapper = new com.fasterxml.jackson.databind.ObjectMapper();
 
     public record SeatStatusUpdateEvent(Long eventId, java.util.List<Long> seatIds, String status) {
@@ -96,6 +102,75 @@ public class BookingService {
         return headers;
     }
 
+    public ict.thesis.booking.enties.EventRef getOrSyncEvent(Long eventId) {
+        if (eventId == null) return null;
+        
+        return eventRefRepository.findById(eventId).orElseGet(() -> {
+            log.info("EventRef cache miss for eventId: {}. Fetching dynamically from management service.", eventId);
+            try {
+                String eventUrl = managementServiceUrl + "/api/events/" + eventId;
+                HttpHeaders headers = buildInternalHeaders();
+                HttpEntity<Void> entity = new HttpEntity<>(headers);
+                ResponseEntity<Map> response = restTemplate.exchange(eventUrl, HttpMethod.GET, entity, Map.class);
+                Map<String, Object> body = response.getBody();
+                if (body != null) {
+                    String title = (String) body.get("title");
+                    String startTimeStr = (String) body.get("startTime");
+                    String endTimeStr = (String) body.get("endTime");
+                    String venue = (String) body.get("venue");
+                    String city = (String) body.get("city");
+                    String bannerUrl = (String) body.get("bannerUrl");
+
+                    java.time.Instant startTime = startTimeStr != null ? java.time.Instant.parse(startTimeStr) : null;
+                    java.time.Instant endTime = endTimeStr != null ? java.time.Instant.parse(endTimeStr) : null;
+
+                    ict.thesis.booking.enties.EventRef ref = ict.thesis.booking.enties.EventRef.builder()
+                            .id(eventId)
+                            .title(title)
+                            .startTime(startTime)
+                            .endTime(endTime)
+                            .venue(venue)
+                            .city(city)
+                            .bannerUrl(bannerUrl)
+                            .syncedAt(java.time.Instant.now())
+                            .build();
+
+                    eventRefRepository.save(ref);
+                    
+                    // Also sync ticket tiers if available to avoid future misses
+                    if (body.get("ticketTiers") != null) {
+                        List<Map<String, Object>> tiers = (List<Map<String, Object>>) body.get("ticketTiers");
+                        for (Map<String, Object> tierMap : tiers) {
+                            Long tierId = ((Number) tierMap.get("id")).longValue();
+                            String tierName = (String) tierMap.get("name");
+                            java.math.BigDecimal tierPrice = new java.math.BigDecimal(tierMap.get("price").toString());
+                            Integer quantityAvailable = tierMap.get("quantityAvailable") != null 
+                                    ? ((Number) tierMap.get("quantityAvailable")).intValue() : null;
+
+                            if (!ticketTierRefRepository.existsById(tierId)) {
+                                ict.thesis.booking.enties.TicketTierRef tierRef = ict.thesis.booking.enties.TicketTierRef.builder()
+                                        .id(tierId)
+                                        .eventId(eventId)
+                                        .eventName(title)
+                                        .name(tierName)
+                                        .price(tierPrice)
+                                        .quantityAvailable(quantityAvailable)
+                                        .syncedAt(java.time.Instant.now())
+                                        .build();
+                                ticketTierRefRepository.save(tierRef);
+                            }
+                        }
+                    }
+                    
+                    return ref;
+                }
+            } catch (Exception e) {
+                log.error("Failed to dynamically fetch and sync eventId: {}", eventId, e);
+            }
+            return null;
+        });
+    }
+
     public void publishSeatStatus(Long eventId, java.util.List<Long> seatIds, String status) {
         if (eventId == null || seatIds == null || seatIds.isEmpty()) {
             return;
@@ -105,7 +180,7 @@ public class BookingService {
             SeatStatusUpdateEvent event = new SeatStatusUpdateEvent(eventId, seatIds, status);
             json = objectMapper.writeValueAsString(event);
             log.info("Publishing seat status update event: {}", json);
-            kafkaTemplate.send(SEAT_STATUS_TOPIC, eventId.toString(), json);
+            kafkaTemplate.send(seatStatusTopic, eventId.toString(), json);
 
             // Save to Outbox DB as PROCESSED
             outboxEventRepository.save(ict.thesis.booking.enties.OutboxEvent.builder()
@@ -301,7 +376,7 @@ public class BookingService {
         String json = "";
         try {
             json = objectMapper.writeValueAsString(message);
-            kafkaTemplate.send(BOOKING_TOPIC, requestId, json);
+            kafkaTemplate.send(bookingTopic, requestId, json);
 
             // Save to Outbox DB as PROCESSED
             outboxEventRepository.save(ict.thesis.booking.enties.OutboxEvent.builder()
@@ -427,35 +502,18 @@ public class BookingService {
         response.put("totalAmount", order.getTotalAmount());
         response.put("status", order.getStatus().toString());
 
-        // Use @LoadBalanced RestTemplate with Eureka service name
-        HttpHeaders headers = buildInternalHeaders();
-        HttpEntity<Void> entity = new HttpEntity<>(headers);
-
         Map<String, String> tierColorMap = new java.util.HashMap<>();
-        String eventUrl = managementServiceUrl + "/api/events/" + order.getEventId();
         try {
-            ResponseEntity<Map> eventResponse = restTemplate.exchange(eventUrl, HttpMethod.GET, entity, Map.class);
-            Map<String, Object> event = eventResponse.getBody();
+            ict.thesis.booking.enties.EventRef event = getOrSyncEvent(order.getEventId());
             if (event != null) {
-                response.put("eventTitle", event.get("title"));
-                response.put("eventDate", event.get("startTime"));
-                response.put("eventEndDate", event.get("endTime"));
-                response.put("eventVenue", event.get("venue"));
-                response.put("bannerUrl", event.get("bannerUrl"));
-
-                if (event.get("ticketTiers") != null) {
-                    List<Map<String, Object>> tiers = (List<Map<String, Object>>) event.get("ticketTiers");
-                    for (Map<String, Object> tier : tiers) {
-                        String name = (String) tier.get("name");
-                        String color = (String) tier.get("colorCode");
-                        if (name != null && color != null) {
-                            tierColorMap.put(name, color);
-                        }
-                    }
-                }
+                response.put("eventTitle", event.getTitle());
+                response.put("eventDate", event.getStartTime() != null ? event.getStartTime().toString() : null);
+                response.put("eventEndDate", event.getEndTime() != null ? event.getEndTime().toString() : null);
+                response.put("eventVenue", event.getVenue());
+                response.put("bannerUrl", event.getBannerUrl());
             }
         } catch (Exception e) {
-            log.error("Failed to fetch event details from management service", e);
+            log.error("Failed to fetch event details locally/fallback", e);
             response.put("eventTitle", "Event " + order.getEventId());
         }
 
@@ -463,6 +521,7 @@ public class BookingService {
         Map<Long, String> seatCodeMap = new java.util.HashMap<>();
         try {
             String seatMapsUrl = managementServiceUrl + "/api/events/" + order.getEventId() + "/seat-maps";
+            HttpEntity<Void> entity = new HttpEntity<>(buildInternalHeaders());
             ResponseEntity<List> seatMapsResponse = restTemplate.exchange(seatMapsUrl, HttpMethod.GET, entity,
                     List.class);
             List<Map<String, Object>> seatMaps = seatMapsResponse.getBody();
@@ -530,20 +589,17 @@ public class BookingService {
 
             java.util.Map<String, Object> eventData = eventCache.get(order.getEventId());
             if (eventData == null) {
-                String eventUrl = managementServiceUrl + "/api/events/" + order.getEventId();
                 try {
-                    ResponseEntity<Map> eventResponse = restTemplate.exchange(eventUrl, HttpMethod.GET, entity,
-                            Map.class);
-                    Map<String, Object> event = eventResponse.getBody();
+                    ict.thesis.booking.enties.EventRef event = getOrSyncEvent(order.getEventId());
                     if (event != null) {
                         eventData = new java.util.HashMap<>();
-                        eventData.put("title", event.get("title"));
-                        eventData.put("bannerUrl", event.get("bannerUrl"));
-                        eventData.put("startTime", event.get("startTime"));
+                        eventData.put("title", event.getTitle());
+                        eventData.put("bannerUrl", event.getBannerUrl());
+                        eventData.put("startTime", event.getStartTime() != null ? event.getStartTime().toString() : null);
                         eventCache.put(order.getEventId(), eventData);
                     }
                 } catch (Exception e) {
-                    log.error("Failed to fetch event details for order {}", order.getId(), e);
+                    log.error("Failed to fetch event details locally/fallback for order {}", order.getId(), e);
                 }
             }
 
@@ -588,21 +644,18 @@ public class BookingService {
                 Long eventId = item.getOrder().getEventId();
                 java.util.Map<String, Object> eventData = eventCache.get(eventId);
                 if (eventData == null) {
-                    String eventUrl = managementServiceUrl + "/api/events/" + eventId;
                     try {
-                        ResponseEntity<Map> eventResponse = restTemplate.exchange(eventUrl, HttpMethod.GET, entity,
-                                Map.class);
-                        Map<String, Object> event = eventResponse.getBody();
+                        ict.thesis.booking.enties.EventRef event = getOrSyncEvent(eventId);
                         if (event != null) {
                             eventData = new java.util.HashMap<>();
-                            eventData.put("eventTitle", event.get("title"));
-                            eventData.put("eventDate", event.get("startTime"));
-                            eventData.put("venue", event.get("venue"));
-                            eventData.put("bannerUrl", event.get("bannerUrl"));
+                            eventData.put("eventTitle", event.getTitle());
+                            eventData.put("eventDate", event.getStartTime() != null ? event.getStartTime().toString() : null);
+                            eventData.put("venue", event.getVenue());
+                            eventData.put("bannerUrl", event.getBannerUrl());
                             eventCache.put(eventId, eventData);
                         }
                     } catch (Exception e) {
-                        log.error("Failed to fetch event details for ticket {}", ticket.getId(), e);
+                        log.error("Failed to fetch event details locally/fallback for ticket {}", ticket.getId(), e);
                     }
                 }
 
@@ -697,25 +750,21 @@ public class BookingService {
                 response.put("orderStatus", order.getStatus() != null ? order.getStatus().toString() : null);
                 response.put("orderCreatedAt", order.getCreatedAt());
 
-                // 5. Event details (Fetch from Management service)
+                // 5. Event details (Fetch locally/fallback)
                 Long eventId = order.getEventId();
                 response.put("eventId", eventId);
                 
-                String eventUrl = managementServiceUrl + "/api/events/" + eventId;
-                HttpHeaders headers = buildInternalHeaders();
-                HttpEntity<Void> entity = new HttpEntity<>(headers);
                 try {
-                    ResponseEntity<Map> eventResponse = restTemplate.exchange(eventUrl, HttpMethod.GET, entity, Map.class);
-                    Map<String, Object> event = eventResponse.getBody();
+                    ict.thesis.booking.enties.EventRef event = getOrSyncEvent(eventId);
                     if (event != null) {
-                        response.put("eventTitle", event.get("title"));
-                        response.put("eventDate", event.get("startTime"));
-                        response.put("venue", event.get("venue"));
-                        response.put("bannerUrl", event.get("bannerUrl"));
-                        response.put("eventCity", event.get("city"));
+                        response.put("eventTitle", event.getTitle());
+                        response.put("eventDate", event.getStartTime() != null ? event.getStartTime().toString() : null);
+                        response.put("venue", event.getVenue());
+                        response.put("bannerUrl", event.getBannerUrl());
+                        response.put("eventCity", event.getCity());
                     }
                 } catch (Exception e) {
-                    log.error("Failed to fetch event details for ticket detail {}", ticket.getId(), e);
+                    log.error("Failed to fetch event details locally/fallback for ticket detail {}", ticket.getId(), e);
                     response.put("eventTitle", "Sự kiện " + eventId);
                     response.put("eventDate", ticket.getExpiresAt());
                     response.put("venue", "Chưa xác định");
@@ -739,5 +788,45 @@ public class BookingService {
         response.put("checkins", checkinList);
 
         return response;
+    }
+
+    public Map<String, Object> getOrganizerDashboardStats(List<Long> eventIds) {
+        if (eventIds == null || eventIds.isEmpty()) {
+            return Map.of(
+                "totalRevenue", java.math.BigDecimal.ZERO,
+                "totalTicketsSold", 0L,
+                "totalCheckins", 0L
+            );
+        }
+
+        java.math.BigDecimal totalRevenue = orderRepository.sumTotalAmountByEventIdsAndStatus(eventIds, ict.thesis.booking.enties.enums.OrderStatus.PAID);
+        long totalTicketsSold = ticketRepository.countTicketsByEventIds(eventIds);
+        long totalCheckins = ticketRepository.countTicketsByEventIdsAndStatus(eventIds, ict.thesis.booking.enties.enums.TicketStatus.USED);
+
+        return Map.of(
+            "totalRevenue", totalRevenue,
+            "totalTicketsSold", totalTicketsSold,
+            "totalCheckins", totalCheckins
+        );
+    }
+
+    public List<Map<String, Object>> getOrganizerDashboardRecentOrders(List<Long> eventIds) {
+        if (eventIds == null || eventIds.isEmpty()) {
+            return List.of();
+        }
+
+        org.springframework.data.domain.Pageable limitFive = org.springframework.data.domain.PageRequest.of(0, 5);
+        List<Order> recentOrders = orderRepository.findRecentByEventIds(eventIds, limitFive);
+
+        return recentOrders.stream().map(o -> {
+            Map<String, Object> map = new java.util.HashMap<>();
+            map.put("orderId", o.getId());
+            map.put("orderCode", o.getOrderCode());
+            map.put("customerEmail", o.getCustomerEmail());
+            map.put("totalAmount", o.getTotalAmount());
+            map.put("status", o.getStatus().name());
+            map.put("createdAt", o.getCreatedAt().toString());
+            return map;
+        }).toList();
     }
 }

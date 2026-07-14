@@ -44,7 +44,7 @@ public class BookingWorker {
         return headers;
     }
 
-    @KafkaListener(topics = "booking.requests", groupId = "booking-group")
+    @KafkaListener(topics = "${kafka.topic.booking-requests}", groupId = "booking-group")
     @Transactional
     public void processBookingRequest(String payload) {
         log.info("Received booking request from Kafka payload: {}", payload);
@@ -55,34 +55,18 @@ public class BookingWorker {
             log.info("Processing booking request: {}", message.getRequestId());
             CreateBookingRequest request = message.getPayload();
 
-            // Sync ticket tiers from management service dynamically (Pay-To-Win logic)
+            // Sync ticket tiers from management service dynamically if missing (hybrid cache fallback)
             try {
-                String eventUrl = managementServiceUrl + "/api/events/" + request.eventId();
-                org.springframework.http.HttpEntity<Void> entity = new org.springframework.http.HttpEntity<>(buildInternalHeaders());
-                org.springframework.http.ResponseEntity<java.util.Map> eventResponse = 
-                    restTemplate.exchange(eventUrl, org.springframework.http.HttpMethod.GET, entity, java.util.Map.class);
-                java.util.Map<String, Object> event = eventResponse.getBody();
-                if (event != null && event.get("ticketTiers") != null) {
-                    java.util.List<java.util.Map<String, Object>> tiers = 
-                        (java.util.List<java.util.Map<String, Object>>) event.get("ticketTiers");
-                    for (java.util.Map<String, Object> tierMap : tiers) {
-                        Long tierId = ((Number) tierMap.get("id")).longValue();
-                        String tierName = (String) tierMap.get("name");
-                        BigDecimal tierPrice = new BigDecimal(tierMap.get("price").toString());
-                        
-                        if (!ticketTierRefRepository.existsById(tierId)) {
-                            ict.thesis.booking.enties.TicketTierRef ref = ict.thesis.booking.enties.TicketTierRef.builder()
-                                .id(tierId)
-                                .eventId(request.eventId())
-                                .eventName((String) event.get("title"))
-                                .name(tierName)
-                                .price(tierPrice)
-                                .syncedAt(java.time.Instant.now())
-                                .build();
-                            ticketTierRefRepository.save(ref);
-                            log.info("Synced ticket tier dynamically: id={}, name={}, price={}", tierId, tierName, tierPrice);
-                        }
+                boolean allTiersExist = true;
+                for (BookingItemRequest itemReq : request.items()) {
+                    if (itemReq.ticketTierId() != null && !ticketTierRefRepository.existsById(itemReq.ticketTierId())) {
+                        allTiersExist = false;
+                        break;
                     }
+                }
+                if (!allTiersExist) {
+                    log.info("Some ticket tiers are missing locally for eventId: {}. Invoking local write-through caching.", request.eventId());
+                    bookingService.getOrSyncEvent(request.eventId());
                 }
             } catch (Exception e) {
                 log.error("Failed to sync ticket tiers dynamically for eventId: {}", request.eventId(), e);

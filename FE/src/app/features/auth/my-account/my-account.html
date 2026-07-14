@@ -172,9 +172,10 @@
           <div class="tab-content">
             <h2 class="panel-title">My Tickets</h2>
 
-            <!-- Time filter row -->
             <div class="time-tab-row">
               <button class="time-tab" [class.active]="ticketTimeFilter() === 'UPCOMING'" (click)="setTicketTimeFilter('UPCOMING')">Upcoming</button>
+              <button class="time-tab" [class.active]="ticketTimeFilter() === 'UNUSED'" (click)="setTicketTimeFilter('UNUSED')">Unused</button>
+              <button class="time-tab" [class.active]="ticketTimeFilter() === 'USED'" (click)="setTicketTimeFilter('USED')">Used</button>
               <button class="time-tab" [class.active]="ticketTimeFilter() === 'ENDED'" (click)="setTicketTimeFilter('ENDED')">Ended</button>
             </div>
 
@@ -245,7 +246,7 @@
 
                       <!-- Right column: Status & QR Code section -->
                       <div class="ticket-details-qr-side">
-                        <span class="ticket-item-status-badge" [class]="ticket.status || 'SUCCESS'">{{ ticket.status || 'VALID' }}</span>
+                        <span class="ticket-item-status-badge" [class]="ticket.status || 'SUCCESS'">{{ ticket.status === 'VALID' ? 'UNUSED' : (ticket.status || 'VALID') }}</span>
                         @if (ticket.qrCodeUrl) {
                           <div class="ticket-qr-section">
                             <span class="ticket-item-code-inline">{{ ticket.ticketCode }}</span>

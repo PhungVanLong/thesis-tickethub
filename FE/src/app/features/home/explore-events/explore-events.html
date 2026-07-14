@@ -18,7 +18,7 @@
       <div class="filter-field">
         <select [(ngModel)]="cityFilter" (change)="applyFilters()">
           <option value="">All Locations</option>
-          @for (city of cities; track city) {
+          @for (city of cities(); track city) {
             <option [value]="city">{{ city }}</option>
           }
         </select>

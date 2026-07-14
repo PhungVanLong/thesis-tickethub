@@ -29,9 +29,8 @@ export class ExploreEventsComponent implements OnInit {
   readonly events = signal<any[]>([]);
   readonly loading = signal<boolean>(false);
 
-  // Static options matching the drop-downs & DB
   readonly categories = ['Concerts', 'Sports', 'Arts & Theater', 'Family', 'Conference', 'Festival', 'Exhibition', 'Special'];
-  readonly cities = ['Hà Nội', 'Hồ Chí Minh', 'Đà Nẵng'];
+  readonly cities = signal<string[]>([]);
   readonly timeRanges = [
     { value: 'TODAY', label: 'Today' },
     { value: 'WEEKEND', label: 'This Weekend' },
@@ -39,6 +38,14 @@ export class ExploreEventsComponent implements OnInit {
   ];
 
   ngOnInit() {
+    // Dynamically fetch unique cities from all discovery events
+    this.eventApi.getDiscoveryEvents({ limit: 100 }).subscribe(data => {
+      if (data) {
+        const uniqueCities = Array.from(new Set(data.map(e => e.city).filter(c => !!c)));
+        this.cities.set(uniqueCities);
+      }
+    });
+
     // Listen to query param changes
     this.route.queryParams.subscribe(params => {
       this.categoryFilter.set(params['category'] || '');

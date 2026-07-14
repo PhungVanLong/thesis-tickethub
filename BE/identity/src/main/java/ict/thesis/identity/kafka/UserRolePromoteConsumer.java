@@ -18,7 +18,13 @@ public class UserRolePromoteConsumer {
     private final AuthService authService;
     private final KafkaTemplate<String, String> kafkaTemplate;
 
-    @KafkaListener(topics = "user-role-promote-topic", groupId = "identity-group")
+    @org.springframework.beans.factory.annotation.Value("${kafka.topic.user-role-promoted-success}")
+    private String successTopic;
+
+    @org.springframework.beans.factory.annotation.Value("${kafka.topic.user-role-promote-failed}")
+    private String failedTopic;
+
+    @KafkaListener(topics = "${kafka.topic.user-role-promote}", groupId = "identity-group")
     public void consume(String payload) {
         logger.info("Received request to promote user role. Payload: {}", payload);
         String orgIdStr = "";
@@ -49,7 +55,7 @@ public class UserRolePromoteConsumer {
             // Gửi callback phản hồi thành công nếu có orgId
             if (!orgIdStr.isEmpty()) {
                 logger.info("Sending callback success event back to Kafka for organization: {}, user: {}", orgIdStr, userIdStr);
-                kafkaTemplate.send("user-role-promoted-success-topic", payload);
+                kafkaTemplate.send(successTopic, payload);
             }
         } catch (Exception e) {
             logger.error("Error processing user role promotion for payload: {}", payload, e);
@@ -59,7 +65,7 @@ public class UserRolePromoteConsumer {
                     String failedPayload = String.format("{\"organizationId\":%s,\"userId\":%s,\"error\":\"%s\"}", 
                         orgIdStr, userIdStr.isEmpty() ? "null" : userIdStr, errorMsg.replace("\"", "\\\""));
                     logger.info("Sending callback failure event back to Kafka: {}", failedPayload);
-                    kafkaTemplate.send("user-role-promote-failed-topic", failedPayload);
+                    kafkaTemplate.send(failedTopic, failedPayload);
                 } catch (Exception ex) {
                     logger.error("Failed to send rollback event to Kafka", ex);
                 }
