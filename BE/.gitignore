@@ -46,3 +46,7 @@ Thumbs.db
 *.log
 *.jar
 *.war
+
+# Ignore documentation files and folders globally
+docs/
+*.md
