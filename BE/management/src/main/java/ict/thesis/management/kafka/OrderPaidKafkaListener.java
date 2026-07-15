@@ -63,7 +63,7 @@ public class OrderPaidKafkaListener {
             if (!seatIds.isEmpty()) {
                 // PESSIMISTIC LOCK: Claim seats
                 log.info("Attempting to claim seats with pessimistic lock: {}", seatIds);
-                List<ict.thesis.management.entity.Seat> seats = seatRepository.findAllByIdWithLock(seatIds);
+                List<ict.thesis.management.entity.Seat> seats = seatRepository.findAllByIdWithLock(seatIds);// locked
                 
                 // Check if any seat is already SOLD
                 boolean alreadySold = seats.stream().anyMatch(seat -> ict.thesis.management.entity.enums.SeatStatus.SOLD.equals(seat.getStatus()));

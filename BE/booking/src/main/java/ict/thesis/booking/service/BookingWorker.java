@@ -126,7 +126,7 @@ public class BookingWorker {
             
             log.info("Order created successfully: {}", savedOrder.getId());
 
-            // Publish RESERVED status for the seats
+            // Publish  status for the seats
             java.util.List<Long> seatIds = request.items().stream()
                 .map(itemReq -> itemReq.seatId())
                 .filter(java.util.Objects::nonNull)
