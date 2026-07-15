@@ -37,12 +37,9 @@ public class BookingService {
     private final ict.thesis.booking.repository.OrderRepository orderRepository;
     private final ict.thesis.booking.repository.OrderItemRepository orderItemRepository;
     private final RestTemplate restTemplate;
-    private final ict.thesis.booking.config.VNPayConfig vnPayConfig;
     private final ict.thesis.booking.repository.OutboxEventRepository outboxEventRepository;
-    private final TicketService ticketService;
     private final ict.thesis.booking.repository.TicketRepository ticketRepository;
     private final ict.thesis.booking.repository.CheckinRepository checkinRepository;
-    private final PayPalService payPalService;
     private final ict.thesis.booking.repository.EventRefRepository eventRefRepository;
     private final ict.thesis.booking.repository.TicketTierRefRepository ticketTierRefRepository;
 
@@ -52,12 +49,7 @@ public class BookingService {
     @Value("${management.service.url}")
     private String managementServiceUrl;
 
-    // Store SseEmitter for each request ID
-    private final Map<String, SseEmitter> emitters = new ConcurrentHashMap<>();
 
-    // Cache for completed results if the client hasn't subscribed yet
-    private final Map<String, Long> completedBookings = new ConcurrentHashMap<>();
-    private final Map<String, String> failedBookings = new ConcurrentHashMap<>();
 
     @Value("${kafka.topic.booking-requests}")
     private String bookingTopic;
@@ -205,171 +197,16 @@ public class BookingService {
         }
     }
 
-    public void completeMockPayment(Long orderId) {
-        orderRepository.findById(orderId).ifPresent(order -> {
-            order.setStatus(ict.thesis.booking.enties.enums.OrderStatus.PAID);
-            order.setUpdatedAt(java.time.Instant.now());
-            orderRepository.save(order);
-            log.info("Mock payment completed for order ID: {}", orderId);
-
-            // Generate tickets and send Kafka notification
-            ticketService.generateTicketsAndNotify(order);
-
-            java.util.List<Long> seatIds = orderItemRepository.findByOrderId(orderId).stream()
-                    .map(ict.thesis.booking.enties.OrderItem::getSeat)
-                    .filter(java.util.Objects::nonNull)
-                    .toList();
-
-            publishSeatStatus(order.getEventId(), seatIds, "SOLD");
-        });
-    }
-
-    public void cancelMockPayment(Long orderId) {
-        orderRepository.findById(orderId).ifPresent(order -> {
-            order.setStatus(ict.thesis.booking.enties.enums.OrderStatus.CANCELLED);
-            order.setUpdatedAt(java.time.Instant.now());
-            orderRepository.save(order);
-            log.info("Mock payment cancelled for order ID: {}", orderId);
-
-            java.util.List<Long> seatIds = orderItemRepository.findByOrderId(orderId).stream()
-                    .map(ict.thesis.booking.enties.OrderItem::getSeat)
-                    .filter(java.util.Objects::nonNull)
-                    .toList();
-
-            publishSeatStatus(order.getEventId(), seatIds, "AVAILABLE");
-        });
-    }
-
-    public String createVNPayPaymentUrl(Long orderId, jakarta.servlet.http.HttpServletRequest request) {
-        Order order = orderRepository.findById(orderId)
-                .orElseThrow(() -> new org.springframework.web.server.ResponseStatusException(
-                        org.springframework.http.HttpStatus.NOT_FOUND, "Order not found"));
-
-        String vnp_Version = vnPayConfig.getVnpVersion();
-        String vnp_Command = vnPayConfig.getVnpCommand();
-        String vnp_TxnRef = order.getId().toString() + "_" + UUID.randomUUID().toString().substring(0, 8);
-        String vnp_IpAddr = vnPayConfig.getIpAddress(request);
-        String vnp_TmnCode = vnPayConfig.getVnpCode();
-
-        // Amount must be multiplied by 100 as per VNPay spec
-        long amount = order.getTotalAmount().multiply(new java.math.BigDecimal("100")).longValue();
-
-        Map<String, String> vnp_Params = new java.util.HashMap<>();
-        vnp_Params.put("vnp_Version", vnp_Version);
-        vnp_Params.put("vnp_Command", vnp_Command);
-        vnp_Params.put("vnp_TmnCode", vnp_TmnCode);
-        vnp_Params.put("vnp_Amount", String.valueOf(amount));
-        vnp_Params.put("vnp_CurrCode", "VND");
-        vnp_Params.put("vnp_TxnRef", vnp_TxnRef);
-        vnp_Params.put("vnp_OrderInfo", "Thanh toan don hang " + order.getOrderCode());
-        vnp_Params.put("vnp_OrderType", "other");
-        vnp_Params.put("vnp_Locale", "vn");
-        vnp_Params.put("vnp_ReturnUrl", vnPayConfig.getVnpReturnUrl());
-        vnp_Params.put("vnp_IpAddr", vnp_IpAddr);
-
-        java.util.Calendar cld = java.util.Calendar.getInstance(java.util.TimeZone.getTimeZone("Etc/GMT+7"));
-        java.text.SimpleDateFormat formatter = new java.text.SimpleDateFormat("yyyyMMddHHmmss");
-        String vnp_CreateDate = formatter.format(cld.getTime());
-        vnp_Params.put("vnp_CreateDate", vnp_CreateDate);
-
-        cld.add(java.util.Calendar.MINUTE, 15);
-        String vnp_ExpireDate = formatter.format(cld.getTime());
-        vnp_Params.put("vnp_ExpireDate", vnp_ExpireDate);
-
-        List fieldNames = new ArrayList(vnp_Params.keySet());
-        Collections.sort(fieldNames);
-        StringBuilder hashData = new StringBuilder();
-        StringBuilder query = new StringBuilder();
-        Iterator itr = fieldNames.iterator();
-        while (itr.hasNext()) {
-            String fieldName = (String) itr.next();
-            String fieldValue = (String) vnp_Params.get(fieldName);
-            if ((fieldValue != null) && (fieldValue.length() > 0)) {
-                // Build hash data
-                hashData.append(fieldName);
-                hashData.append('=');
-                try {
-                    hashData.append(java.net.URLEncoder.encode(fieldValue,
-                            java.nio.charset.StandardCharsets.US_ASCII.toString()));
-                    // Build query
-                    query.append(java.net.URLEncoder.encode(fieldName,
-                            java.nio.charset.StandardCharsets.US_ASCII.toString()));
-                    query.append('=');
-                    query.append(java.net.URLEncoder.encode(fieldValue,
-                            java.nio.charset.StandardCharsets.US_ASCII.toString()));
-                } catch (java.io.UnsupportedEncodingException e) {
-                    log.error("Encoding error", e);
-                }
-                if (itr.hasNext()) {
-                    query.append('&');
-                    hashData.append('&');
-                }
-            }
-        }
-
-        String queryUrl = query.toString();
-        String vnp_SecureHash = vnPayConfig.hashAllFields(vnp_Params);
-        queryUrl += "&vnp_SecureHash=" + vnp_SecureHash;
-
-        return vnPayConfig.getVnpPayUrl() + "?" + queryUrl;
-    }
-
-    public boolean processVNPayCallback(Map<String, String> params) {
-        log.info("Processing VNPay Callback with params: {}", params);
-
-        String vnp_ResponseCode = params.get("vnp_ResponseCode");
-        String vnp_TxnRef = params.get("vnp_TxnRef");
-
-        if (vnp_TxnRef == null) {
-            return false;
-        }
-
-        // vnp_TxnRef is formatted as {orderId}_{randomString}
-        Long orderId = Long.parseLong(vnp_TxnRef.split("_")[0]);
-
-        if ("00".equals(vnp_ResponseCode)) {
-            completeMockPayment(orderId);
-            log.info("VNPay Payment Successful for order ID: {}", orderId);
-            return true;
-        } else {
-            cancelMockPayment(orderId);
-            log.warn("VNPay Payment Failed for order ID: {}, response code: {}", orderId, vnp_ResponseCode);
-            return false;
-        }
-    }
-
-    public String createPayPalPaymentUrl(Long orderId) {
-        Order order = orderRepository.findById(orderId)
-                .orElseThrow(() -> new org.springframework.web.server.ResponseStatusException(
-                        org.springframework.http.HttpStatus.NOT_FOUND, "Order not found"));
-        return payPalService.createPayPalOrder(order);
-    }
-
-    public boolean processPayPalCallback(Long orderId, String token) {
-        log.info("Processing PayPal Callback for order ID: {}, token: {}", orderId, token);
-        boolean success = payPalService.capturePayPalOrder(token);
-        if (success) {
-            completeMockPayment(orderId);
-            log.info("PayPal Payment Successful for order ID: {}", orderId);
-            return true;
-        } else {
-            cancelMockPayment(orderId);
-            log.warn("PayPal Payment Failed for order ID: {}", orderId);
-            return false;
-        }
-    }
-
-
-    @Data
-    @NoArgsConstructor
-    @AllArgsConstructor
+    @lombok.Data
+    @lombok.NoArgsConstructor
+    @lombok.AllArgsConstructor
     public static class BookingMessage {
         private String requestId;
-        private CreateBookingRequest payload;
+        private ict.thesis.booking.dto.BookingDtos.CreateBookingRequest payload;
     }
 
-    public String submitBookingRequest(CreateBookingRequest request) {
-        String requestId = UUID.randomUUID().toString();
+    public String submitBookingRequest(ict.thesis.booking.dto.BookingDtos.CreateBookingRequest request) {
+        String requestId = java.util.UUID.randomUUID().toString();
         log.info("Submitting booking request {} to Kafka", requestId);
 
         BookingMessage message = new BookingMessage(requestId, request);
@@ -401,91 +238,6 @@ public class BookingService {
             throw new RuntimeException("Failed to serialize booking request", e);
         }
         return requestId;
-    }
-
-    public SseEmitter subscribeToBookingResult(String requestId) {
-        SseEmitter emitter = new SseEmitter(60000L); // 60 seconds timeout
-
-        // Check if there is already a cached success result
-        if (completedBookings.containsKey(requestId)) {
-            Long orderId = completedBookings.remove(requestId);
-            try {
-                emitter.send(SseEmitter.event().name("SUCCESS").data(orderId));
-                emitter.complete();
-            } catch (IOException e) {
-                emitter.completeWithError(e);
-            }
-            return emitter;
-        }
-
-        // Check if there is already a cached failed result
-        if (failedBookings.containsKey(requestId)) {
-            String reason = failedBookings.remove(requestId);
-            try {
-                emitter.send(SseEmitter.event().name("FAILED").data(reason));
-                emitter.complete();
-            } catch (IOException e) {
-                emitter.completeWithError(e);
-            }
-            return emitter;
-        }
-
-        emitters.put(requestId, emitter);
-
-        emitter.onCompletion(() -> emitters.remove(requestId));
-        emitter.onTimeout(() -> {
-            emitter.complete();
-            emitters.remove(requestId);
-        });
-        emitter.onError(e -> {
-            emitter.completeWithError(e);
-            emitters.remove(requestId);
-        });
-
-        // Send a dummy event to establish connection immediately
-        try {
-            emitter.send(SseEmitter.event().name("INIT").data("Connected"));
-        } catch (IOException e) {
-            emitter.completeWithError(e);
-        }
-
-        return emitter;
-    }
-
-    public void notifyBookingSuccess(String requestId, Long orderId) {
-        SseEmitter emitter = emitters.get(requestId);
-        if (emitter != null) {
-            try {
-                emitter.send(SseEmitter.event().name("SUCCESS").data(orderId));
-                emitter.complete();
-            } catch (IOException e) {
-                log.error("Failed to send SSE for requestId {}", requestId, e);
-                emitter.completeWithError(e);
-            } finally {
-                emitters.remove(requestId);
-            }
-        } else {
-            log.info("SseEmitter not found for requestId: {}, caching success result.", requestId);
-            completedBookings.put(requestId, orderId);
-        }
-    }
-
-    public void notifyBookingFailed(String requestId, String reason) {
-        SseEmitter emitter = emitters.get(requestId);
-        if (emitter != null) {
-            try {
-                emitter.send(SseEmitter.event().name("FAILED").data(reason));
-                emitter.complete();
-            } catch (IOException e) {
-                log.error("Failed to send FAILED SSE for requestId {}", requestId, e);
-                emitter.completeWithError(e);
-            } finally {
-                emitters.remove(requestId);
-            }
-        } else {
-            log.info("SseEmitter not found for requestId: {}, caching failed result.", requestId);
-            failedBookings.put(requestId, reason);
-        }
     }
 
     @org.springframework.transaction.annotation.Transactional(readOnly = true)

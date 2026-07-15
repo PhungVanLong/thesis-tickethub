@@ -2,6 +2,8 @@ package ict.thesis.booking.controller;
 
 import ict.thesis.booking.dto.BookingDtos.CreateBookingRequest;
 import ict.thesis.booking.service.BookingService;
+import ict.thesis.booking.service.BookingSseService;
+import ict.thesis.booking.service.PaymentService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -21,6 +23,8 @@ import java.util.Map;
 public class BookingController {
 
     private final BookingService bookingService;
+    private final BookingSseService bookingSseService;
+    private final PaymentService paymentService;
 
     @PostMapping
     public ResponseEntity<Map<String, String>> submitBooking(@RequestBody CreateBookingRequest request) {
@@ -30,30 +34,30 @@ public class BookingController {
 
     @GetMapping(path = "/stream/{requestId}", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
     public SseEmitter streamBookingResult(@PathVariable String requestId) {
-        return bookingService.subscribeToBookingResult(requestId);
+        return bookingSseService.subscribeToBookingResult(requestId);
     }
 
     @PostMapping("/{orderId}/mock-pay")
     public ResponseEntity<Map<String, String>> mockPay(@PathVariable Long orderId) {
-        bookingService.completeMockPayment(orderId);
+        paymentService.completeMockPayment(orderId);
         return ResponseEntity.ok(Map.of("message", "Payment simulated successfully"));
     }
 
     @PostMapping("/{orderId}/mock-cancel")
     public ResponseEntity<Map<String, String>> mockCancel(@PathVariable Long orderId) {
-        bookingService.cancelMockPayment(orderId);
+        paymentService.cancelMockPayment(orderId);
         return ResponseEntity.ok(Map.of("message", "Cancellation simulated successfully"));
     }
 
     @GetMapping("/{orderId}/vnpay-url")
     public ResponseEntity<Map<String, String>> getVNPayUrl(@PathVariable Long orderId, jakarta.servlet.http.HttpServletRequest request) {
-        String paymentUrl = bookingService.createVNPayPaymentUrl(orderId, request);
+        String paymentUrl = paymentService.createVNPayPaymentUrl(orderId, request);
         return ResponseEntity.ok(Map.of("paymentUrl", paymentUrl));
     }
 
     @GetMapping("/vnpay-return")
     public void vnpayReturn(@org.springframework.web.bind.annotation.RequestParam Map<String, String> allParams, jakarta.servlet.http.HttpServletResponse response) throws java.io.IOException {
-        boolean success = bookingService.processVNPayCallback(allParams);
+        boolean success = paymentService.processVNPayCallback(allParams);
         String txnRef = allParams.get("vnp_TxnRef");
         String orderIdStr = (txnRef != null && txnRef.contains("_")) ? txnRef.split("_")[0] : txnRef;
         String redirectUrl = "http://localhost:4200/checkout/" + orderIdStr;
@@ -65,7 +69,7 @@ public class BookingController {
 
     @GetMapping("/{orderId}/paypal-url")
     public ResponseEntity<Map<String, String>> getPayPalUrl(@PathVariable Long orderId) {
-        String paymentUrl = bookingService.createPayPalPaymentUrl(orderId);
+        String paymentUrl = paymentService.createPayPalPaymentUrl(orderId);
         return ResponseEntity.ok(Map.of("paymentUrl", paymentUrl != null ? paymentUrl : ""));
     }
 
@@ -73,7 +77,7 @@ public class BookingController {
     public void paypalReturn(@org.springframework.web.bind.annotation.RequestParam("orderId") Long orderId,
                              @org.springframework.web.bind.annotation.RequestParam("token") String token,
                              jakarta.servlet.http.HttpServletResponse response) throws java.io.IOException {
-        boolean success = bookingService.processPayPalCallback(orderId, token);
+        boolean success = paymentService.processPayPalCallback(orderId, token);
         String redirectUrl = "http://localhost:4200/checkout/" + orderId;
         if (!success) {
             redirectUrl = "http://localhost:4200/checkout/" + orderId + "?error=payment_failed";

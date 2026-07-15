@@ -29,6 +29,7 @@ public class BookingWorker {
     private final OrderItemRepository orderItemRepository;
     private final TicketTierRefRepository ticketTierRefRepository;
     private final BookingService bookingService;
+    private final BookingSseService bookingSseService;
     private final org.springframework.web.client.RestTemplate restTemplate;
     private final com.fasterxml.jackson.databind.ObjectMapper objectMapper = new com.fasterxml.jackson.databind.ObjectMapper();
 
@@ -140,19 +141,19 @@ public class BookingWorker {
                     new org.springframework.transaction.support.TransactionSynchronization() {
                         @Override
                         public void afterCommit() {
-                            bookingService.notifyBookingSuccess(finalRequestId, finalOrderId);
+                            bookingSseService.notifyBookingSuccess(finalRequestId, finalOrderId);
                         }
                     }
                 );
             } else {
-                bookingService.notifyBookingSuccess(finalRequestId, finalOrderId);
+                bookingSseService.notifyBookingSuccess(finalRequestId, finalOrderId);
             }
             
         } catch (Exception e) {
             String rId = (message != null) ? message.getRequestId() : "UNKNOWN";
             log.error("Failed to process booking request {}", rId, e);
             if (message != null) {
-                bookingService.notifyBookingFailed(message.getRequestId(), "Failed to create order: " + e.getMessage());
+                bookingSseService.notifyBookingFailed(message.getRequestId(), "Failed to create order: " + e.getMessage());
             }
         }
     }
